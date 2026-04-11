@@ -1,5 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
   "name": "Saturday API",
   "logo": {
     "dark": "/images/logo-dark.svg",
@@ -9,112 +10,86 @@
   "colors": {
     "primary": "#1aabb8",
     "light": "#8FC5CE",
-    "dark": "#0e7e8a",
-    "background": {
-      "dark": "#0d1e23",
-      "light": "#ffffff"
-    },
-    "anchors": {
-      "from": "#1aabb8",
-      "to": "#f5a623"
-    }
+    "dark": "#0e7e8a"
   },
-  "font": {
-    "headings": {
-      "family": "Bitter",
-      "weight": 600
-    },
-    "body": {
-      "family": "Inter",
-      "weight": 400
-    }
-  },
-  "topbarLinks": [
-    {
-      "name": "Support",
-      "url": "mailto:api@saturday.fit"
-    }
-  ],
-  "topbarCtaButton": {
-    "name": "Get API Key",
-    "url": "mailto:api@saturday.fit?subject=API%20Access%20Request"
-  },
-  "tabs": [
-    {
-      "name": "API Reference",
-      "url": "api-reference"
-    }
-  ],
-  "anchors": [
-    {
-      "name": "Status",
-      "icon": "signal",
-      "url": "https://status.saturday.fit"
-    },
-    {
-      "name": "Community",
-      "icon": "people-group",
-      "url": "https://forum.saturday.fit"
-    }
-  ],
-  "navigation": [
-    {
-      "group": "Getting Started",
-      "pages": [
-        "introduction",
-        "quickstart",
-        "authentication",
-        "error-handling",
-        "rate-limiting"
-      ]
-    },
-    {
-      "group": "Core Guides",
-      "pages": [
-        "guides/nutrition-calculation",
-        "guides/athletes",
-        "guides/activities",
-        "guides/freemium-model",
-        "guides/safety"
-      ]
-    },
-    {
-      "group": "Integration Guides",
-      "pages": [
-        "guides/ai-coach",
-        "guides/webhooks",
-        "guides/oauth2",
-        "guides/organizations",
-        "guides/batch-operations",
-        "guides/mcp-integration"
-      ]
-    },
-    {
-      "group": "Platform",
-      "pages": [
-        "guides/feature-gates",
-        "guides/data-policy",
-        "guides/deployment"
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "authentication",
+              "error-handling",
+              "rate-limiting"
+            ]
+          },
+          {
+            "group": "Core Guides",
+            "pages": [
+              "guides/nutrition-calculation",
+              "guides/athletes",
+              "guides/activities",
+              "guides/freemium-model",
+              "guides/safety"
+            ]
+          },
+          {
+            "group": "Integration Guides",
+            "pages": [
+              "guides/ai-coach",
+              "guides/webhooks",
+              "guides/oauth2",
+              "guides/organizations",
+              "guides/batch-operations",
+              "guides/mcp-integration"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              "guides/feature-gates",
+              "guides/data-policy",
+              "guides/deployment"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Community",
+          "href": "https://forum.saturday.fit",
+          "icon": "people-group"
+        }
       ]
     }
-  ],
-  "footerSocials": {
-    "website": "https://saturday.fit",
-    "youtube": "https://youtube.com/@saturdayfuel"
   },
-  "openapi": "../api/openapi.yaml",
-  "hosting": {
-    "customDomain": "docs.saturday.fit"
-  },
-  "api": {
-    "baseUrl": "https://api.saturday.fit",
-    "auth": {
-      "method": "bearer",
-      "name": "Authorization"
-    },
-    "playground": {
-      "mode": "simple"
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:api@saturday.fit"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get API Key",
+      "href": "mailto:api@saturday.fit?subject=API%20Access%20Request"
     }
+  },
+  "footer": {
+    "socials": {
+      "website": "https://saturday.fit",
+      "youtube": "https://youtube.com/@saturdayfuel"
+    }
+  },
+  "contextual": {
+    "options": ["copy", "view", "claude", "cursor"]
   },
   "feedback": {
     "thumbsRating": true,
@@ -126,12 +101,6 @@
   },
   "metadata": {
     "og:site_name": "Saturday API Documentation",
-    "og:image": "/images/og-docs.png",
     "twitter:site": "@saturdayfuel"
-  },
-  "integrations": {
-    "intercom": null
-  },
-  "redirects": [],
-  "backgroundImage": "/images/hero-gradient.svg"
+  }
 }
