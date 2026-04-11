@@ -1,0 +1,334 @@
+---
+title: 'Batch Operations'
+description: 'Batch calculations, bulk athlete creation, and activity imports'
+sidebarTitle: 'Batch Operations'
+icon: 'layer-group'
+---
+
+# Batch Operations
+
+Batch endpoints let you perform multiple operations in a single API call. Use these when you need to process a training week, onboard a team, or import historical activities.
+
+## Batch calculate
+
+Calculate prescriptions for multiple scenarios at once. Ideal for building "training week" views or "what if" comparisons.
+
+```bash
+POST /v1/nutrition/calculate/batch
+```
+
+<CodeGroup>
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.saturday.fit/v1/nutrition/calculate/batch",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "athlete_id": "ath_abc123",
+        "scenarios": [
+            {
+                "label": "Monday easy run",
+                "activity_type": "running",
+                "duration_minutes": 45,
+                "intensity": "easy",
+            },
+            {
+                "label": "Wednesday intervals",
+                "activity_type": "running",
+                "duration_minutes": 60,
+                "intensity": "hard",
+            },
+            {
+                "label": "Saturday long ride",
+                "activity_type": "cycling",
+                "duration_minutes": 180,
+                "intensity": "moderate",
+                "conditions": {
+                    "temperature_celsius": 28,
+                    "humidity_percent": 65,
+                },
+            },
+        ],
+    },
+)
+
+results = response.json()
+for result in results["results"]:
+    print(f"{result['label']}: {result['prescription']['carbohydrate']['grams_per_hour']}g carbs/hr")
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://api.saturday.fit/v1/nutrition/calculate/batch",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer sk_test_abc123def456",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      athlete_id: "ath_abc123",
+      scenarios: [
+        {
+          label: "Monday easy run",
+          activity_type: "running",
+          duration_minutes: 45,
+          intensity: "easy",
+        },
+        {
+          label: "Wednesday intervals",
+          activity_type: "running",
+          duration_minutes: 60,
+          intensity: "hard",
+        },
+        {
+          label: "Saturday long ride",
+          activity_type: "cycling",
+          duration_minutes: 180,
+          intensity: "moderate",
+          conditions: {
+            temperature_celsius: 28,
+            humidity_percent: 65,
+          },
+        },
+      ],
+    }),
+  }
+);
+
+const data = await response.json();
+data.results.forEach((r: any) =>
+  console.log(`${r.label}: ${r.prescription.carbohydrate.grams_per_hour}g carbs/hr`)
+);
+```
+
+</CodeGroup>
+
+### Response format
+
+```json
+{
+  "results": [
+    {
+      "index": 0,
+      "label": "Monday easy run",
+      "prescription": { "..." : "..." },
+      "safety": { "risk_level": "low" }
+    },
+    {
+      "index": 1,
+      "label": "Wednesday intervals",
+      "prescription": { "..." : "..." },
+      "safety": { "risk_level": "low" }
+    }
+  ],
+  "errors": [],
+  "metadata": {
+    "total_scenarios": 3,
+    "successful": 3,
+    "failed": 0,
+    "request_id": "req_abc123def456"
+  }
+}
+```
+
+If individual scenarios fail, they appear in `errors` with the index and error detail. Successful scenarios are still returned — batch operations don't fail atomically.
+
+### Limits
+
+| Constraint | Value |
+|------------|-------|
+| Max scenarios per batch | 50 |
+| Rate limiting | Counts as 1 API call per scenario |
+
+## Bulk athlete create
+
+Onboard multiple athletes in one call. Useful for team imports or platform migrations.
+
+```bash
+POST /v1/athletes/batch
+```
+
+<CodeGroup>
+
+```python Python
+response = requests.post(
+    "https://api.saturday.fit/v1/athletes/batch",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "athletes": [
+            {
+                "external_id": "user-001",
+                "name": "Alice Runner",
+                "weight_kg": 58,
+                "fitness_level": "advanced",
+                "primary_sport": "running",
+            },
+            {
+                "external_id": "user-002",
+                "name": "Bob Cyclist",
+                "weight_kg": 75,
+                "fitness_level": "intermediate",
+                "primary_sport": "cycling",
+            },
+            {
+                "external_id": "user-003",
+                "name": "Carol Triathlete",
+                "weight_kg": 65,
+                "fitness_level": "elite",
+                "primary_sport": "triathlon",
+            },
+        ],
+    },
+)
+
+results = response.json()
+for athlete in results["created"]:
+    print(f"Created: {athlete['name']} -> {athlete['id']}")
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.saturday.fit/v1/athletes/batch", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer sk_test_abc123def456",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    athletes: [
+      {
+        external_id: "user-001",
+        name: "Alice Runner",
+        weight_kg: 58,
+        fitness_level: "advanced",
+        primary_sport: "running",
+      },
+      {
+        external_id: "user-002",
+        name: "Bob Cyclist",
+        weight_kg: 75,
+        fitness_level: "intermediate",
+        primary_sport: "cycling",
+      },
+    ],
+  }),
+});
+
+const results = await response.json();
+results.created.forEach((a: any) => console.log(`Created: ${a.name} -> ${a.id}`));
+```
+
+</CodeGroup>
+
+### Limits
+
+| Constraint | Value |
+|------------|-------|
+| Max athletes per batch | 100 |
+| Duplicate `external_id` | Error for that item, others continue |
+
+## Activity import
+
+Import multiple activities for an athlete at once. Useful for backfilling historical data from other platforms.
+
+```bash
+POST /v1/athletes/{athlete_id}/activities/import
+```
+
+<CodeGroup>
+
+```python Python
+response = requests.post(
+    f"https://api.saturday.fit/v1/athletes/ath_abc123/activities/import",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "activities": [
+            {
+                "type": "running",
+                "name": "New Year's Day 10K",
+                "duration_minutes": 48,
+                "intensity": "hard",
+                "scheduled_at": "2025-01-01T09:00:00Z",
+                "conditions": {
+                    "temperature_celsius": 4,
+                    "humidity_percent": 80,
+                },
+            },
+            {
+                "type": "cycling",
+                "name": "Weekend group ride",
+                "duration_minutes": 150,
+                "intensity": "moderate",
+                "scheduled_at": "2025-01-04T08:00:00Z",
+            },
+        ],
+    },
+)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  `https://api.saturday.fit/v1/athletes/ath_abc123/activities/import`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer sk_test_abc123def456",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      activities: [
+        {
+          type: "running",
+          name: "New Year's Day 10K",
+          duration_minutes: 48,
+          intensity: "hard",
+          scheduled_at: "2025-01-01T09:00:00Z",
+          conditions: { temperature_celsius: 4, humidity_percent: 80 },
+        },
+        {
+          type: "cycling",
+          name: "Weekend group ride",
+          duration_minutes: 150,
+          intensity: "moderate",
+          scheduled_at: "2025-01-04T08:00:00Z",
+        },
+      ],
+    }),
+  }
+);
+```
+
+</CodeGroup>
+
+Imported activities don't automatically get prescriptions calculated — call the prescription endpoint for each activity that needs one, or let the athlete trigger calculations through your UI.
+
+## Error handling in batch operations
+
+Batch operations use partial success semantics. If 3 out of 5 items succeed and 2 fail:
+
+- The 3 successful items are committed
+- The 2 failed items are returned in the `errors` array with index, error type, and message
+- The HTTP status is `200` (not `400`) because some items succeeded
+
+```json
+{
+  "created": [
+    { "index": 0, "id": "ath_abc123", "name": "Alice Runner" },
+    { "index": 2, "id": "ath_def456", "name": "Carol Triathlete" }
+  ],
+  "errors": [
+    {
+      "index": 1,
+      "error": {
+        "type": "conflict",
+        "code": "duplicate_external_id",
+        "message": "An athlete with external_id 'user-002' already exists"
+      }
+    }
+  ]
+}
+```
+
+Check both `created` (or `results`) and `errors` arrays to handle the response correctly.

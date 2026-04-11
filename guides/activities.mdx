@@ -1,0 +1,223 @@
+---
+title: 'Activities'
+description: 'Activity lifecycle — creating, prescribing, and tracking'
+sidebarTitle: 'Activities'
+icon: 'bicycle'
+---
+
+# Activities
+
+Activities represent individual training sessions or races. Each activity belongs to an athlete and can have a nutrition prescription, selected products, and post-activity feedback attached.
+
+## Activity lifecycle
+
+```
+Create activity -> Calculate prescription -> (Optional) Add products -> (Optional) Submit feedback
+```
+
+1. **Create** the activity with type, duration, intensity, and conditions
+2. **Calculate** a nutrition prescription for it
+3. **Add products** the athlete plans to use (optional — for preparation planning)
+4. **Submit feedback** after the activity (optional — improves future prescriptions)
+
+## Creating an activity
+
+<CodeGroup>
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.saturday.fit/v1/athletes/ath_abc123/activities",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "type": "running",
+        "name": "Saturday long run",
+        "duration_minutes": 120,
+        "intensity": "moderate",
+        "scheduled_at": "2025-01-15T07:00:00Z",
+        "conditions": {
+            "temperature_celsius": 18,
+            "humidity_percent": 55,
+        },
+    },
+)
+
+activity = response.json()
+print(f"Activity ID: {activity['id']}")
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://api.saturday.fit/v1/athletes/ath_abc123/activities",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer sk_test_abc123def456",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: "running",
+      name: "Saturday long run",
+      duration_minutes: 120,
+      intensity: "moderate",
+      scheduled_at: "2025-01-15T07:00:00Z",
+      conditions: {
+        temperature_celsius: 18,
+        humidity_percent: 55,
+      },
+    }),
+  }
+);
+
+const activity = await response.json();
+console.log(`Activity ID: ${activity.id}`);
+```
+
+</CodeGroup>
+
+### Activity fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | Activity type (see [supported types](/guides/nutrition-calculation#supported-activity-types)) |
+| `duration_minutes` | integer | Yes | Expected duration |
+| `intensity` | string | No | `easy`, `moderate`, `hard`, `race` |
+| `name` | string | No | Human-readable label |
+| `scheduled_at` | string | No | ISO 8601 datetime |
+| `conditions` | object | No | Environmental conditions |
+| `sub_activities` | array | No | For multi-sport activities |
+
+### Multi-sport activities
+
+For triathlons and brick workouts, specify sub-activities:
+
+```json
+{
+  "type": "triathlon",
+  "name": "Olympic distance race",
+  "duration_minutes": 165,
+  "intensity": "race",
+  "sub_activities": [
+    { "type": "swimming", "duration_minutes": 25 },
+    { "type": "cycling", "duration_minutes": 75 },
+    { "type": "running", "duration_minutes": 55 }
+  ]
+}
+```
+
+Saturday calculates per-segment prescriptions — you fuel differently on the bike than on the run.
+
+## Calculating a prescription
+
+```bash
+POST /v1/athletes/{athlete_id}/activities/{activity_id}/prescription
+```
+
+This uses the activity's parameters and the athlete's profile to generate a personalized prescription. Recalculating overwrites the previous prescription — use this when activity parameters change (e.g., updated weather forecast).
+
+## Getting an activity with prescription
+
+```bash
+GET /v1/athletes/{athlete_id}/activities/{activity_id}
+```
+
+The activity response includes the prescription, safety metadata, and any attached products.
+
+## Listing activities
+
+```bash
+GET /v1/athletes/{athlete_id}/activities?from=2025-01-01&to=2025-01-31&type=running
+```
+
+Supports filtering by date range and type.
+
+## Submitting feedback
+
+Post-activity feedback improves future prescriptions:
+
+<CodeGroup>
+
+```python Python
+response = requests.post(
+    "https://api.saturday.fit/v1/athletes/ath_abc123/activities/act_xyz789/feedback",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "gi_comfort": "good",
+        "energy_level": "adequate",
+        "hydration_feel": "slightly_dehydrated",
+        "notes": "Felt good until mile 18, then energy dropped",
+        "actual_intake": {
+            "carbs_grams": 100,
+            "fluid_ml": 900,
+            "sodium_mg": 800,
+        },
+    },
+)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://api.saturday.fit/v1/athletes/ath_abc123/activities/act_xyz789/feedback",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer sk_test_abc123def456",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      gi_comfort: "good",
+      energy_level: "adequate",
+      hydration_feel: "slightly_dehydrated",
+      notes: "Felt good until mile 18, then energy dropped",
+      actual_intake: {
+        carbs_grams: 100,
+        fluid_ml: 900,
+        sodium_mg: 800,
+      },
+    }),
+  }
+);
+```
+
+</CodeGroup>
+
+### Feedback fields
+
+| Field | Values | Description |
+|-------|--------|-------------|
+| `gi_comfort` | `excellent`, `good`, `fair`, `poor` | GI comfort during activity |
+| `energy_level` | `surplus`, `adequate`, `low`, `bonked` | Energy levels throughout |
+| `hydration_feel` | `over_hydrated`, `well_hydrated`, `slightly_dehydrated`, `dehydrated` | Perceived hydration |
+| `actual_intake` | object | What the athlete actually consumed |
+
+<Tip>
+  Feedback is the single most valuable signal for improving future prescriptions. The more activities with feedback, the more personalized Saturday becomes. Encourage athletes to submit feedback — even simple ratings help.
+</Tip>
+
+## Activity type inference
+
+If your platform has activity metadata but not a clean type, Saturday can infer it:
+
+```bash
+POST /v1/inference/activity-type
+```
+
+```json
+{
+  "title": "Morning jog around Green Lake",
+  "description": "Easy recovery after yesterday's intervals",
+  "tags": ["recovery", "outdoor"]
+}
+```
+
+Response:
+```json
+{
+  "inferred_type": "running",
+  "confidence": 0.95,
+  "intensity_hint": "easy"
+}
+```
+
+For multi-sport titles like "Bike/run brick", use `POST /v1/inference/activity-type/brick`.

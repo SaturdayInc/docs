@@ -1,0 +1,183 @@
+---
+title: 'Athletes'
+description: 'Managing athlete profiles for personalized nutrition'
+sidebarTitle: 'Athletes'
+icon: 'person-running'
+---
+
+# Athletes
+
+Athletes are the core entity in Saturday's API. Each athlete has a profile with physical characteristics and fueling preferences that personalize their nutrition prescriptions.
+
+Athletes are **partner-scoped** — your organization can only access athletes created through your API key. There is no cross-partner data access.
+
+## Creating an athlete
+
+<CodeGroup>
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.saturday.fit/v1/athletes",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "external_id": "your-user-12345",
+        "name": "Alex Runner",
+        "weight_kg": 70,
+        "fitness_level": "intermediate",
+    },
+)
+
+athlete = response.json()
+print(f"Saturday ID: {athlete['id']}")
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.saturday.fit/v1/athletes", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer sk_test_abc123def456",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    external_id: "your-user-12345",
+    name: "Alex Runner",
+    weight_kg: 70,
+    fitness_level: "intermediate",
+  }),
+});
+
+const athlete = await response.json();
+console.log(`Saturday ID: ${athlete.id}`);
+```
+
+</CodeGroup>
+
+### External IDs
+
+The `external_id` field maps the Saturday athlete to your platform's user. This is your user ID, not Saturday's. Use it to look up athletes without storing Saturday's `ath_` IDs.
+
+## Profile fields
+
+All fields except `weight_kg` are optional. More fields produce more personalized prescriptions.
+
+### Required
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `weight_kg` | number | Body weight in kilograms |
+
+### Recommended
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `fitness_level` | string | `beginner`, `intermediate`, `advanced`, `elite` |
+| `primary_sport` | string | Main activity type |
+
+### Personalization settings
+
+These fields significantly improve prescription accuracy:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sweat_level` | string | `low`, `moderate`, `heavy`, `very_heavy` |
+| `saltiness` | string | `low`, `moderate`, `salty`, `very_salty` |
+| `satiety_level` | string | `low`, `moderate`, `high` — fullness during exercise |
+| `carb_tolerance` | string | `low`, `moderate`, `high` — gut tolerance for carbs |
+| `carb_upper_limit_override` | number | Max carbs (g/hr) the athlete wants |
+| `concerns` | array | `"vegan"`, `"gluten_free"`, `"caffeine_sensitive"`, etc. |
+
+<Note>
+  **Settings evolve over time.** As athletes train their gut and build tolerance, settings should be updated. Encourage periodic review of `carb_tolerance` and `sweat_level`.
+</Note>
+
+### Sensitive fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `eating_disorder_flag` | boolean | Triggers additional safety guardrails and adjusted language |
+
+<Warning>
+  The `eating_disorder_flag` exists to protect vulnerable athletes. When set, Saturday avoids triggering language around food restriction, caloric deficit, or weight. Never expose this flag in partner UIs — it's a backend safety signal.
+</Warning>
+
+## Listing athletes
+
+```bash
+GET /v1/athletes?limit=20&offset=0
+```
+
+Returns a paginated list of athletes for your organization.
+
+## Updating an athlete
+
+```bash
+PATCH /v1/athletes/{id}
+```
+
+Only include fields you want to change. Unspecified fields are not modified.
+
+<CodeGroup>
+
+```python Python
+response = requests.patch(
+    "https://api.saturday.fit/v1/athletes/ath_abc123def456",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "weight_kg": 72,
+        "sweat_level": "heavy",
+        "carb_tolerance": "high",
+    },
+)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://api.saturday.fit/v1/athletes/ath_abc123def456",
+  {
+    method: "PATCH",
+    headers: {
+      Authorization: "Bearer sk_test_abc123def456",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      weight_kg: 72,
+      sweat_level: "heavy",
+      carb_tolerance: "high",
+    }),
+  }
+);
+```
+
+</CodeGroup>
+
+## Deleting an athlete
+
+```bash
+DELETE /v1/athletes/{id}
+```
+
+<Warning>
+  Athlete deletion is permanent and cascading. All activities, prescriptions, and feedback are deleted. This supports GDPR right to erasure but cannot be undone.
+</Warning>
+
+## Data export (GDPR)
+
+Export all data for an athlete:
+
+```bash
+POST /v1/athletes/{id}/export
+```
+
+Returns a JSON file containing the athlete's complete profile, all activities, prescriptions, and feedback.
+
+## Settings schema
+
+Fetch the settings schema to build dynamic forms:
+
+```bash
+GET /v1/athletes/{id}/settings/schema
+```
+
+Returns field definitions with valid ranges, descriptions, and validation rules — useful for building settings UIs without hardcoding Saturday's requirements.

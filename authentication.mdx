@@ -1,0 +1,150 @@
+---
+title: 'Authentication'
+description: 'API keys, OAuth2, environments, and securing your integration'
+sidebarTitle: 'Authentication'
+---
+
+# Authentication
+
+Saturday supports two authentication methods depending on your use case:
+
+| Method | Use case | How it works |
+|--------|----------|--------------|
+| **API Key** | Server-to-server integration | Bearer token in Authorization header |
+| **OAuth2** | Athlete-delegated access | Authorization code flow with PKCE |
+
+Most integrations start with API keys. Add OAuth2 when you need athletes to connect their existing Saturday accounts.
+
+## API keys
+
+All server-to-server requests use API keys passed in the `Authorization` header as Bearer tokens.
+
+### Key types
+
+Saturday uses prefixed API keys to prevent environment mistakes:
+
+| Prefix | Environment | Purpose |
+|--------|-------------|---------|
+| `sk_test_` | Sandbox | Development and testing. Returns realistic data, no rate limit pressure. |
+| `sk_live_` | Production | Real athlete data. Standard rate limits apply. |
+
+```bash
+# Sandbox
+curl -H "Authorization: Bearer sk_test_abc123..." https://api.saturday.fit/v1/nutrition/calculate
+
+# Production
+curl -H "Authorization: Bearer sk_live_xyz789..." https://api.saturday.fit/v1/nutrition/calculate
+```
+
+<Warning>
+  **Never expose live keys in client-side code.** API keys should only be used in server-to-server requests. If you suspect a key has been compromised, rotate it immediately.
+</Warning>
+
+### Getting your keys
+
+1. Contact [api@saturday.fit](mailto:api@saturday.fit) with your platform name and use case
+2. You'll receive a sandbox key after vetting
+3. Complete integration testing to receive your production key
+
+### Using your key
+
+Include the key in the `Authorization` header on every request:
+
+<CodeGroup>
+
+```python Python
+import requests
+
+headers = {"Authorization": "Bearer sk_test_abc123def456"}
+response = requests.get("https://api.saturday.fit/v1/athletes", headers=headers)
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.saturday.fit/v1/athletes", {
+  headers: { Authorization: "Bearer sk_test_abc123def456" },
+});
+```
+
+</CodeGroup>
+
+### Key management
+
+**Creating additional keys:**
+
+```bash
+curl -X POST https://api.saturday.fit/v1/partner/api-keys \
+  -H "Authorization: Bearer sk_live_xyz789..." \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "production-nutrition-service", "environment": "live" }'
+```
+
+<Note>
+  **Save the key immediately.** The full key value is only returned once at creation time. Store it securely — you won't be able to retrieve it later.
+</Note>
+
+**Rotating keys:**
+
+Key rotation creates a new key and keeps the old one valid for 72 hours:
+
+```bash
+curl -X POST https://api.saturday.fit/v1/partner/api-keys/key_abc123/rotate \
+  -H "Authorization: Bearer sk_live_xyz789..."
+```
+
+**Revoking keys:**
+
+Immediately invalidate a key (no grace period):
+
+```bash
+curl -X DELETE https://api.saturday.fit/v1/partner/api-keys/key_abc123 \
+  -H "Authorization: Bearer sk_live_xyz789..."
+```
+
+## Environments
+
+| Environment | Base URL | Data |
+|-------------|----------|------|
+| Sandbox | `https://api.saturday.fit` | Synthetic test data |
+| Production | `https://api.saturday.fit` | Real athlete data |
+
+Both environments use the same base URL — the API key prefix determines which environment you're operating in.
+
+### Sandbox behavior
+
+- All endpoints work identically to production
+- Athlete data is isolated — sandbox athletes are not real people
+- Rate limits are relaxed (higher limits for testing)
+- Nutrition calculations return realistic but synthetic results
+- No billing impact
+
+## Security best practices
+
+1. **Store keys in environment variables**, not in source code
+2. **Use separate keys** for different services or deployment stages
+3. **Rotate keys regularly** — at minimum every 90 days
+4. **Monitor usage** for unexpected patterns
+5. **Revoke immediately** if a key is exposed in logs, repos, or client code
+6. **Never send keys over unencrypted channels** — all API traffic uses HTTPS
+
+## Error responses
+
+Authentication failures return a `401` status:
+
+```json
+{
+  "error": {
+    "type": "authentication_error",
+    "code": "invalid_api_key",
+    "message": "The API key provided is invalid or has been revoked.",
+    "documentation_url": "https://api.saturday.fit/docs/authentication",
+    "request_id": "req_abc123def456"
+  }
+}
+```
+
+| Code | Meaning |
+|------|---------|
+| `invalid_api_key` | Key doesn't exist or has been revoked |
+| `expired_api_key` | Key was rotated and the grace period has passed |
+| `environment_mismatch` | Using a test key to access production data or vice versa |
+| `missing_authorization` | No `Authorization` header provided |

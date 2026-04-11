@@ -1,0 +1,161 @@
+---
+title: 'Organizations'
+description: 'Team management, members, and bulk subscriptions'
+sidebarTitle: 'Organizations'
+icon: 'building'
+---
+
+# Organizations
+
+Organizations let partners manage teams of athletes under a single billing structure. This is designed for coaching platforms, team managers, and enterprise partners who onboard athletes in groups.
+
+## Creating an organization
+
+<CodeGroup>
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.saturday.fit/v1/organizations",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "name": "Seattle Running Club",
+        "type": "team",
+        "contact_email": "coach@seattlerunclub.com",
+    },
+)
+
+org = response.json()
+org_id = org["id"]
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.saturday.fit/v1/organizations", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer sk_test_abc123def456",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    name: "Seattle Running Club",
+    type: "team",
+    contact_email: "coach@seattlerunclub.com",
+  }),
+});
+
+const org = await response.json();
+const orgId = org.id;
+```
+
+</CodeGroup>
+
+## Organization types
+
+| Type | Use case | Example |
+|------|----------|---------|
+| `team` | Group of athletes with shared coaching | Running club, triathlon team |
+| `enterprise` | Company managing multiple teams | Training platform with B2B clients |
+| `coaching` | Individual coach with multiple athletes | Solo coach managing a roster |
+
+## Managing members
+
+### Adding members
+
+<CodeGroup>
+
+```python Python
+response = requests.post(
+    f"https://api.saturday.fit/v1/organizations/{org_id}/members",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "athlete_id": "ath_abc123",
+        "role": "athlete",
+    },
+)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  `https://api.saturday.fit/v1/organizations/${orgId}/members`,
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer sk_test_abc123def456",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      athlete_id: "ath_abc123",
+      role: "athlete",
+    }),
+  }
+);
+```
+
+</CodeGroup>
+
+### Member roles
+
+| Role | Permissions |
+|------|------------|
+| `admin` | Full organization management, can add/remove members |
+| `coach` | View all athletes, manage activities and prescriptions |
+| `athlete` | View own data only |
+
+### Listing members
+
+```bash
+GET /v1/organizations/{org_id}/members
+```
+
+Returns all members with their roles and activity status.
+
+### Removing members
+
+```bash
+DELETE /v1/organizations/{org_id}/members/{member_id}
+```
+
+Removing a member doesn't delete their athlete profile — it only removes their organization association.
+
+## Bulk subscriptions
+
+Organizations can manage subscriptions for all members at once:
+
+```bash
+GET /v1/organizations/{org_id}/subscriptions
+```
+
+This shows the subscription status of every member, making it easy for coaches to see which athletes have full access vs. teaser-only.
+
+## Listing organizations
+
+```bash
+GET /v1/organizations
+```
+
+Returns all organizations created by your partner account.
+
+## Updating an organization
+
+```bash
+PATCH /v1/organizations/{org_id}
+```
+
+```json
+{
+  "name": "Seattle Running Club - Elite Squad",
+  "contact_email": "elite@seattlerunclub.com"
+}
+```
+
+## Organization-scoped queries
+
+When querying athletes or activities, you can filter by organization:
+
+```bash
+GET /v1/athletes?organization_id=org_abc123
+GET /v1/organizations/{org_id}/members?role=athlete
+```
+
+This makes it easy to build coach dashboards that show all athletes in a team.

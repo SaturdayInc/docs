@@ -1,0 +1,133 @@
+---
+title: 'Data Policy'
+description: 'License terms, usage restrictions, attribution, and privacy'
+sidebarTitle: 'Data Policy'
+icon: 'scale-balanced'
+---
+
+# Data Policy
+
+This page covers how partners may and may not use data returned by Saturday's API. These rules protect athletes, protect Saturday's intellectual property, and ensure the API ecosystem remains trustworthy.
+
+## Data license
+
+Saturday grants partners a limited license to use API response data. This license is communicated programmatically via the `X-Saturday-Data-License` response header on every API response.
+
+### Permitted uses
+
+Partners may use API response data for:
+
+- **Displaying** prescriptions and safety metadata to end users (athletes)
+- **Storing** response data temporarily to serve your application's UX
+- **Caching** prescriptions for performance (cache invalidation on profile update)
+
+### Prohibited uses
+
+Partners may NOT use API response data for:
+
+- **Training** machine learning or AI models
+- **Fine-tuning** language models or other generative AI systems
+- **Building** competing nutrition prescription algorithms
+- **Aggregating** response data across athletes for statistical analysis or resale
+- **Reverse engineering** Saturday's calculation algorithms
+- **Redistributing** response data to third parties
+- **Creating** derivative databases from product catalog data
+
+<Warning>
+  **The training prohibition is explicit and serious.** Saturday's prescriptions are the product of 15 years of coaching expertise, a PhD in Sport Physiology, and months of algorithm development. Using API responses to train a competing model is grounds for immediate termination.
+</Warning>
+
+## Response headers
+
+Every API response includes data policy headers:
+
+| Header | Value | Meaning |
+|--------|-------|---------|
+| `X-Saturday-Data-License` | `display-only` | Data may only be displayed to end users |
+| `X-Saturday-Data-Attribution` | `required` or `optional` | Whether "Powered by Saturday" is required |
+| `X-Saturday-Data-Training` | `prohibited` | ML/AI training on response data is prohibited |
+
+## Attribution requirements
+
+### Teaser tier (required)
+
+When displaying teaser/free response data, partners must show "Powered by Saturday" attribution:
+
+- **Text**: "Powered by Saturday" visible near nutrition data
+- **Link**: Attribution must link to `saturday.fit` or the subscription `upgrade_url`
+- **Logo**: Optional but preferred — Saturday provides approved logo assets
+
+The `X-Saturday-Data-Attribution: required` header signals this programmatically.
+
+### Full tier (optional)
+
+Attribution is appreciated but not required when displaying data for subscribed athletes.
+
+### Logo and brand assets
+
+Approved attribution assets are available at `https://api.saturday.fit/brand/`. Partners must not modify the Saturday logo or use Saturday's brand in misleading contexts.
+
+## Safety disclaimer
+
+Partners must include a visible disclaimer in their application stating that nutrition prescriptions are **guidance, not medical instructions**. Saturday provides sports nutrition recommendations based on physiological models — not medical advice.
+
+### Required disclaimer language
+
+Partners must display, at minimum:
+
+> Nutrition recommendations are personalized guidance based on physiological models. They are not a substitute for professional medical evaluation. Consult a healthcare provider for medical dietary needs.
+
+### Safety data handling
+
+Partners must NOT:
+
+- Strip, hide, or downplay safety metadata from responses
+- Remove safety warnings before displaying data to athletes
+- Override or modify Saturday's risk levels
+- Present prescriptions without safety context
+
+## Athlete data and privacy
+
+### Data controller vs. processor
+
+- **Partners** act as data controllers for their athletes' personal data
+- **Saturday** acts as a data processor on behalf of the partner
+
+Partners are responsible for obtaining appropriate consent from athletes before sending their data to Saturday's API.
+
+### GDPR compliance
+
+Saturday provides endpoints for GDPR compliance:
+
+| Endpoint | Right | Description |
+|----------|-------|-------------|
+| `POST /v1/athletes/{id}/export` | Data portability | Export all athlete data as JSON |
+| `DELETE /v1/athletes/{id}` | Right to erasure | Cascading deletion of all data |
+
+Partners are responsible for responding to athlete data subject requests within the timelines required by applicable law.
+
+### Data retention
+
+Saturday retains athlete data only for as long as the partner account is active, plus a 30-day grace period after deletion. After termination:
+
+- Partner must delete all cached Saturday response data within 30 days
+- Athletes' data remains available for GDPR export for 30 days, then is deleted
+
+## Product database protection
+
+Saturday's curated product database (186+ endurance nutrition products) is competitive intellectual property. The following protections apply:
+
+- **All product queries require an `athlete_id`** — no anonymous product browsing
+- **Per-athlete rate limits** on product endpoints
+- **No bulk export** — product listing endpoints are paginated with a maximum page size
+- **All product access is logged** with partner_id, athlete_id, and query
+
+Systematic scraping, automated enumeration, or bulk extraction of the product database is grounds for immediate account suspension.
+
+## Intellectual property
+
+API access does not grant any license to Saturday's intellectual property beyond the right to display response data to end users. Saturday's nutrition algorithms, product database, AI coaching models, and knowledge base are proprietary.
+
+## Terms modifications
+
+Saturday may modify data policy terms with 30 days advance notice for standard changes or 60 days for material changes. Continued API use after the notice period constitutes acceptance.

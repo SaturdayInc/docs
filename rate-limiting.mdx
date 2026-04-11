@@ -1,0 +1,107 @@
+---
+title: 'Rate Limiting'
+description: 'Rate limit headers, tiers, and handling exceeded responses'
+sidebarTitle: 'Rate Limiting'
+---
+
+# Rate Limiting
+
+Saturday uses token bucket rate limiting to ensure fair access and API stability. Rate limits are applied per API key.
+
+## Rate limit headers
+
+Every API response includes headers showing your current rate limit status:
+
+```http
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 42
+X-RateLimit-Reset: 1705312800
+Content-Type: application/json
+```
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Maximum requests allowed per minute |
+| `X-RateLimit-Remaining` | Requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp when the window resets |
+
+## When you're rate limited
+
+When you exceed the limit, Saturday returns a `429 Too Many Requests` response:
+
+```json
+{
+  "error": {
+    "type": "rate_limit_exceeded",
+    "code": "rate_limit_exceeded",
+    "message": "Rate limit exceeded. Retry after 30 seconds.",
+    "documentation_url": "https://api.saturday.fit/docs/rate-limiting",
+    "request_id": "req_abc123def456"
+  }
+}
+```
+
+Always respect the `Retry-After` header:
+
+<CodeGroup>
+
+```python Python
+import time
+
+response = make_api_request()
+
+if response.status_code == 429:
+    retry_after = int(response.headers["Retry-After"])
+    time.sleep(retry_after)
+    response = make_api_request()
+```
+
+```typescript TypeScript
+const response = await makeApiRequest();
+
+if (response.status === 429) {
+  const retryAfter = parseInt(response.headers.get("Retry-After") ?? "60");
+  await new Promise((r) => setTimeout(r, retryAfter * 1000));
+  return makeApiRequest();
+}
+```
+
+</CodeGroup>
+
+## Best practices
+
+### Spread requests evenly
+
+Instead of bursting 60 requests in 5 seconds then waiting 55 seconds, spread them across the full minute. Token bucket rate limiting allows short bursts but sustained bursting will hit the limit.
+
+### Cache when possible
+
+Nutrition prescriptions for the same inputs don't change unless the athlete's profile is updated. Cache prescription results and only recalculate when:
+
+- The athlete's profile settings change
+- Activity parameters change (new weather forecast, updated duration)
+- You need a fresh calculation for race day
+
+### Use batch endpoints
+
+Instead of making 10 individual calculation requests, use the batch endpoint:
+
+```bash
+POST /v1/nutrition/calculate/batch
+```
+
+Batch requests count as one API call per item for rate limiting but avoid connection overhead.
+
+### Monitor your usage
+
+Check your current usage via the API:
+
+```bash
+curl https://api.saturday.fit/v1/partner/usage \
+  -H "Authorization: Bearer sk_live_xyz789..."
+```
+
+## Requesting higher limits
+
+If your integration needs higher limits, contact [api@saturday.fit](mailto:api@saturday.fit) with your partner ID and expected volume. Limit upgrades are free — we want your integration to succeed.

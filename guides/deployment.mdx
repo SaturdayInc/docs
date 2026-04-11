@@ -1,0 +1,143 @@
+---
+title: 'Deployment & Configuration'
+description: 'DNS setup, deployment process, and AI agent discoverability'
+sidebarTitle: 'Deployment'
+icon: 'globe'
+---
+
+# Deployment & Configuration
+
+This page documents how api.saturday.fit is configured, the DNS setup, and how the documentation site is deployed.
+
+## Domain setup: api.saturday.fit
+
+The API documentation is hosted on Mintlify at `api.saturday.fit`. This requires a Cloudflare CNAME record pointing to Mintlify's hosting infrastructure.
+
+### Cloudflare DNS configuration
+
+| Record type | Name | Target | Proxy |
+|------------|------|--------|-------|
+| CNAME | `api` | `cname.mintlify.com` | DNS only (no proxy) |
+
+<Note>
+  Cloudflare proxy must be **disabled** (DNS only / gray cloud) for the Mintlify CNAME. Mintlify handles SSL termination and needs direct DNS resolution.
+</Note>
+
+### Verification steps
+
+After adding the CNAME:
+
+1. Verify DNS propagation: `dig api.saturday.fit CNAME`
+2. Expected result: `api.saturday.fit. CNAME cname.mintlify.com.`
+3. Navigate to `https://api.saturday.fit` — should show the documentation site
+4. SSL certificate should be issued automatically by Mintlify
+
+## Deploying documentation updates
+
+Mintlify supports Git-based deployments. When documentation source files are updated:
+
+1. Push changes to the repository
+2. Mintlify detects changes to `docs/mintlify/` contents
+3. Site rebuilds automatically (typically under 60 seconds)
+4. Live at api.saturday.fit
+
+### Manual deployment
+
+If needed, trigger a manual deployment from the Mintlify dashboard:
+
+1. Log in to [dashboard.mintlify.com](https://dashboard.mintlify.com)
+2. Select the Saturday API project
+3. Click "Deploy" to trigger a rebuild
+
+## AI agent discoverability
+
+Saturday publishes machine-readable context files for AI agents and LLMs:
+
+### llms.txt
+
+```
+URL: https://api.saturday.fit/llms.txt
+```
+
+A brief overview of Saturday's API capabilities, authentication, and key endpoints. Follows the [llms.txt standard](https://llmstxt.org/).
+
+**Contents include:**
+- What Saturday does (one-paragraph summary)
+- Authentication method (Bearer token)
+- Core endpoints with brief descriptions
+- Safety model summary
+- Link to full documentation
+
+### llms-full.txt
+
+```
+URL: https://api.saturday.fit/llms-full.txt
+```
+
+Complete API documentation in a single text file, optimized for LLM context windows. Includes all endpoint descriptions, request/response schemas, code examples, safety documentation, and error catalogs.
+
+### OpenAPI spec
+
+```
+URL: https://api.saturday.fit/openapi.yaml
+```
+
+The machine-readable OpenAPI 3.0 specification that drives the interactive API playground and auto-generated reference pages.
+
+### MCP server
+
+```
+URL: https://api.saturday.fit/v1/mcp
+```
+
+The Model Context Protocol server endpoint for AI agents. See [MCP Integration](/guides/mcp-integration) for setup instructions.
+
+## Mintlify configuration
+
+The documentation site is configured via `mint.json` in the `docs/mintlify/` directory. Key configuration:
+
+| Setting | Value | Notes |
+|---------|-------|-------|
+| Primary color | `#1aabb8` (Saturday teal) | Sourced from brand design system |
+| Dark background | `#0d1e23` (navy-darkest) | Matches website dark theme |
+| Heading font | Bitter | Matches saturday.fit website |
+| Body font | Inter | Matches saturday.fit website |
+| OpenAPI source | `../api/openapi.yaml` | Auto-generates API reference pages |
+| API playground | Enabled (simple mode) | Interactive try-it from docs |
+
+## Content structure
+
+```
+docs/mintlify/
+  mint.json              # Site configuration
+  introduction.mdx       # Landing page
+  quickstart.mdx         # 5-min getting started
+  authentication.mdx     # Auth guide
+  error-handling.mdx     # Error format
+  rate-limiting.mdx      # Rate limits
+  guides/
+    nutrition-calculation.mdx   # Core product
+    athletes.mdx                # Athlete management
+    activities.mdx              # Activity lifecycle
+    freemium-model.mdx          # Teaser vs full
+    safety.mdx                  # Safety (FIRST-CLASS)
+    ai-coach.mdx                # AI Coach SSE
+    webhooks.mdx                # Webhook setup
+    oauth2.mdx                  # OAuth2 PKCE
+    organizations.mdx           # Team management
+    batch-operations.mdx        # Batch endpoints
+    mcp-integration.mdx         # MCP for AI agents
+    feature-gates.mdx           # Launch stages
+    data-policy.mdx             # Legal/terms
+    deployment.mdx              # This page
+  api-reference/
+    (auto-generated from OpenAPI spec)
+  images/
+    logo-dark.svg
+    logo-light.svg
+    favicon.svg
+```
+
+## Status page
+
+Saturday publishes system status at [status.saturday.fit](https://status.saturday.fit) (when available). Partners can subscribe to status notifications for proactive awareness of maintenance or incidents.

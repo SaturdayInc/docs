@@ -1,0 +1,108 @@
+---
+title: 'Freemium Model'
+description: 'Teaser vs. full responses, subscription flow, and attribution'
+sidebarTitle: 'Freemium Model'
+icon: 'gift'
+---
+
+# Freemium Model
+
+Saturday's API is free for partners to integrate. The monetization happens at the athlete level — athletes subscribe to Saturday for full-precision nutrition data.
+
+```
+Partner integrates (free) -> Athletes see teasers (free) -> Athletes subscribe for precision -> Everyone wins
+```
+
+## Teaser vs. full comparison
+
+| | Teaser (free) | Full (subscribed) |
+|---|---|---|
+| **Carbohydrates** | Range: 45-75 g/hr | Exact: 60 g/hr |
+| **Hydration** | Range: 450-750 mL/hr | Exact: 600 mL/hr |
+| **Sodium** | Range: 350-650 mg/hr | Exact: 500 mg/hr |
+| **Products** | Category only ("gel") | Specific products + schedule |
+| **Safety metadata** | Full | Full |
+| **Confidence levels** | Shown | Shown |
+
+<Note>
+  **Safety is never gated.** Both teaser and full responses include complete safety metadata. Safety information is always free.
+</Note>
+
+## Detecting response type
+
+<CodeGroup>
+
+```python Python
+data = response.json()
+
+if data["subscription"]["status"] == "teaser":
+    # Show ranges and subscription CTA
+    carb_range = data["prescription"]["carbohydrate"]["grams_per_hour_range"]
+    show_range(carb_range["min"], carb_range["max"])
+    show_upgrade_cta(data["subscription"]["upgrade_url"])
+else:
+    # Show exact numbers
+    carbs = data["prescription"]["carbohydrate"]["grams_per_hour"]
+    show_exact(carbs)
+```
+
+```typescript TypeScript
+const data = await response.json();
+
+if (data.subscription.status === "teaser") {
+  // Show ranges and subscription CTA
+  const carbRange = data.prescription.carbohydrate.grams_per_hour_range;
+  showRange(carbRange.min, carbRange.max);
+  showUpgradeCTA(data.subscription.upgrade_url);
+} else {
+  // Show exact numbers
+  const carbs = data.prescription.carbohydrate.grams_per_hour;
+  showExact(carbs);
+}
+```
+
+</CodeGroup>
+
+## Subscription flow
+
+When an athlete wants full precision:
+
+1. Your app shows teaser data with the upgrade CTA
+2. Athlete taps the upgrade link (`upgrade_url` from the response)
+3. Athlete subscribes on saturday.fit or through the Saturday app
+4. Next API call for that athlete returns full precision data
+
+The `upgrade_url` includes your partner ID for attribution. You don't handle payment — Saturday manages the subscription.
+
+## Attribution requirements
+
+### Required (teaser tier)
+
+- **Visual attribution**: "Powered by Saturday" or the Saturday logo near any teaser nutrition data
+- **Link**: Attribution must link to `saturday.fit` or the `upgrade_url`
+
+### Example implementation
+
+```html
+<div class="nutrition-teaser">
+  <p>Carbohydrates: 45-75 g/hr</p>
+  <p>Hydration: 450-750 mL/hr</p>
+  <p>Sodium: 350-650 mg/hr</p>
+
+  <a href="https://saturday.fit/subscribe?ref=your_partner_id">
+    Get exact targets — Powered by Saturday
+  </a>
+</div>
+```
+
+### Not required (full tier)
+
+Attribution is appreciated but not required when displaying data for subscribed athletes.
+
+## Partner value exchange
+
+- **Partners get**: Free nutrition intelligence for their platform
+- **Saturday gets**: Distribution to athletes who may subscribe
+- **Athletes get**: Personalized nutrition whether they subscribe or not
+
+The API is designed as a distribution play. More partners = more athletes seeing Saturday = more subscribers. The API doesn't need to make money directly — it needs to make Saturday the default nutrition layer.

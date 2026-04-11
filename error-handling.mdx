@@ -1,0 +1,121 @@
+---
+title: 'Error Handling'
+description: 'Error format, types, codes, and retry logic'
+sidebarTitle: 'Error Handling'
+---
+
+# Error Handling
+
+Saturday uses a consistent error format across all endpoints, modeled on Stripe's error structure. Errors are predictable, machine-readable, and include enough context to diagnose the issue without consulting logs.
+
+## Error format
+
+Every error response follows this structure:
+
+```json
+{
+  "error": {
+    "type": "invalid_request",
+    "code": "missing_required_field",
+    "message": "The 'athlete_weight_kg' field is required for hydration calculations.",
+    "param": "athlete_weight_kg",
+    "documentation_url": "https://api.saturday.fit/docs/errors#missing_required_field",
+    "request_id": "req_abc123def456"
+  }
+}
+```
+
+| Field | Always present | Description |
+|-------|---------------|-------------|
+| `type` | Yes | Category of error |
+| `code` | Yes | Specific error code (machine-readable) |
+| `message` | Yes | Human-readable explanation |
+| `param` | No | The request parameter that caused the error |
+| `documentation_url` | Yes | Direct link to docs for this error |
+| `request_id` | Yes | Unique identifier for this request — include in support tickets |
+
+## Error types
+
+| Type | HTTP Status | Description |
+|------|-------------|-------------|
+| `authentication_error` | 401 | Invalid, expired, or missing API key |
+| `authorization_error` | 403 | Valid key but insufficient permissions |
+| `invalid_request` | 400 | Request is malformed or missing required fields |
+| `resource_not_found` | 404 | The requested resource doesn't exist |
+| `conflict` | 409 | Request conflicts with current state |
+| `rate_limit_exceeded` | 429 | Too many requests |
+| `safety_limit` | 422 | Calculation would violate safety guardrails |
+| `api_error` | 500 | Something went wrong on Saturday's end |
+
+## Retry logic
+
+| Error type | Retry? | Strategy |
+|------------|--------|----------|
+| `authentication_error` | No | Fix credentials |
+| `authorization_error` | No | Fix permissions |
+| `invalid_request` | No | Fix the request |
+| `resource_not_found` | No | Fix the resource ID |
+| `rate_limit_exceeded` | Yes | Wait for `Retry-After` header |
+| `safety_limit` | No | Review and adjust parameters |
+| `api_error` | Yes | Exponential backoff |
+
+### Exponential backoff implementation
+
+<CodeGroup>
+
+```python Python
+import time
+import random
+
+def request_with_retry(make_request, max_retries=3):
+    for attempt in range(max_retries + 1):
+        response = make_request()
+
+        if response.status_code == 429:
+            retry_after = int(response.headers.get("Retry-After", 60))
+            time.sleep(retry_after)
+            continue
+
+        if response.status_code >= 500:
+            if attempt < max_retries:
+                delay = (2 ** attempt) + random.uniform(0, 1)
+                time.sleep(delay)
+                continue
+
+        return response
+
+    return response
+```
+
+```typescript TypeScript
+async function requestWithRetry(
+  makeRequest: () => Promise<Response>,
+  maxRetries = 3
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const response = await makeRequest();
+
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get("Retry-After") ?? "60");
+      await new Promise((r) => setTimeout(r, retryAfter * 1000));
+      continue;
+    }
+
+    if (response.status >= 500 && attempt < maxRetries) {
+      const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+      await new Promise((r) => setTimeout(r, delay));
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error("Max retries exceeded");
+}
+```
+
+</CodeGroup>
+
+### Request IDs
+
+Every response includes a `request_id` in both the response body and the `X-Request-Id` header. Always include this when reporting issues — it lets us trace the exact request through our systems.

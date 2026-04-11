@@ -1,0 +1,219 @@
+---
+title: 'Nutrition Calculation'
+description: 'The core of Saturday — personalized fuel, hydration, and electrolyte prescriptions'
+sidebarTitle: 'Nutrition Calculation'
+icon: 'flask'
+---
+
+# Nutrition Calculation
+
+The nutrition calculation endpoint is Saturday's core product. It takes an activity description and returns a personalized fuel prescription — carbohydrate, hydration, and electrolyte targets — with safety guardrails applied.
+
+```bash
+POST /v1/nutrition/calculate
+```
+
+## Progressive enrichment
+
+Saturday works with whatever data you have. More data produces more accurate prescriptions — but even minimal inputs return useful results.
+
+### Minimal inputs
+
+The bare minimum for a calculation:
+
+<CodeGroup>
+
+```python Python
+response = requests.post(
+    "https://api.saturday.fit/v1/nutrition/calculate",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "activity_type": "running",
+        "duration_minutes": 90,
+        "athlete_weight_kg": 70,
+    },
+)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  "https://api.saturday.fit/v1/nutrition/calculate",
+  {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer sk_test_abc123def456",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      activity_type: "running",
+      duration_minutes: 90,
+      athlete_weight_kg: 70,
+    }),
+  }
+);
+```
+
+</CodeGroup>
+
+This returns a prescription with `"confidence": "low"` and `"inputs_quality": "minimal"`. The numbers are based on population-level defaults for the given activity type and body weight.
+
+### Standard inputs
+
+Add intensity and environmental conditions for a meaningfully better prescription:
+
+```json
+{
+  "activity_type": "cycling",
+  "duration_minutes": 180,
+  "intensity": "hard",
+  "athlete_weight_kg": 68,
+  "conditions": {
+    "temperature_celsius": 30,
+    "humidity_percent": 75
+  }
+}
+```
+
+Temperature and humidity dramatically affect hydration and sodium needs. A 3-hour ride at 30C/75% humidity requires very different fueling than the same ride at 15C/40%.
+
+### Comprehensive inputs
+
+For the highest accuracy, include an athlete reference:
+
+```json
+{
+  "activity_type": "triathlon",
+  "duration_minutes": 300,
+  "intensity": "race",
+  "athlete_id": "ath_abc123",
+  "conditions": {
+    "temperature_celsius": 28,
+    "humidity_percent": 65,
+    "altitude_meters": 500
+  },
+  "sub_activities": [
+    { "type": "swimming", "duration_minutes": 35 },
+    { "type": "cycling", "duration_minutes": 150 },
+    { "type": "running", "duration_minutes": 115 }
+  ]
+}
+```
+
+When you include an `athlete_id`, Saturday pulls their stored profile — sweat level, saltiness, carb tolerance, fitness level, dietary preferences, and past activity feedback. This is where prescriptions become genuinely personalized.
+
+<Tip>
+  **The enrichment path:** Start with minimal inputs to get integrated fast, then progressively add more data as your integration matures. Every additional field improves accuracy.
+</Tip>
+
+## Understanding the response
+
+```json
+{
+  "prescription": {
+    "carbohydrate": {
+      "grams_per_hour": 72,
+      "total_grams": 216,
+      "confidence": "high",
+      "rationale": "Trained gut, high intensity, long duration"
+    },
+    "hydration": {
+      "ml_per_hour": 750,
+      "total_ml": 2250,
+      "confidence": "high",
+      "rationale": "High sweat rate, hot/humid conditions"
+    },
+    "sodium": {
+      "mg_per_hour": 800,
+      "total_mg": 2400,
+      "confidence": "moderate",
+      "rationale": "Salty sweater profile, elevated thermal stress"
+    }
+  },
+  "safety": {
+    "risk_level": "moderate",
+    "flags": ["high_thermal_stress"],
+    "warnings": [
+      "High heat/humidity combination. Consider ice, cold fluids, and shade."
+    ],
+    "guardrails_applied": [
+      "sodium_ceiling",
+      "fluid_physiological_limit",
+      "carb_gut_tolerance"
+    ]
+  },
+  "metadata": {
+    "request_id": "req_def456ghi789",
+    "inputs_quality": "comprehensive",
+    "enrichment_available": false
+  }
+}
+```
+
+### Confidence levels
+
+| Level | Meaning | Typical inputs |
+|-------|---------|----------------|
+| `high` | Strong personalization, athlete history | Athlete profile + conditions + feedback |
+| `moderate` | Good estimates with some personalization | Weight + intensity + conditions |
+| `low` | Population-level defaults applied | Minimal inputs (type + duration + weight) |
+
+## Comparing scenarios
+
+Compare prescriptions across different conditions — ideal for race-day planning UIs:
+
+```bash
+POST /v1/nutrition/calculate/compare
+```
+
+```json
+{
+  "athlete_id": "ath_abc123",
+  "activity_type": "running",
+  "duration_minutes": 240,
+  "intensity": "race",
+  "scenarios": [
+    {
+      "label": "Cool morning",
+      "conditions": { "temperature_celsius": 12, "humidity_percent": 50 }
+    },
+    {
+      "label": "Hot afternoon",
+      "conditions": { "temperature_celsius": 32, "humidity_percent": 70 }
+    }
+  ]
+}
+```
+
+## Teaser vs. full responses
+
+Responses depend on the athlete's Saturday subscription status:
+
+- **Subscribed athletes** get exact numbers: `"grams_per_hour": 72`
+- **Free/teaser athletes** get ranges: `"grams_per_hour_range": { "min": 55, "max": 85 }`
+
+See [Freemium Model](/guides/freemium-model) for implementation details.
+
+## Safety
+
+Every calculation response includes a `safety` block. This is non-negotiable — Saturday is a nutrition API for athletes, and bad recommendations can cause real harm.
+
+See [Safety](/guides/safety) for the full guide on safety fields, risk levels, and display requirements.
+
+<Warning>
+  **Safety data is never gated behind subscription status.** Even teaser responses include complete safety metadata.
+</Warning>
+
+## Supported activity types
+
+| Type | Key | Notes |
+|------|-----|-------|
+| Running | `running` | Road, trail, track |
+| Cycling | `cycling` | Road, gravel, mountain |
+| Swimming | `swimming` | Pool, open water |
+| Triathlon | `triathlon` | Use `sub_activities` for segment splits |
+| Cross-country skiing | `xc_skiing` | Classic, skate |
+| Rowing | `rowing` | On-water, ergometer |
+| Hiking | `hiking` | Long-duration, variable intensity |
+| Weightlifting | `lift` | Strength training |
+
+Use `GET /v1/activity-types` for the complete list with descriptions.

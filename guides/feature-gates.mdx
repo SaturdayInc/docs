@@ -1,0 +1,131 @@
+---
+title: 'Feature Gates'
+description: 'Launch stages, alpha access, and feature progression'
+sidebarTitle: 'Feature Gates'
+icon: 'toggle-on'
+---
+
+# Feature Gates
+
+Saturday's API features progress through launch stages. This system controls feature visibility, access, and stability guarantees as the platform matures.
+
+## Why feature gates?
+
+Not all API features ship at the same time. When you integrate Saturday, some features may be in early access (alpha), some in public beta, and some fully stable (GA). Feature gates tell you exactly what to expect from each feature.
+
+If an endpoint returns a `404` when you expect it to work, check the feature stage — it may be in STEALTH or require alpha access.
+
+## Launch stages
+
+| Stage | What happens | Who can access | Stability |
+|-------|-------------|---------------|-----------|
+| **STEALTH** | Endpoint returns 404 (indistinguishable from nonexistent) | Nobody | Not available |
+| **ALPHA** | Works for allowlisted partners | Specific partners by invitation | May change without notice |
+| **BETA** | Works for all authenticated partners | All partners | May have breaking changes with notice |
+| **GA** | Production-stable | All partners | Stable, backward compatible |
+| **DEPRECATED** | Still works but being phased out | All partners | 12-month sunset notice |
+
+### STEALTH
+
+Features in stealth are completely invisible. The endpoint returns a standard `404` that is byte-identical to a request for a path that doesn't exist. No auth headers, no CORS headers, no logging. This is intentional — stealth features don't exist yet from the outside world.
+
+### ALPHA
+
+Alpha features are available to specific partners who have been invited. If you try to access an alpha feature without being on the allowlist, you'll get a `403` response:
+
+```json
+{
+  "error": {
+    "type": "authorization_error",
+    "code": "feature_alpha_access_required",
+    "message": "This feature is in alpha. Contact api@saturday.fit to request access.",
+    "documentation_url": "https://api.saturday.fit/docs/feature-gates"
+  }
+}
+```
+
+When you are on the alpha allowlist, responses include a notice header:
+
+```http
+X-Saturday-Feature-Stage: ALPHA
+X-Saturday-Alpha-Notice: This feature is in alpha and may change without notice. Contact api@saturday.fit with feedback.
+```
+
+### BETA
+
+Beta features work for all authenticated partners. They may have breaking changes with advance notice. Responses include:
+
+```http
+X-Saturday-Feature-Stage: BETA
+X-Saturday-Beta-Notice: This feature is in beta. Breaking changes may occur with 14 days notice.
+```
+
+### GA (General Availability)
+
+GA features are production-stable with backward compatibility guarantees. Breaking changes go through a deprecation cycle.
+
+### DEPRECATED
+
+Deprecated features still work but will be removed. A 12-month notice period starts when deprecation is announced:
+
+```http
+X-Saturday-Feature-Stage: DEPRECATED
+Deprecation: true
+```
+
+## Current feature stages
+
+| Feature | What it controls | Stage |
+|---------|-----------------|-------|
+| `nutrition` | Fuel/hydration/electrolyte calculation, prep, inference | ALPHA |
+| `products` | Curated product database (186+ products) | STEALTH |
+| `gear` | Gear management CRUD (bottles, flasks) | STEALTH |
+| `ai_coach` | AI coaching with SSE streaming | STEALTH |
+| `ai_data` | AI-generated insights, churn risk, ML bias | STEALTH |
+
+<Note>
+  Feature stages are updated in Saturday's configuration without requiring a deploy. Stage changes propagate within 5 minutes.
+</Note>
+
+## Feature groups
+
+Features are organized into groups for coordinated stage transitions:
+
+| Group | Features | Example transition |
+|-------|----------|-------------------|
+| `core` | nutrition, products | "Move core to BETA" — all partners get nutrition + products |
+| `advanced` | ai_coach, ai_data | "Move advanced to ALPHA" — select partners get AI features |
+| `all` | All 5 features | "Move all to GA" — launch day |
+
+## Getting alpha access
+
+Alpha access is by invitation. To request access:
+
+1. Email [api@saturday.fit](mailto:api@saturday.fit) with your platform name, use case, and expected volume
+2. Saturday vets the request and adds your partner ID to the alpha allowlist
+3. Within 5 minutes, your API key works on alpha-stage endpoints
+
+Alpha partners get:
+- Early access to new features before public beta
+- Direct support channel for integration questions
+- Influence on API design decisions
+- No additional cost
+
+## Checking feature availability
+
+The API root endpoint shows which features are available at each stage:
+
+```bash
+GET /v1/
+```
+
+The response includes feature discovery information. Features in STEALTH are intentionally omitted — they don't appear in discovery, error catalogs, or documentation.
+
+## Response headers reference
+
+| Header | When sent | Value |
+|--------|-----------|-------|
+| `X-Saturday-Feature-Stage` | ALPHA, BETA, DEPRECATED | Stage name |
+| `X-Saturday-Alpha-Notice` | ALPHA (on allowlist) | Stability warning + support contact |
+| `X-Saturday-Beta-Notice` | BETA | Breaking changes warning |
+| `Deprecation` | DEPRECATED | `true` (RFC 8594) |

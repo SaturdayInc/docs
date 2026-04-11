@@ -1,0 +1,202 @@
+---
+title: 'MCP Integration'
+description: 'Consume Saturday via Model Context Protocol for AI agents'
+sidebarTitle: 'MCP Integration'
+icon: 'microchip'
+---
+
+# MCP Integration
+
+Saturday provides a native [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server, allowing AI agents to discover and use Saturday's nutrition intelligence tools without custom API integration code.
+
+## What is MCP?
+
+MCP is an open standard that lets AI models discover and use external tools. Instead of writing custom API client code, an AI agent connects to Saturday's MCP server and automatically discovers available nutrition tools — their inputs, outputs, descriptions, and safety constraints.
+
+Think of it as USB for AI tools: plug in and it works.
+
+## Why use Saturday via MCP?
+
+| Approach | Best for |
+|----------|----------|
+| **Direct API** | Traditional server-side integrations, custom UIs |
+| **SDK** | TypeScript/Python applications with typed interfaces |
+| **MCP** | AI agents, LLM-powered platforms, automated nutrition workflows |
+
+MCP is ideal when your platform uses AI agents that need to dynamically decide when to call Saturday's tools based on conversation context.
+
+## Connecting to Saturday's MCP server
+
+### Server configuration
+
+Add Saturday to your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "saturday": {
+      "url": "https://api.saturday.fit/v1/mcp",
+      "transport": "streamable-http",
+      "headers": {
+        "Authorization": "Bearer sk_test_abc123def456"
+      }
+    }
+  }
+}
+```
+
+### Available tools
+
+When your agent connects, it discovers tools including:
+
+| Tool | Description |
+|------|-------------|
+| `calculate_nutrition` | Calculate fuel/hydration/electrolyte prescription for an activity |
+| `compare_scenarios` | Compare prescriptions across different conditions |
+| `search_products` | Search the curated nutrition product database |
+| `get_athlete_profile` | Retrieve an athlete's profile and settings |
+| `create_activity` | Create an activity for an athlete |
+| `get_prescription` | Get the prescription for an existing activity |
+| `infer_activity_type` | Infer activity type from metadata |
+| `search_knowledge` | Search Saturday's sports nutrition knowledge base |
+
+Each tool includes rich descriptions, input schemas, and output schemas that help AI agents use them correctly.
+
+## Example: Claude agent with Saturday MCP
+
+Here's how a Claude-powered agent might use Saturday's tools in a conversation:
+
+**Athlete asks:** "I have a 3-hour bike race on Saturday. It's going to be 30C and humid. What should I eat?"
+
+**Agent's tool calls:**
+1. `calculate_nutrition` with `{activity_type: "cycling", duration_minutes: 180, intensity: "race", conditions: {temperature_celsius: 30, humidity_percent: 70}}`
+2. `search_products` with `{category: "gel", caffeine: false}` (based on athlete preferences)
+
+**Agent synthesizes:** Uses Saturday's prescription + product results + safety warnings to give a complete race-day fueling plan.
+
+## Safety-aware tool descriptions
+
+Saturday's MCP tools include safety metadata in their descriptions. This ensures AI agents know that:
+
+- Prescriptions are **guidance for human consideration**, not automated commands
+- Safety warnings must be surfaced to the user
+- The `not_instructions: true` field means "present this to the human, don't execute it"
+
+Example tool description (what the agent sees):
+
+```
+Tool: calculate_nutrition
+Description: Calculate a personalized fuel, hydration, and electrolyte
+prescription for an endurance activity. Returns safety metadata including
+risk level, warnings, and guardrails. IMPORTANT: Results are nutrition
+guidance for human review — not executable instructions. Always present
+safety warnings to the user.
+```
+
+## Tool call example
+
+<CodeGroup>
+
+```python Python
+# Using the MCP Python SDK
+from mcp import ClientSession, StdioServerParameters
+
+async with ClientSession(
+    StdioServerParameters(
+        command="npx",
+        args=["mcp-remote", "https://api.saturday.fit/v1/mcp"],
+        env={"SATURDAY_API_KEY": "sk_test_abc123def456"},
+    )
+) as session:
+    # List available tools
+    tools = await session.list_tools()
+    for tool in tools:
+        print(f"{tool.name}: {tool.description}")
+
+    # Call a tool
+    result = await session.call_tool(
+        "calculate_nutrition",
+        {
+            "activity_type": "running",
+            "duration_minutes": 90,
+            "intensity": "moderate",
+            "athlete_weight_kg": 70,
+            "conditions": {
+                "temperature_celsius": 25,
+                "humidity_percent": 60,
+            },
+        },
+    )
+    print(result)
+```
+
+```typescript TypeScript
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
+const client = new Client({ name: "my-agent", version: "1.0" });
+
+const transport = new StreamableHTTPClientTransport(
+  new URL("https://api.saturday.fit/v1/mcp"),
+  {
+    requestInit: {
+      headers: {
+        Authorization: "Bearer sk_test_abc123def456",
+      },
+    },
+  }
+);
+
+await client.connect(transport);
+
+// List available tools
+const tools = await client.listTools();
+tools.tools.forEach((t) => console.log(`${t.name}: ${t.description}`));
+
+// Call a tool
+const result = await client.callTool("calculate_nutrition", {
+  activity_type: "running",
+  duration_minutes: 90,
+  intensity: "moderate",
+  athlete_weight_kg: 70,
+  conditions: {
+    temperature_celsius: 25,
+    humidity_percent: 60,
+  },
+});
+
+console.log(result);
+```
+
+</CodeGroup>
+
+## AI agent guidelines
+
+When building AI agents that consume Saturday via MCP:
+
+### Do
+
+- **Surface all safety warnings** to the human user
+- **Present prescriptions as recommendations**, not commands
+- **Include "Powered by Saturday"** attribution for teaser-tier responses
+- **Cache results** when inputs haven't changed — prescriptions are deterministic
+- **Handle errors gracefully** — if a tool call fails, explain why to the user
+
+### Don't
+
+- **Don't autonomously act on prescriptions** (e.g., auto-ordering supplements)
+- **Don't strip safety metadata** from results before presenting to users
+- **Don't modify prescription numbers** based on your own logic
+- **Don't use response data for ML training** — this violates Saturday's data policy
+- **Don't make excessive tool calls** — batch when possible
+
+## LLM discoverability
+
+Saturday publishes machine-readable context files for AI agents:
+
+| File | URL | Purpose |
+|------|-----|---------|
+| `llms.txt` | `https://api.saturday.fit/llms.txt` | Brief API overview for LLM context |
+| `llms-full.txt` | `https://api.saturday.fit/llms-full.txt` | Complete API documentation for LLM context |
+
+These files follow the [llms.txt standard](https://llmstxt.org/) and provide structured context that helps AI agents understand Saturday's capabilities without reading the full documentation site.

@@ -1,0 +1,187 @@
+# Saturday API — Complete Documentation for LLM Context
+
+> Nutrition intelligence for endurance athletes — as an API.
+> Base URL: https://api.saturday.fit
+> Authentication: Bearer token (API key or OAuth2 JWT)
+
+---
+
+## Overview
+
+Saturday provides AI-powered nutrition intelligence for endurance athletes. The API calculates personalized fuel, hydration, and electrolyte recommendations based on athlete profiles, activity parameters, and environmental conditions.
+
+The API is FREE for partners to integrate. Athletes access teaser data (ranges) at no cost. For full precision (exact numbers), athletes subscribe to Saturday directly.
+
+## Authentication
+
+### API Keys
+All server-to-server requests use API keys in the Authorization header:
+```
+Authorization: Bearer sk_test_abc123def456
+```
+
+Key prefixes:
+- `sk_test_` — Sandbox (development, no rate limit pressure)
+- `sk_live_` — Production (real athlete data)
+
+### OAuth2
+For athlete-delegated access, use OAuth2 Authorization Code flow with PKCE.
+Scopes: athlete:read, athlete:write, activity:read, activity:write, nutrition:read, ai:chat
+
+## Safety Model
+
+CRITICAL: Every response includes safety metadata. Safety data is NEVER gated behind subscription status.
+
+Exercise-associated hyponatremia (overdrinking that dilutes blood sodium) kills athletes. Saturday's engine enforces hard physiological limits:
+- fluid_physiological_limit: Caps fluid at gastric emptying rate
+- sodium_ceiling: Maximum safe sodium per hour
+- minimum_sodium: Minimum sodium for long activities
+- carb_gut_tolerance: Limits carbs to demonstrated tolerance
+
+Safety block structure:
+```json
+{
+  "safety": {
+    "risk_level": "low|moderate|high|critical",
+    "flags": ["high_thermal_stress", "extended_duration", ...],
+    "warnings": ["Human-readable warning messages"],
+    "guardrails_applied": ["sodium_ceiling", "fluid_physiological_limit", ...],
+    "contraindications": []
+  }
+}
+```
+
+The `not_instructions: true` field tells AI consumers that prescriptions are guidance for human consideration, not executable commands.
+
+## Core Endpoints
+
+### POST /v1/nutrition/calculate
+Calculate fuel/hydration/electrolyte prescription.
+
+Request:
+```json
+{
+  "activity_type": "running",
+  "duration_minutes": 90,
+  "intensity": "moderate",
+  "athlete_weight_kg": 70,
+  "athlete_id": "ath_abc123",
+  "conditions": {
+    "temperature_celsius": 25,
+    "humidity_percent": 60
+  }
+}
+```
+
+Response (full tier):
+```json
+{
+  "prescription": {
+    "carbohydrate": { "grams_per_hour": 60, "total_grams": 90, "confidence": "high" },
+    "hydration": { "ml_per_hour": 600, "total_ml": 900, "confidence": "moderate" },
+    "sodium": { "mg_per_hour": 500, "total_mg": 750, "confidence": "moderate" }
+  },
+  "safety": { "risk_level": "low", "guardrails_applied": ["sodium_ceiling", "fluid_physiological_limit"] },
+  "metadata": { "request_id": "req_abc123", "inputs_quality": "standard" }
+}
+```
+
+Response (teaser tier — unsubscribed athlete):
+```json
+{
+  "prescription": {
+    "carbohydrate": { "grams_per_hour_range": { "min": 45, "max": 75 } },
+    "hydration": { "ml_per_hour_range": { "min": 450, "max": 750 } },
+    "sodium": { "mg_per_hour_range": { "min": 350, "max": 650 } }
+  },
+  "safety": { "risk_level": "low", "guardrails_applied": ["sodium_ceiling"] },
+  "subscription": { "status": "teaser", "upgrade_url": "https://saturday.fit/subscribe?ref=PARTNER_ID" }
+}
+```
+
+### POST /v1/nutrition/calculate/batch
+Batch calculate for up to 50 scenarios.
+
+### POST /v1/nutrition/calculate/compare
+Compare prescriptions across different conditions (race-day planning).
+
+### POST /v1/athletes
+Create an athlete profile (partner-scoped).
+
+Required: weight_kg
+Optional: fitness_level, primary_sport, sweat_level, saltiness, satiety_level, carb_tolerance, concerns, eating_disorder_flag
+
+### GET /v1/athletes
+List partner's athletes (paginated).
+
+### GET /v1/athletes/{id}
+Get athlete profile.
+
+### PATCH /v1/athletes/{id}
+Update athlete profile (partial update).
+
+### DELETE /v1/athletes/{id}
+Delete athlete and all associated data (cascading, irreversible).
+
+### POST /v1/athletes/{id}/activities
+Create an activity (type, duration_minutes required; intensity, conditions, sub_activities optional).
+
+### GET /v1/athletes/{id}/activities
+List activities (filterable by date range and type).
+
+### POST /v1/athletes/{id}/activities/{activityId}/prescription
+Calculate prescription for this activity.
+
+### POST /v1/athletes/{id}/activities/{activityId}/feedback
+Submit post-activity feedback (gi_comfort, energy_level, hydration_feel, actual_intake).
+
+### POST /v1/inference/activity-type
+Infer activity type from metadata (title, description, tags).
+
+### POST /v1/ai/conversations
+Start AI coaching conversation for an athlete (SSE streaming).
+
+### POST /v1/ai/conversations/{convID}/messages
+Send message to AI coach (response streamed via SSE).
+
+### POST /v1/webhooks
+Register webhook for real-time event notifications. Events include: athlete.created, prescription.calculated, subscription.activated, etc. Webhooks are HMAC-SHA256 signed.
+
+## Activity Types
+running, cycling, swimming, triathlon, xc_skiing, rowing, hiking, lift
+
+## Error Format (Stripe-style)
+```json
+{
+  "error": {
+    "type": "invalid_request",
+    "code": "missing_required_field",
+    "message": "Human-readable description",
+    "param": "field_name",
+    "documentation_url": "https://api.saturday.fit/docs/errors#code",
+    "request_id": "req_abc123"
+  }
+}
+```
+
+Error types: authentication_error (401), authorization_error (403), invalid_request (400), resource_not_found (404), rate_limit_exceeded (429), safety_limit (422), api_error (500)
+
+## Rate Limiting
+Per API key. Headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset.
+429 responses include Retry-After header.
+
+## Feature Gates
+Features progress: STEALTH -> ALPHA -> BETA -> GA -> DEPRECATED.
+Current: nutrition=ALPHA, products=STEALTH, gear=STEALTH, ai_coach=STEALTH, ai_data=STEALTH.
+
+## Data Policy
+- Response data: display-only license (no ML/AI training)
+- Teaser tier: "Powered by Saturday" attribution required
+- Product database: competitive IP, no bulk export
+- GDPR: export via POST /v1/athletes/{id}/export, delete via DELETE /v1/athletes/{id}
+
+## MCP Server
+Saturday provides a native MCP server at https://api.saturday.fit/v1/mcp for AI agent tool discovery and execution.
+
+## Contact
+api@saturday.fit

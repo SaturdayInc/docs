@@ -1,0 +1,74 @@
+---
+title: 'Introduction'
+description: 'Nutrition intelligence for endurance athletes — as an API'
+sidebarTitle: 'Introduction'
+---
+
+# Saturday API
+
+Saturday provides AI-powered nutrition intelligence for endurance athletes. Our API calculates personalized fuel, hydration, and electrolyte recommendations based on athlete profiles, activity parameters, and environmental conditions.
+
+## What Saturday does
+
+Training platforms build great workout plans. Saturday makes sure athletes are properly fueled for them.
+
+The API takes training data in and returns science-backed, safety-guarded nutrition prescriptions out:
+
+- **Carbohydrate targets** — grams per hour, personalized to the athlete and activity
+- **Hydration targets** — fluid intake in mL per hour, adjusted for sweat rate and conditions
+- **Electrolyte targets** — sodium in mg per hour, accounting for individual sweat composition
+- **Product recommendations** — matched from a curated database of 186+ endurance nutrition products
+- **AI coaching** — conversational nutrition coach with SSE streaming for real-time interactions
+- **Safety metadata** — every response includes safety guardrails and risk flags
+
+## Why an API?
+
+Nutrition for endurance athletes is safety-critical. Hyponatremia (dangerously low blood sodium from overdrinking) kills athletes. Bad fueling causes GI distress, bonking, and DNFs. Building a nutrition engine that handles these edge cases correctly requires deep sports science expertise and years of algorithm development.
+
+Saturday's API lets training platforms offer world-class nutrition without building it from scratch. Your platform handles the training. Saturday handles the fueling.
+
+## Who it's for
+
+The Saturday API is designed for developers at:
+
+- **Training platforms** — Athletica.ai, Intervals.icu, TriDot, AI Endurance, Final Surge
+- **Wearable companies** — Integrate nutrition into watch faces and workout summaries
+- **Race organizers** — Provide personalized fueling plans for event participants
+- **Coaching platforms** — Give coaches nutrition tools alongside training tools
+- **AI agents** — Consume Saturday via MCP or direct API for automated nutrition workflows
+
+## Free for partners
+
+The API itself is free for partners to integrate. Athletes access teaser data (ranges instead of exact numbers) at no cost. For full precision, athletes subscribe to Saturday directly. Partners earn attribution and provide a better experience — without managing nutrition billing.
+
+See [Freemium Model](/guides/freemium-model) for details on how teaser vs. full responses work.
+
+## Core capabilities
+
+| Capability | Description |
+|------------|-------------|
+| [Nutrition Calculation](/guides/nutrition-calculation) | The core product — calculate fuel prescriptions |
+| [Athletes](/guides/athletes) | Manage athlete profiles scoped to your organization |
+| [Activities](/guides/activities) | Create activities and get prescriptions |
+| [AI Coach](/guides/ai-coach) | Conversational nutrition coaching with SSE streaming |
+| [Webhooks](/guides/webhooks) | Real-time event notifications for your integration |
+| [Safety](/guides/safety) | Understand Saturday's safety model — this is life-or-death |
+
+## Getting started
+
+The fastest path to your first API response:
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Make your first API call in 5 minutes
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    API keys, environments, and security
+  </Card>
+  <Card title="Safety" icon="shield-halved" href="/guides/safety">
+    Understand why safety metadata matters
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference">
+    Full endpoint documentation
+  </Card>
+</CardGroup>

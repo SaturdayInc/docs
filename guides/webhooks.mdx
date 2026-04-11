@@ -1,0 +1,272 @@
+---
+title: 'Webhooks'
+description: 'Real-time event notifications with HMAC-SHA256 verification'
+sidebarTitle: 'Webhooks'
+icon: 'bell'
+---
+
+# Webhooks
+
+Webhooks let Saturday push real-time event notifications to your server. Instead of polling the API for changes, register a webhook URL and Saturday will POST events to you as they happen.
+
+## Registering a webhook
+
+<CodeGroup>
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api.saturday.fit/v1/webhooks",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "url": "https://your-app.com/webhooks/saturday",
+        "events": [
+            "prescription.calculated",
+            "athlete.updated",
+            "athlete.created",
+        ],
+    },
+)
+
+webhook = response.json()
+# Save webhook["secret"] — you need it to verify signatures
+print(f"Webhook secret: {webhook['secret']}")
+```
+
+```typescript TypeScript
+const response = await fetch("https://api.saturday.fit/v1/webhooks", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer sk_test_abc123def456",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    url: "https://your-app.com/webhooks/saturday",
+    events: ["prescription.calculated", "athlete.updated", "athlete.created"],
+  }),
+});
+
+const webhook = await response.json();
+// Save webhook.secret — you need it to verify signatures
+console.log(`Webhook secret: ${webhook.secret}`);
+```
+
+</CodeGroup>
+
+<Warning>
+  **Save the webhook secret immediately.** It is only returned once at creation time. You need it to verify that incoming webhooks are genuinely from Saturday.
+</Warning>
+
+## Available events
+
+| Event | Triggered when |
+|-------|---------------|
+| `athlete.created` | A new athlete is created |
+| `athlete.updated` | An athlete profile is modified |
+| `athlete.deleted` | An athlete is deleted |
+| `activity.created` | A new activity is created |
+| `activity.updated` | An activity is modified |
+| `prescription.calculated` | A nutrition prescription is generated |
+| `feedback.submitted` | Post-activity feedback is submitted |
+| `subscription.activated` | An athlete subscribes to Saturday |
+| `subscription.canceled` | An athlete's subscription is canceled |
+| `conversation.message_sent` | An AI Coach message is sent |
+
+## Webhook payload format
+
+Every webhook delivery has this structure:
+
+```json
+{
+  "id": "evt_abc123def456",
+  "type": "prescription.calculated",
+  "created_at": "2025-01-15T14:30:00Z",
+  "data": {
+    "athlete_id": "ath_abc123",
+    "activity_id": "act_xyz789",
+    "prescription": {
+      "carbohydrate": { "grams_per_hour": 60 },
+      "hydration": { "ml_per_hour": 600 },
+      "sodium": { "mg_per_hour": 500 }
+    }
+  }
+}
+```
+
+## Verifying webhook signatures (HMAC-SHA256)
+
+Every webhook delivery includes a signature in the `X-Saturday-Signature` header. **Always verify this signature** to confirm the webhook came from Saturday and wasn't tampered with.
+
+The signature is computed as `HMAC-SHA256(webhook_secret, timestamp + "." + raw_body)`.
+
+### Verification steps
+
+1. Extract the timestamp and signature from the header
+2. Reconstruct the signed payload: `{timestamp}.{raw_body}`
+3. Compute HMAC-SHA256 using your webhook secret
+4. Compare with constant-time equality
+
+<CodeGroup>
+
+```python Python
+import hashlib
+import hmac
+import time
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+WEBHOOK_SECRET = "whsec_your_webhook_secret_here"
+
+@app.route("/webhooks/saturday", methods=["POST"])
+def handle_webhook():
+    # 1. Extract signature header
+    signature_header = request.headers.get("X-Saturday-Signature")
+    if not signature_header:
+        abort(400, "Missing signature header")
+
+    # 2. Parse timestamp and signature
+    parts = signature_header.split(",")
+    timestamp = None
+    signature = None
+    for part in parts:
+        key, value = part.split("=", 1)
+        if key == "t":
+            timestamp = value
+        elif key == "v1":
+            signature = value
+
+    if not timestamp or not signature:
+        abort(400, "Invalid signature format")
+
+    # 3. Reject stale timestamps (5-minute replay window)
+    if abs(time.time() - int(timestamp)) > 300:
+        abort(400, "Timestamp too old — possible replay attack")
+
+    # 4. Compute expected signature
+    raw_body = request.get_data(as_text=True)
+    signed_payload = f"{timestamp}.{raw_body}"
+    expected = hmac.new(
+        WEBHOOK_SECRET.encode("utf-8"),
+        signed_payload.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+    # 5. Constant-time comparison
+    if not hmac.compare_digest(expected, signature):
+        abort(400, "Invalid signature")
+
+    # 6. Process the event
+    event = request.json
+    print(f"Received event: {event['type']}")
+
+    # Always return 200 quickly — process async if needed
+    return "", 200
+```
+
+```typescript TypeScript
+import crypto from "crypto";
+import express from "express";
+
+const app = express();
+const WEBHOOK_SECRET = "whsec_your_webhook_secret_here";
+
+app.post(
+  "/webhooks/saturday",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    // 1. Extract signature header
+    const signatureHeader = req.headers["x-saturday-signature"] as string;
+    if (!signatureHeader) {
+      return res.status(400).send("Missing signature header");
+    }
+
+    // 2. Parse timestamp and signature
+    const parts = Object.fromEntries(
+      signatureHeader.split(",").map((p) => p.split("=", 2) as [string, string])
+    );
+    const timestamp = parts["t"];
+    const signature = parts["v1"];
+
+    if (!timestamp || !signature) {
+      return res.status(400).send("Invalid signature format");
+    }
+
+    // 3. Reject stale timestamps (5-minute replay window)
+    if (Math.abs(Date.now() / 1000 - parseInt(timestamp)) > 300) {
+      return res.status(400).send("Timestamp too old");
+    }
+
+    // 4. Compute expected signature
+    const rawBody = req.body.toString("utf-8");
+    const signedPayload = `${timestamp}.${rawBody}`;
+    const expected = crypto
+      .createHmac("sha256", WEBHOOK_SECRET)
+      .update(signedPayload)
+      .digest("hex");
+
+    // 5. Constant-time comparison
+    if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) {
+      return res.status(400).send("Invalid signature");
+    }
+
+    // 6. Process the event
+    const event = JSON.parse(rawBody);
+    console.log(`Received event: ${event.type}`);
+
+    // Always return 200 quickly
+    res.status(200).send();
+  }
+);
+```
+
+</CodeGroup>
+
+## Retry behavior
+
+If your endpoint fails (non-2xx response or timeout), Saturday retries with exponential backoff:
+
+| Attempt | Delay | Total elapsed |
+|---------|-------|---------------|
+| 1st retry | 30 seconds | 30s |
+| 2nd retry | 2 minutes | 2.5 min |
+| 3rd retry | 10 minutes | 12.5 min |
+| 4th retry | 1 hour | 1 hr 12.5 min |
+| 5th retry | 4 hours | 5 hr 12.5 min |
+
+After 5 failed retries, the delivery is marked as failed and the event is logged for manual retry.
+
+## Auto-disable
+
+If a webhook endpoint fails consistently for **3 consecutive days**, Saturday automatically disables it and sends a notification email to the partner contact. Re-enable it from the API after fixing the issue:
+
+```bash
+curl -X PATCH https://api.saturday.fit/v1/webhooks/{webhook_id} \
+  -H "Authorization: Bearer sk_live_xyz789..." \
+  -d '{"active": true}'
+```
+
+## Best practices
+
+1. **Return 200 immediately** — process events asynchronously. Saturday times out after 30 seconds.
+2. **Handle duplicates** — use the `id` field to deduplicate. The same event may be delivered more than once.
+3. **Verify signatures** — always. Never trust a webhook payload without HMAC verification.
+4. **Use HTTPS** — Saturday only delivers to HTTPS endpoints.
+5. **Log everything** — store raw payloads for debugging. Include the event `id` in your logs.
+
+## Managing webhooks
+
+**List webhooks:**
+```bash
+GET /v1/webhooks
+```
+
+**Update events or URL:**
+```bash
+PATCH /v1/webhooks/{webhook_id}
+```
+
+**Delete a webhook:**
+```bash
+DELETE /v1/webhooks/{webhook_id}
+```
