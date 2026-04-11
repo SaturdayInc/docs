@@ -28,8 +28,8 @@ response = requests.post(
     "https://api.saturday.fit/v1/nutrition/calculate",
     headers={"Authorization": "Bearer sk_test_abc123def456"},
     json={
-        "activity_type": "running",
-        "duration_minutes": 90,
+        "activity_type": "run",
+        "duration_min": 90,
         "athlete_weight_kg": 70,
     },
 )
@@ -45,8 +45,8 @@ const response = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      activity_type: "running",
-      duration_minutes: 90,
+      activity_type: "run",
+      duration_min: 90,
       athlete_weight_kg: 70,
     }),
   }
@@ -55,7 +55,7 @@ const response = await fetch(
 
 </CodeGroup>
 
-This returns a prescription with `"confidence": "low"` and `"inputs_quality": "minimal"`. The numbers are based on population-level defaults for the given activity type and body weight.
+This returns a prescription with a low `confidence_score`. The numbers are based on population-level defaults for the given activity type and body weight.
 
 ### Standard inputs
 
@@ -63,18 +63,15 @@ Add intensity and environmental conditions for a meaningfully better prescriptio
 
 ```json
 {
-  "activity_type": "cycling",
-  "duration_minutes": 180,
-  "intensity": "hard",
+  "activity_type": "bike",
+  "duration_min": 180,
+  "intensity_level": 7,
   "athlete_weight_kg": 68,
-  "conditions": {
-    "temperature_celsius": 30,
-    "humidity_percent": 75
-  }
+  "thermal_stress_level": 8
 }
 ```
 
-Temperature and humidity dramatically affect hydration and sodium needs. A 3-hour ride at 30C/75% humidity requires very different fueling than the same ride at 15C/40%.
+Thermal stress dramatically affects hydration and sodium needs. A 3-hour ride at high thermal stress requires very different fueling than the same ride in cool conditions.
 
 ### Comprehensive inputs
 
@@ -82,24 +79,16 @@ For the highest accuracy, include an athlete reference:
 
 ```json
 {
-  "activity_type": "triathlon",
-  "duration_minutes": 300,
-  "intensity": "race",
+  "activity_type": "bike",
+  "duration_min": 300,
+  "intensity_level": 8,
+  "is_race": true,
   "athlete_id": "ath_abc123",
-  "conditions": {
-    "temperature_celsius": 28,
-    "humidity_percent": 65,
-    "altitude_meters": 500
-  },
-  "sub_activities": [
-    { "type": "swimming", "duration_minutes": 35 },
-    { "type": "cycling", "duration_minutes": 150 },
-    { "type": "running", "duration_minutes": 115 }
-  ]
+  "thermal_stress_level": 7
 }
 ```
 
-When you include an `athlete_id`, Saturday pulls their stored profile — sweat level, saltiness, carb tolerance, fitness level, dietary preferences, and past activity feedback. This is where prescriptions become genuinely personalized.
+When you include an `athlete_id`, Saturday pulls their stored profile — sweat level, saltiness, carb experience, fitness level, and past activity feedback. This is where prescriptions become genuinely personalized.
 
 <Tip>
   **The enrichment path:** Start with minimal inputs to get integrated fast, then progressively add more data as your integration matures. Every additional field improves accuracy.
@@ -109,53 +98,41 @@ When you include an `athlete_id`, Saturday pulls their stored profile — sweat 
 
 ```json
 {
-  "prescription": {
-    "carbohydrate": {
-      "grams_per_hour": 72,
-      "total_grams": 216,
-      "confidence": "high",
-      "rationale": "Trained gut, high intensity, long duration"
-    },
-    "hydration": {
-      "ml_per_hour": 750,
-      "total_ml": 2250,
-      "confidence": "high",
-      "rationale": "High sweat rate, hot/humid conditions"
-    },
-    "sodium": {
-      "mg_per_hour": 800,
-      "total_mg": 2400,
-      "confidence": "moderate",
-      "rationale": "Salty sweater profile, elevated thermal stress"
-    }
-  },
+  "tier": "full",
+  "carb_g_per_hr": 72,
+  "sodium_mg_per_hr": 800,
+  "fluid_ml_per_hr": 750,
+  "total_carb_g": 360,
+  "total_sodium_mg": 4000,
+  "total_fluid_ml": 3750,
   "safety": {
-    "risk_level": "moderate",
-    "flags": ["high_thermal_stress"],
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.85,
+    "requires_human_review": false,
     "warnings": [
-      "High heat/humidity combination. Consider ice, cold fluids, and shade."
+      "High thermal stress. Consider ice, cold fluids, and shade."
     ],
-    "guardrails_applied": [
-      "sodium_ceiling",
-      "fluid_physiological_limit",
-      "carb_gut_tolerance"
-    ]
+    "not_instructions": true
   },
-  "metadata": {
-    "request_id": "req_def456ghi789",
-    "inputs_quality": "comprehensive",
-    "enrichment_available": false
+  "attribution": {
+    "text": "Powered by Saturday",
+    "logo_url": "https://saturdaymorning.fit/logo.png",
+    "link": "https://saturdaymorning.fit",
+    "required": false
   }
 }
 ```
 
-### Confidence levels
+### Confidence score
 
-| Level | Meaning | Typical inputs |
+The `safety.confidence_score` (0.0-1.0) indicates how personalized the prescription is:
+
+| Range | Meaning | Typical inputs |
 |-------|---------|----------------|
-| `high` | Strong personalization, athlete history | Athlete profile + conditions + feedback |
-| `moderate` | Good estimates with some personalization | Weight + intensity + conditions |
-| `low` | Population-level defaults applied | Minimal inputs (type + duration + weight) |
+| 0.8-1.0 | Strong personalization, athlete history | Athlete profile + conditions + feedback |
+| 0.5-0.8 | Good estimates with some personalization | Weight + intensity + thermal stress |
+| 0.0-0.5 | Population-level defaults applied | Minimal inputs (type + duration + weight) |
 
 ## Comparing scenarios
 
@@ -168,17 +145,18 @@ POST /v1/nutrition/calculate/compare
 ```json
 {
   "athlete_id": "ath_abc123",
-  "activity_type": "running",
-  "duration_minutes": 240,
-  "intensity": "race",
+  "activity_type": "run",
+  "duration_min": 240,
+  "intensity_level": 8,
+  "is_race": true,
   "scenarios": [
     {
       "label": "Cool morning",
-      "conditions": { "temperature_celsius": 12, "humidity_percent": 50 }
+      "thermal_stress_level": 3
     },
     {
       "label": "Hot afternoon",
-      "conditions": { "temperature_celsius": 32, "humidity_percent": 70 }
+      "thermal_stress_level": 8
     }
   ]
 }
@@ -188,8 +166,8 @@ POST /v1/nutrition/calculate/compare
 
 Responses depend on the athlete's Saturday subscription status:
 
-- **Subscribed athletes** get exact numbers: `"grams_per_hour": 72`
-- **Free/teaser athletes** get ranges: `"grams_per_hour_range": { "min": 55, "max": 85 }`
+- **Subscribed athletes** get exact numbers: `"carb_g_per_hr": 72`
+- **Free/teaser athletes** get ranges: `"carb_range_g_per_hr": "55-85"`
 
 See [Freemium Model](/guides/freemium-model) for implementation details.
 
@@ -207,13 +185,12 @@ See [Safety](/guides/safety) for the full guide on safety fields, risk levels, a
 
 | Type | Key | Notes |
 |------|-----|-------|
-| Running | `running` | Road, trail, track |
-| Cycling | `cycling` | Road, gravel, mountain |
-| Swimming | `swimming` | Pool, open water |
-| Triathlon | `triathlon` | Use `sub_activities` for segment splits |
-| Cross-country skiing | `xc_skiing` | Classic, skate |
-| Rowing | `rowing` | On-water, ergometer |
-| Hiking | `hiking` | Long-duration, variable intensity |
+| Running | `run` | Road, trail, track |
+| Cycling | `bike` | Road, gravel, mountain |
+| Swimming | `swim` | Pool, open water |
+| Rowing | `row` | On-water, ergometer |
+| Skiing | `ski` | Cross-country, classic, skate |
+| Hiking | `hike` | Long-duration, variable intensity |
 | Weightlifting | `lift` | Strength training |
 
 Use `GET /v1/activity-types` for the complete list with descriptions.

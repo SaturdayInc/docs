@@ -15,7 +15,7 @@ Activities represent individual training sessions or races. Each activity belong
 Create activity -> Calculate prescription -> (Optional) Add products -> (Optional) Submit feedback
 ```
 
-1. **Create** the activity with type, duration, intensity, and conditions
+1. **Create** the activity with type, duration, and optional intensity/thermal stress
 2. **Calculate** a nutrition prescription for it
 3. **Add products** the athlete plans to use (optional — for preparation planning)
 4. **Submit feedback** after the activity (optional — improves future prescriptions)
@@ -31,15 +31,12 @@ response = requests.post(
     "https://api.saturday.fit/v1/athletes/ath_abc123/activities",
     headers={"Authorization": "Bearer sk_test_abc123def456"},
     json={
-        "type": "running",
+        "type": "run",
         "name": "Saturday long run",
-        "duration_minutes": 120,
-        "intensity": "moderate",
+        "duration_min": 120,
+        "intensity_level": 5,
         "scheduled_at": "2025-01-15T07:00:00Z",
-        "conditions": {
-            "temperature_celsius": 18,
-            "humidity_percent": 55,
-        },
+        "thermal_stress_level": 4,
     },
 )
 
@@ -57,15 +54,12 @@ const response = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      type: "running",
+      type: "run",
       name: "Saturday long run",
-      duration_minutes: 120,
-      intensity: "moderate",
+      duration_min: 120,
+      intensity_level: 5,
       scheduled_at: "2025-01-15T07:00:00Z",
-      conditions: {
-        temperature_celsius: 18,
-        humidity_percent: 55,
-      },
+      thermal_stress_level: 4,
     }),
   }
 );
@@ -81,12 +75,12 @@ console.log(`Activity ID: ${activity.id}`);
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `type` | string | Yes | Activity type (see [supported types](/guides/nutrition-calculation#supported-activity-types)) |
-| `duration_minutes` | integer | Yes | Expected duration |
-| `intensity` | string | No | `easy`, `moderate`, `hard`, `race` |
+| `duration_min` | integer | Yes | Expected duration in minutes |
+| `intensity_level` | integer | No | 1-9 scale |
+| `thermal_stress_level` | integer | No | 1-9 scale |
+| `is_race_event` | boolean | No | Whether this is a race |
 | `name` | string | No | Human-readable label |
 | `scheduled_at` | string | No | ISO 8601 datetime |
-| `conditions` | object | No | Environmental conditions |
-| `sub_activities` | array | No | For multi-sport activities |
 
 ### Multi-sport activities
 
@@ -94,19 +88,15 @@ For triathlons and brick workouts, specify sub-activities:
 
 ```json
 {
-  "type": "triathlon",
+  "type": "bike",
   "name": "Olympic distance race",
-  "duration_minutes": 165,
-  "intensity": "race",
-  "sub_activities": [
-    { "type": "swimming", "duration_minutes": 25 },
-    { "type": "cycling", "duration_minutes": 75 },
-    { "type": "running", "duration_minutes": 55 }
-  ]
+  "duration_min": 165,
+  "intensity_level": 8,
+  "is_race_event": true
 }
 ```
 
-Saturday calculates per-segment prescriptions — you fuel differently on the bike than on the run.
+Saturday calculates prescriptions tailored to the activity type — you fuel differently on the bike than on a run.
 
 ## Calculating a prescription
 
@@ -214,7 +204,7 @@ POST /v1/inference/activity-type
 Response:
 ```json
 {
-  "inferred_type": "running",
+  "inferred_type": "run",
   "confidence": 0.95,
   "intensity_hint": "easy"
 }

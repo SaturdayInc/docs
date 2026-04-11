@@ -32,49 +32,47 @@ Every nutrition calculation response — including teasers and free responses �
 ```json
 {
   "safety": {
-    "risk_level": "moderate",
-    "flags": ["high_thermal_stress", "extended_duration"],
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.72,
+    "requires_human_review": false,
     "warnings": [
-      "High heat/humidity combination increases dehydration risk. Plan extra fluid access points.",
+      "High thermal stress increases dehydration risk. Plan extra fluid access points.",
       "Activities over 4 hours require careful sodium management. Monitor for signs of hyponatremia."
     ],
-    "guardrails_applied": [
-      "sodium_ceiling",
-      "fluid_physiological_limit",
-      "carb_gut_tolerance"
-    ],
-    "contraindications": []
+    "not_instructions": true
   }
 }
 ```
 
 <Note>
-  **Safety data is NEVER gated behind subscription status.** A teaser response may show carb ranges instead of exact numbers, but it will always show the full safety block with all risk flags, warnings, guardrails, and contraindications. This is non-negotiable.
+  **Safety data is NEVER gated behind subscription status.** A teaser response may show carb ranges instead of exact numbers, but it will always show the full safety block with all warnings, confidence scores, and safe maximums. This is non-negotiable.
 </Note>
 
 ## Engine hard limits
 
 Saturday enforces absolute physiological boundaries that cannot be overridden by any input combination:
 
-| Guardrail | What it does | Why |
-|-----------|-------------|-----|
-| `fluid_physiological_limit` | Caps fluid at gastric emptying rate | Overdrinking causes hyponatremia |
-| `sodium_ceiling` | Maximum safe sodium per hour | Excess sodium causes GI distress and nausea |
-| `minimum_sodium` | Minimum sodium for long activities | Prevents hyponatremia in extended efforts |
-| `carb_gut_tolerance` | Limits carbs to demonstrated tolerance | Exceeding gut capacity causes vomiting |
-| `duration_scaling` | Adjusts for very long activities | Steady-state assumptions break after 4+ hours |
-| `eating_disorder_guardrails` | Language and framing adjustments | Protects vulnerable athletes |
+| Guardrail | Exposed as | Why |
+|-----------|-----------|-----|
+| Fluid physiological limit | `max_safe_fluid_ml_per_hr` | Overdrinking causes hyponatremia |
+| Sodium ceiling | `max_safe_sodium_mg_per_hr` | Excess sodium causes GI distress and nausea |
+| Minimum sodium | (enforced internally) | Prevents hyponatremia in extended efforts |
+| Carb gut tolerance | (enforced internally) | Exceeding gut capacity causes vomiting |
+| Duration scaling | (enforced internally) | Steady-state assumptions break after 4+ hours |
+| Eating disorder guardrails | (enforced internally) | Protects vulnerable athletes |
 
-These guardrails are evaluated on every calculation. The `guardrails_applied` field tells you which ones were checked — it does not mean they were all hit, only that they were evaluated and the prescription respects them.
+These guardrails are evaluated on every calculation. The `max_safe_fluid_ml_per_hr` and `max_safe_sodium_mg_per_hr` fields expose the hard ceilings so partners can display them. All other guardrails are enforced internally — prescriptions always respect them.
 
-## Risk levels
+## Confidence score and human review
 
-| Level | Meaning | Your display recommendation |
-|-------|---------|----------------------------|
-| `low` | Standard conditions, well-understood parameters | No special display needed |
-| `moderate` | Conditions warrant attention (heat, duration, altitude) | Show warnings in your UI |
-| `high` | Significant risk factors present | Prominent warning, consider a confirmation step |
-| `critical` | Extreme conditions or constraint violations | Block-level warning, require acknowledgment |
+The `confidence_score` (0.0-1.0) indicates how well-supported the prescription is. When `requires_human_review` is `true`, conditions are unusual enough that a human should verify the prescription before following it.
+
+| Confidence range | Meaning | Your display recommendation |
+|-----------------|---------|----------------------------|
+| 0.8-1.0 | Strong personalization, well-understood conditions | No special display needed |
+| 0.5-0.8 | Good estimates, some assumptions made | Show any warnings in your UI |
+| 0.0-0.5 | Significant uncertainty or risk factors | Prominent warning, consider a confirmation step |
 
 ## Dangerous vs. safe prescription example
 
@@ -94,13 +92,16 @@ This is dangerous because:
 **Safe** (what Saturday produces for the same conditions):
 
 ```
-Fluid: 700 mL/hr (capped by physiological limit)
-Sodium: 800 mg/hr (elevated for salty sweater in heat)
-Carbs: 72 g/hr (limited by demonstrated tolerance)
+fluid_ml_per_hr: 700 (capped by physiological limit)
+sodium_mg_per_hr: 800 (elevated for salty sweater in heat)
+carb_g_per_hr: 72 (limited by demonstrated tolerance)
 
-Safety: risk_level "high"
-Warnings: ["High heat/humidity combination. Plan extra fluid access points and shade."]
-Guardrails: ["fluid_physiological_limit", "sodium_ceiling", "carb_gut_tolerance"]
+safety.max_safe_fluid_ml_per_hr: 1500
+safety.max_safe_sodium_mg_per_hr: 3000
+safety.confidence_score: 0.45
+safety.requires_human_review: true
+safety.warnings: ["High thermal stress. Plan extra fluid access points and shade."]
+safety.not_instructions: true
 ```
 
 The difference between these two prescriptions is potentially life-or-death. Saturday's guardrails ensure the second version is what athletes receive.
@@ -121,7 +122,7 @@ This field tells AI consumers that Saturday's prescription data is **information
 
 ### Required
 
-- **Always show safety warnings** when `risk_level` is `moderate` or higher
+- **Always show safety warnings** when warnings are present or `requires_human_review` is `true`
 - **Never hide safety data** behind expandable sections or "advanced" toggles
 - **Never strip safety metadata** from responses before displaying to users
 - **Include the disclaimer** that prescriptions are guidance, not medical advice
@@ -130,7 +131,7 @@ This field tells AI consumers that Saturday's prescription data is **information
 
 - Show warnings **before or alongside** the prescription numbers, not hidden in details
 - Use visual hierarchy (color, icons, positioning) to make warnings visible
-- For `high` or `critical` risk levels, consider requiring user acknowledgment before proceeding
+- When `requires_human_review` is `true`, consider requiring user acknowledgment before proceeding
 
 ### Prohibited
 

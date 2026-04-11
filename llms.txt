@@ -26,7 +26,7 @@ Authorization: Bearer sk_test_abc123def456
 
 ## Safety
 
-Every response includes safety metadata (risk_level, warnings, guardrails_applied). Safety data is NEVER gated behind subscription status. Bad hydration recommendations can cause exercise-associated hyponatremia — a condition that kills athletes.
+Every response includes safety metadata (confidence_score, warnings, max_safe_fluid_ml_per_hr, max_safe_sodium_mg_per_hr, not_instructions). Safety data is NEVER gated behind subscription status. Bad hydration recommendations can cause exercise-associated hyponatremia — a condition that kills athletes.
 
 ## Freemium Model
 

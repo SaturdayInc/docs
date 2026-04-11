@@ -182,7 +182,7 @@ The access token is a JWT that contains the partner ID, athlete UID, and granted
 curl -H "Authorization: Bearer ACCESS_TOKEN_JWT" \
   https://api.saturday.fit/v1/nutrition/calculate \
   -X POST -H "Content-Type: application/json" \
-  -d '{"activity_type": "bike", "duration_minutes": 120, "intensity_level": 3}'
+  -d '{"activity_type": "bike", "duration_min": 120, "intensity_level": 3}'
 ```
 
 The API automatically scopes requests to the athlete who granted consent. You don't need to pass an `athlete_id` — it's in the JWT.

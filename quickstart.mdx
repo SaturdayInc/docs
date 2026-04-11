@@ -31,14 +31,11 @@ curl -X POST https://api.saturday.fit/v1/nutrition/calculate \
   -H "Authorization: Bearer sk_test_abc123def456" \
   -H "Content-Type: application/json" \
   -d '{
-    "activity_type": "running",
-    "duration_minutes": 90,
-    "intensity": "moderate",
+    "activity_type": "run",
+    "duration_min": 90,
+    "intensity_level": 5,
     "athlete_weight_kg": 70,
-    "conditions": {
-      "temperature_celsius": 25,
-      "humidity_percent": 60
-    }
+    "thermal_stress_level": 6
   }'
 ```
 
@@ -52,14 +49,11 @@ response = requests.post(
         "Content-Type": "application/json",
     },
     json={
-        "activity_type": "running",
-        "duration_minutes": 90,
-        "intensity": "moderate",
+        "activity_type": "run",
+        "duration_min": 90,
+        "intensity_level": 5,
         "athlete_weight_kg": 70,
-        "conditions": {
-            "temperature_celsius": 25,
-            "humidity_percent": 60,
-        },
+        "thermal_stress_level": 6,
     },
 )
 
@@ -77,14 +71,11 @@ const response = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      activity_type: "running",
-      duration_minutes: 90,
-      intensity: "moderate",
+      activity_type: "run",
+      duration_min: 90,
+      intensity_level: 5,
       athlete_weight_kg: 70,
-      conditions: {
-        temperature_celsius: 25,
-        humidity_percent: 60,
-      },
+      thermal_stress_level: 6,
     }),
   }
 );
@@ -95,40 +86,84 @@ console.log(data);
 
 </CodeGroup>
 
+### Install an SDK (optional)
+
+Saturday provides official SDKs for Python and TypeScript:
+
+<CodeGroup>
+
+```bash Python
+pip install saturday
+```
+
+```bash TypeScript
+npm install @saturdayinc/sdk
+```
+
+</CodeGroup>
+
+<CodeGroup>
+
+```python Python (SDK)
+from saturday import Saturday
+
+client = Saturday(api_key="sk_test_abc123def456")
+
+result = client.nutrition.calculate(
+    activity_type="run",
+    duration_min=90,
+    intensity_level=5,
+    athlete_weight_kg=70,
+    thermal_stress_level=6,
+)
+
+print(result)
+```
+
+```typescript TypeScript (SDK)
+import Saturday from "@saturdayinc/sdk";
+
+const client = new Saturday({ apiKey: "sk_test_abc123def456" });
+
+const result = await client.nutrition.calculate({
+  activityType: "run",
+  durationMin: 90,
+  intensityLevel: 5,
+  athleteWeightKg: 70,
+  thermalStressLevel: 6,
+});
+
+console.log(result);
+```
+
+</CodeGroup>
+
 ## 3. Read the response
 
 A successful response returns a fuel prescription with safety metadata:
 
 ```json
 {
-  "prescription": {
-    "carbohydrate": {
-      "grams_per_hour": 60,
-      "total_grams": 90,
-      "confidence": "high"
-    },
-    "hydration": {
-      "ml_per_hour": 600,
-      "total_ml": 900,
-      "confidence": "moderate"
-    },
-    "sodium": {
-      "mg_per_hour": 500,
-      "total_mg": 750,
-      "confidence": "moderate"
-    }
-  },
+  "tier": "full",
+  "carb_g_per_hr": 62.5,
+  "sodium_mg_per_hr": 485.0,
+  "fluid_ml_per_hr": 620.0,
+  "total_carb_g": 125,
+  "total_sodium_mg": 970,
+  "total_fluid_ml": 1240,
   "safety": {
-    "risk_level": "low",
-    "flags": [],
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.72,
+    "requires_human_review": false,
     "warnings": [],
-    "guardrails_applied": ["sodium_ceiling", "fluid_physiological_limit"]
+    "not_instructions": true
   },
-  "metadata": {
-    "request_id": "req_abc123def456",
-    "calculation_version": "2024.1",
-    "inputs_quality": "minimal",
-    "enrichment_available": true
+  "attribution": {
+    "text": "Powered by Saturday",
+    "logo_url": "https://saturdaymorning.fit/logo.png",
+    "link": "https://saturdaymorning.fit",
+    "required": false
   }
 }
 ```
@@ -137,12 +172,14 @@ Key fields to understand:
 
 | Field | What it means |
 |-------|---------------|
-| `prescription.*` | The actual fuel targets — what to eat, drink, and supplement |
-| `prescription.*.confidence` | How confident Saturday is in this number (`high`, `moderate`, `low`) |
-| `safety.risk_level` | Overall risk assessment for this prescription |
-| `safety.guardrails_applied` | Which safety limits were checked or enforced |
-| `metadata.inputs_quality` | How complete the inputs were (`minimal`, `standard`, `comprehensive`) |
-| `metadata.enrichment_available` | Whether providing more data would improve accuracy |
+| `tier` | Response tier — `"full"` for subscribed athletes, `"teaser"` for free |
+| `carb_g_per_hr` | Carbohydrate target in grams per hour |
+| `sodium_mg_per_hr` | Sodium target in milligrams per hour |
+| `fluid_ml_per_hr` | Fluid target in milliliters per hour |
+| `total_*` | Total amounts for the entire activity duration |
+| `safety.confidence_score` | How confident Saturday is in this prescription (0.0-1.0) |
+| `safety.warnings` | Any safety warnings for this prescription |
+| `safety.not_instructions` | Signals that prescriptions are guidance, not commands |
 
 <Warning>
   **Safety data is never gated.** Every response includes full safety metadata regardless of subscription status. Bad hydration can cause hyponatremia — a potentially fatal condition. Safety information is always free and complete.
@@ -154,17 +191,21 @@ The response above shows **full precision** numbers because it's from a sandbox 
 
 | Athlete status | What they get | Example |
 |----------------|---------------|---------|
-| **Subscribed** | Exact numbers | `"grams_per_hour": 60` |
-| **Free / teaser** | Ranges | `"grams_per_hour_range": { "min": 45, "max": 75 }` |
+| **Subscribed** | Exact numbers | `"carb_g_per_hr": 62.5` |
+| **Free / teaser** | Ranges | `"carb_range_g_per_hr": "60-80"` |
 
-Teaser responses include a `subscription` field with a CTA:
+Teaser responses include a `subscription_cta` field:
 
 ```json
 {
-  "subscription": {
-    "status": "teaser",
-    "upgrade_url": "https://saturday.fit/subscribe?ref=YOUR_PARTNER_ID",
-    "message": "Subscribe to Saturday for exact fueling targets"
+  "tier": "teaser",
+  "carb_range_g_per_hr": "60-80",
+  "sodium_range_mg_per_hr": "300-600",
+  "fluid_range_ml_per_hr": "600-900",
+  "subscription_cta": {
+    "message": "Subscribe to Saturday for exact fueling targets",
+    "subscribe_url": "https://saturday.fit/subscribe?ref=YOUR_PARTNER_ID",
+    "features": ["Exact carb/sodium/fluid targets", "Product recommendations"]
   }
 }
 ```

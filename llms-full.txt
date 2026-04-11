@@ -42,11 +42,12 @@ Safety block structure:
 ```json
 {
   "safety": {
-    "risk_level": "low|moderate|high|critical",
-    "flags": ["high_thermal_stress", "extended_duration", ...],
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.72,
+    "requires_human_review": false,
     "warnings": ["Human-readable warning messages"],
-    "guardrails_applied": ["sodium_ceiling", "fluid_physiological_limit", ...],
-    "contraindications": []
+    "not_instructions": true
   }
 }
 ```
@@ -61,41 +62,65 @@ Calculate fuel/hydration/electrolyte prescription.
 Request:
 ```json
 {
-  "activity_type": "running",
-  "duration_minutes": 90,
-  "intensity": "moderate",
+  "activity_type": "run",
+  "duration_min": 90,
+  "intensity_level": 5,
   "athlete_weight_kg": 70,
   "athlete_id": "ath_abc123",
-  "conditions": {
-    "temperature_celsius": 25,
-    "humidity_percent": 60
-  }
+  "thermal_stress_level": 6
 }
 ```
+
+Optional request fields: sex, age, is_race, sweat_level (1-9), saltiness (1-9), satiety_level (1-9), fitness_level (1-9), carb_experience, usual_carb_consumption, carb_upper_limit_override, concerns (object with bool fields: muscle_cramps, gut_distress, performance, hunger, heat_tolerance, faintness, drinking_resistance, thirst), meal_before_min.
 
 Response (full tier):
 ```json
 {
-  "prescription": {
-    "carbohydrate": { "grams_per_hour": 60, "total_grams": 90, "confidence": "high" },
-    "hydration": { "ml_per_hour": 600, "total_ml": 900, "confidence": "moderate" },
-    "sodium": { "mg_per_hour": 500, "total_mg": 750, "confidence": "moderate" }
+  "tier": "full",
+  "carb_g_per_hr": 62.5,
+  "sodium_mg_per_hr": 485.0,
+  "fluid_ml_per_hr": 620.0,
+  "total_carb_g": 125,
+  "total_sodium_mg": 970,
+  "total_fluid_ml": 1240,
+  "safety": {
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.72,
+    "requires_human_review": false,
+    "warnings": [],
+    "not_instructions": true
   },
-  "safety": { "risk_level": "low", "guardrails_applied": ["sodium_ceiling", "fluid_physiological_limit"] },
-  "metadata": { "request_id": "req_abc123", "inputs_quality": "standard" }
+  "attribution": {
+    "text": "Powered by Saturday",
+    "logo_url": "https://saturdaymorning.fit/logo.png",
+    "link": "https://saturdaymorning.fit",
+    "required": false
+  }
 }
 ```
 
 Response (teaser tier — unsubscribed athlete):
 ```json
 {
-  "prescription": {
-    "carbohydrate": { "grams_per_hour_range": { "min": 45, "max": 75 } },
-    "hydration": { "ml_per_hour_range": { "min": 450, "max": 750 } },
-    "sodium": { "mg_per_hour_range": { "min": 350, "max": 650 } }
+  "tier": "teaser",
+  "carb_range_g_per_hr": "60-80",
+  "sodium_range_mg_per_hr": "300-600",
+  "fluid_range_ml_per_hr": "600-900",
+  "safety": {
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.72,
+    "requires_human_review": false,
+    "warnings": [],
+    "not_instructions": true
   },
-  "safety": { "risk_level": "low", "guardrails_applied": ["sodium_ceiling"] },
-  "subscription": { "status": "teaser", "upgrade_url": "https://saturday.fit/subscribe?ref=PARTNER_ID" }
+  "attribution": { "text": "Powered by Saturday", "logo_url": "https://saturdaymorning.fit/logo.png", "link": "https://saturdaymorning.fit", "required": true },
+  "subscription_cta": {
+    "message": "Subscribe to Saturday for exact fueling targets",
+    "subscribe_url": "https://saturday.fit/subscribe?ref=PARTNER_ID",
+    "features": ["Exact carb/sodium/fluid targets", "Product recommendations"]
+  }
 }
 ```
 
@@ -124,7 +149,7 @@ Update athlete profile (partial update).
 Delete athlete and all associated data (cascading, irreversible).
 
 ### POST /v1/athletes/{id}/activities
-Create an activity (type, duration_minutes required; intensity, conditions, sub_activities optional).
+Create an activity (type, duration_min required; intensity_level, thermal_stress_level, is_race_event optional).
 
 ### GET /v1/athletes/{id}/activities
 List activities (filterable by date range and type).
@@ -148,7 +173,7 @@ Send message to AI coach (response streamed via SSE).
 Register webhook for real-time event notifications. Events include: athlete.created, prescription.calculated, subscription.activated, etc. Webhooks are HMAC-SHA256 signed.
 
 ## Activity Types
-running, cycling, swimming, triathlon, xc_skiing, rowing, hiking, lift
+bike, run, swim, row, ski, lift, hike
 
 ## Error Format (Stripe-style)
 ```json

@@ -69,7 +69,7 @@ Here's how a Claude-powered agent might use Saturday's tools in a conversation:
 **Athlete asks:** "I have a 3-hour bike race on Saturday. It's going to be 30C and humid. What should I eat?"
 
 **Agent's tool calls:**
-1. `calculate_nutrition` with `{activity_type: "cycling", duration_minutes: 180, intensity: "race", conditions: {temperature_celsius: 30, humidity_percent: 70}}`
+1. `calculate_nutrition` with `{activity_type: "bike", duration_min: 180, intensity_level: 8, is_race: true, thermal_stress_level: 8}`
 2. `search_products` with `{category: "gel", caffeine: false}` (based on athlete preferences)
 
 **Agent synthesizes:** Uses Saturday's prescription + product results + safety warnings to give a complete race-day fueling plan.
@@ -117,14 +117,11 @@ async with ClientSession(
     result = await session.call_tool(
         "calculate_nutrition",
         {
-            "activity_type": "running",
-            "duration_minutes": 90,
-            "intensity": "moderate",
+            "activity_type": "run",
+            "duration_min": 90,
+            "intensity_level": 5,
             "athlete_weight_kg": 70,
-            "conditions": {
-                "temperature_celsius": 25,
-                "humidity_percent": 60,
-            },
+            "thermal_stress_level": 6,
         },
     )
     print(result)
@@ -155,14 +152,11 @@ tools.tools.forEach((t) => console.log(`${t.name}: ${t.description}`));
 
 // Call a tool
 const result = await client.callTool("calculate_nutrition", {
-  activity_type: "running",
-  duration_minutes: 90,
-  intensity: "moderate",
+  activity_type: "run",
+  duration_min: 90,
+  intensity_level: 5,
   athlete_weight_kg: 70,
-  conditions: {
-    temperature_celsius: 25,
-    humidity_percent: 60,
-  },
+  thermal_stress_level: 6,
 });
 
 console.log(result);
