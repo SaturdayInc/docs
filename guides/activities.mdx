@@ -106,13 +106,48 @@ POST /v1/athletes/{athlete_id}/activities/{activity_id}/prescription
 
 This uses the activity's parameters and the athlete's profile to generate a personalized prescription. Recalculating overwrites the previous prescription — use this when activity parameters change (e.g., updated weather forecast).
 
+The response is the prescription object itself (carb/sodium/fluid values, totals, per-hour rates).
+
+## Getting a stored prescription
+
+```bash
+GET /v1/athletes/{athlete_id}/activities/{activity_id}/prescription
+```
+
+Returns the most recently calculated prescription for this activity, wrapped with safety metadata:
+
+```json
+{
+  "prescription": {
+    "carb_g_per_hr": 62.5,
+    "sodium_mg_per_hr": 485.0,
+    "fluid_ml_per_hr": 620.0,
+    "total_carb_g": 125,
+    "total_sodium_mg": 970,
+    "total_fluid_ml": 1240,
+    "calculated_at": "2025-01-15T06:55:00Z"
+  },
+  "safety": {
+    "max_safe_fluid_ml_per_hr": 1801,
+    "max_safe_sodium_mg_per_hr": 5000,
+    "confidence_score": 0.85,
+    "not_instructions": true,
+    "warnings": []
+  }
+}
+```
+
+<Note>
+  The `{prescription, safety}` envelope is consistent across all Saturday endpoints that return prescription data. Always read `prescription.*` for values and `safety.*` for guardrail information. The `not_instructions: true` flag signals that these are recommendations for human consideration, not executable commands.
+</Note>
+
 ## Getting an activity with prescription
 
 ```bash
 GET /v1/athletes/{athlete_id}/activities/{activity_id}
 ```
 
-The activity response includes the prescription, safety metadata, and any attached products.
+The activity response includes the prescription inline, along with any attached products.
 
 ## Listing activities
 

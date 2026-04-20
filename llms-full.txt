@@ -155,7 +155,10 @@ Create an activity (type, duration_min required; intensity_level, thermal_stress
 List activities (filterable by date range and type).
 
 ### POST /v1/athletes/{id}/activities/{activityId}/prescription
-Calculate prescription for this activity.
+Calculate prescription for this activity. Response: prescription object.
+
+### GET /v1/athletes/{id}/activities/{activityId}/prescription
+Get the most recently calculated prescription. Response is wrapped with safety metadata: { "prescription": { ... }, "safety": { "max_safe_fluid_ml_per_hr": 1801, "max_safe_sodium_mg_per_hr": 5000, "confidence_score": 0.0-1.0, "not_instructions": true, "warnings": [...] } }.
 
 ### POST /v1/athletes/{id}/activities/{activityId}/feedback
 Submit post-activity feedback (gi_comfort, energy_level, hydration_feel, actual_intake).
