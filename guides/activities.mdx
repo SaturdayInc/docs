@@ -101,7 +101,7 @@ Saturday calculates prescriptions tailored to the activity type — you fuel dif
 ## Calculating a prescription
 
 ```bash
-POST /v1/athletes/{athlete_id}/activities/{activity_id}/prescription
+POST /v1/athletes/{athlete_id}/activities/{activity_id}/calculate
 ```
 
 This uses the activity's parameters and the athlete's profile to generate a personalized prescription. Recalculating overwrites the previous prescription — use this when activity parameters change (e.g., updated weather forecast).
@@ -168,15 +168,8 @@ response = requests.post(
     "https://api.saturday.fit/v1/athletes/ath_abc123/activities/act_xyz789/feedback",
     headers={"Authorization": "Bearer sk_test_abc123def456"},
     json={
-        "gi_comfort": "good",
-        "energy_level": "adequate",
-        "hydration_feel": "slightly_dehydrated",
+        "rating": 4,
         "notes": "Felt good until mile 18, then energy dropped",
-        "actual_intake": {
-            "carbs_grams": 100,
-            "fluid_ml": 900,
-            "sodium_mg": 800,
-        },
     },
 )
 ```
@@ -191,15 +184,8 @@ const response = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      gi_comfort: "good",
-      energy_level: "adequate",
-      hydration_feel: "slightly_dehydrated",
+      rating: 4,
       notes: "Felt good until mile 18, then energy dropped",
-      actual_intake: {
-        carbs_grams: 100,
-        fluid_ml: 900,
-        sodium_mg: 800,
-      },
     }),
   }
 );
@@ -209,12 +195,10 @@ const response = await fetch(
 
 ### Feedback fields
 
-| Field | Values | Description |
-|-------|--------|-------------|
-| `gi_comfort` | `excellent`, `good`, `fair`, `poor` | GI comfort during activity |
-| `energy_level` | `surplus`, `adequate`, `low`, `bonked` | Energy levels throughout |
-| `hydration_feel` | `over_hydrated`, `well_hydrated`, `slightly_dehydrated`, `dehydrated` | Perceived hydration |
-| `actual_intake` | object | What the athlete actually consumed |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `rating` | integer | Yes | Overall prescription quality, 1 (poor) to 5 (excellent) |
+| `notes` | string | No | Free-text feedback on how the fueling went |
 
 <Tip>
   Feedback is the single most valuable signal for improving future prescriptions. The more activities with feedback, the more personalized Saturday becomes. Encourage athletes to submit feedback — even simple ratings help.
@@ -225,7 +209,7 @@ const response = await fetch(
 If your platform has activity metadata but not a clean type, Saturday can infer it:
 
 ```bash
-POST /v1/inference/activity-type
+POST /v1/infer/activity-type
 ```
 
 ```json
@@ -245,4 +229,4 @@ Response:
 }
 ```
 
-For multi-sport titles like "Bike/run brick", use `POST /v1/inference/activity-type/brick`.
+For multi-sport titles like "Bike/run brick", use `POST /v1/infer/brick-types`.

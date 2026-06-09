@@ -41,11 +41,15 @@ Every error response follows this structure:
 | `authentication_error` | 401 | Invalid, expired, or missing API key |
 | `authorization_error` | 403 | Valid key but insufficient permissions |
 | `invalid_request` | 400 | Request is malformed or missing required fields |
-| `resource_not_found` | 404 | The requested resource doesn't exist |
+| `not_found_error` | 404 | The requested resource doesn't exist |
 | `conflict` | 409 | Request conflicts with current state |
-| `rate_limit_exceeded` | 429 | Too many requests |
+| `rate_limit_error` | 429 | Too many requests |
 | `safety_limit` | 422 | Calculation would violate safety guardrails |
 | `api_error` | 500 | Something went wrong on Saturday's end |
+
+<Note>
+  **Branch on `type`, not `code`.** For a 404 the `type` is `not_found_error` while the more specific `code` is `resource_not_found`; for a 429 the `type` is `rate_limit_error` while the `code` is `rate_limit_exceeded`. If you switch on `error.type`, use the values in the table above.
+</Note>
 
 ## Retry logic
 
@@ -54,8 +58,8 @@ Every error response follows this structure:
 | `authentication_error` | No | Fix credentials |
 | `authorization_error` | No | Fix permissions |
 | `invalid_request` | No | Fix the request |
-| `resource_not_found` | No | Fix the resource ID |
-| `rate_limit_exceeded` | Yes | Wait for `Retry-After` header |
+| `not_found_error` | No | Fix the resource ID |
+| `rate_limit_error` | Yes | Wait for `Retry-After` header |
 | `safety_limit` | No | Review and adjust parameters |
 | `api_error` | Yes | Exponential backoff |
 

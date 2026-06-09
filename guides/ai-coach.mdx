@@ -207,7 +207,7 @@ response = requests.get(
     headers={"Authorization": "Bearer sk_test_abc123def456"},
 )
 
-messages = response.json()["data"]
+messages = response.json()["messages"]
 for msg in messages:
     print(f"[{msg['role']}] {msg['content']}")
 ```
@@ -220,7 +220,7 @@ const response = await fetch(
   }
 );
 
-const { data: messages } = await response.json();
+const { messages } = await response.json();
 messages.forEach((msg: any) => console.log(`[${msg.role}] ${msg.content}`));
 ```
 

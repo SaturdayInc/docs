@@ -126,11 +126,11 @@ import Saturday from "@saturdayinc/sdk";
 const client = new Saturday({ apiKey: "sk_test_abc123def456" });
 
 const result = await client.nutrition.calculate({
-  activityType: "run",
-  durationMin: 90,
-  intensityLevel: 5,
-  athleteWeightKg: 70,
-  thermalStressLevel: 6,
+  activity_type: "run",
+  duration_min: 90,
+  intensity_level: 5,
+  athlete_weight_kg: 70,
+  thermal_stress_level: 6,
 });
 
 console.log(result);

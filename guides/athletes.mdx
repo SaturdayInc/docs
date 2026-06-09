@@ -174,10 +174,10 @@ Returns a JSON file containing the athlete's complete profile, all activities, p
 
 ## Settings schema
 
-Fetch the settings schema to build dynamic forms:
+Fetch the global settings schema to build dynamic forms:
 
 ```bash
-GET /v1/athletes/{id}/settings/schema
+GET /v1/settings/schema
 ```
 
-Returns field definitions with valid ranges, descriptions, and validation rules — useful for building settings UIs without hardcoding Saturday's requirements.
+Returns field definitions with valid ranges, descriptions, and validation rules — useful for building settings UIs without hardcoding Saturday's requirements. This is a global, public schema (the same for every athlete); fetch an individual athlete's current values with `GET /v1/athletes/{id}/settings`.
