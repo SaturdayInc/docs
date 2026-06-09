@@ -27,9 +27,20 @@ MCP is ideal when your platform uses AI agents that need to dynamically decide w
 
 ## Connecting to Saturday's MCP server
 
-### Server configuration
+There are two ways to reach Saturday's MCP server, depending on who you are:
 
-Add Saturday to your MCP client configuration:
+| You are | Auth | What you get |
+|---------|------|--------------|
+| A **partner** (e.g. an AI platform) | `sk_*` partner key | Your partner-scoped tools over your own `partners/{id}` athletes |
+| A **person** (athlete or coach) | "Sign in with Saturday" OAuth via the [Claude connector](/guides/coach-connector) | Your own data (athlete) and, for coaches, your roster + config |
+
+<Note>
+  **End users connect via the Claude connector, not an API key.** If you're an individual athlete or coach connecting your own Saturday account to Claude, see the [Claude Connector guide](/guides/coach-connector) — you paste `https://api.saturday.fit/mcp` into Claude and sign in; no API key needed. The configuration below is for **partners** integrating their platform with a partner API key.
+</Note>
+
+### Server configuration (partners)
+
+Add Saturday to your MCP client configuration with your partner API key:
 
 ```json
 {
@@ -44,6 +55,8 @@ Add Saturday to your MCP client configuration:
   }
 }
 ```
+
+The server speaks the MCP **Streamable HTTP** transport and protocol revision **2025-11-25** (negotiating down to older revisions a client offers).
 
 ### Available tools
 
@@ -60,7 +73,11 @@ When your agent connects, it discovers tools including:
 | `infer_activity_type` | Infer activity type from metadata |
 | `search_knowledge` | Search Saturday's sports nutrition knowledge base |
 
-Each tool includes rich descriptions, input schemas, and output schemas that help AI agents use them correctly.
+Each tool includes rich descriptions, structured input schemas, and tool annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`) that help AI agents use them correctly.
+
+<Note>
+  **Coach tools.** When a **coach** (Pro-Coach tier or higher) connects via the [Claude connector](/guides/coach-connector), an additional set of roster + configuration tools lights up — `get_roster`, `get_roster_digest`, `get_athlete_fueling_rollup`, `get_athlete_report`, `get_session_detail`, `set_notification_rules`, `apply_alert_preset`, `set_report_settings`, `register_webhook`, and more. These are invisible to athlete-only users and to other partners. See the [Claude Connector guide](/guides/coach-connector) for the full coach tool catalog and the [Coach API](/guides/coach-api) for the equivalent REST surface.
+</Note>
 
 ## Example: Claude agent with Saturday MCP
 

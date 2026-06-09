@@ -1,0 +1,101 @@
+---
+title: 'Claude Connector'
+description: 'Connect Saturday to Claude — one connector, athlete and coach tools'
+sidebarTitle: 'Claude Connector'
+icon: 'plug'
+---
+
+# Saturday Claude Connector
+
+Saturday ships a **remote MCP connector** for [Claude](https://claude.ai). One connector, one URL, one directory listing — the tools that light up depend on **who signs in**:
+
+- An **athlete** (any active Saturday subscriber) gets self-tools over their own data.
+- A **coach** (Pro-Coach tier or higher) *additionally* gets roster + config tools.
+
+A coach is also an athlete, so a coach sees both tool sets. An athlete-only subscriber never sees the coach tools.
+
+## Connect
+
+In Claude, add a custom connector pointing at:
+
+```
+https://api.saturday.fit/mcp
+```
+
+Claude auto-discovers Saturday's authorization server (RFC 9728 / RFC 8414 discovery), walks you through **"Sign in with Saturday,"** and shows a branded consent screen. A coach granting access sees an explicit disclosure that Claude will be able to read their athletes' fueling data and manage their alert settings.
+
+<Note>
+  **Subscriber wall.** Only an active Saturday subscriber can complete the connect flow. A non-subscriber sees a clean "subscription required" page with no account side-effects. A lapsed subscriber loses access within ~1 hour (on the next token refresh).
+</Note>
+
+### Transport & protocol
+
+The connector speaks the MCP **Streamable HTTP** transport (`POST /mcp`) and protocol revision **2025-11-25** (it negotiates down to older revisions a client offers). Tokens are bound to the connector resource (`https://api.saturday.fit/mcp`) via [RFC 8707](/guides/oauth2#resource-indicators-rfc-8707) audience binding — a token minted for Saturday can only be used against Saturday.
+
+## Athlete tools
+
+When an athlete connects, Claude can read and (carefully) write their own Saturday data. Athlete tools operate strictly on the signed-in athlete — there is no athlete selector. The full catalog is in [MCP Integration](/guides/mcp-integration#tool-catalog); highlights:
+
+- `get_athlete`, `update_athlete` — read/update their own profile.
+- `list_activities`, `get_activity`, `create_activity` — manage their own activities.
+- `calculate_activity_prescription`, `get_activity_prescription` — Saturday's engine computes the prescription (it is never writable by hand).
+- `calculate_nutrition`, `search_products`, `analyze_product_fit`, `get_athlete_insights`, `search_knowledge`.
+
+<Warning>
+  Prescriptions come only from Saturday's calculator engine. The connector can request a calculation but can never write prescription numbers — the same safety invariant as the [partner API](/guides/safety).
+</Warning>
+
+## Coach tools
+
+A Pro-Coach+ coach additionally sees the tools below. Every athlete argument is confined to the coach's roster (a non-roster athlete returns "resource not found"). These mirror the [Coach REST API](/guides/coach-api) one-to-one.
+
+### Read tools
+
+| Tool | Args | Returns |
+|------|------|---------|
+| `get_roster` | `window?` | the roster + per-athlete needs-attention markers |
+| `get_roster_digest` | `window?` | flagged-only digest, most-flagged first |
+| `get_athlete_fueling_rollup` | `athlete_id`, `window?`, `focus?` | in-window sessions + concern summary + resolved cutoffs |
+| `get_athlete_report` | `athlete_id`, `window?`, `focus?`, `refresh?` | narrative + structured report |
+| `get_session_detail` | `athlete_id`, `activity_id` | one session's full projection + markers |
+
+`window` is one of `7`, `14`, `30`; `focus` is `worst`, `rolling`, or `key`.
+
+### Config tools
+
+| Tool | Args | Behavior |
+|------|------|----------|
+| `get_notification_rules` | `scope?`, `scope_id?` | read the rules at one scope |
+| `set_notification_rules` | `rules`, `scope?`, `scope_id?` | **replace** the rules at a scope (idempotent upsert) |
+| `apply_alert_preset` | `preset`, `scope?`, `scope_id?` | apply `hands_off` / `balanced` / `hands_on` |
+| `get_report_settings` | `scope?`, `scope_id?` | read AI-report + concern settings |
+| `set_report_settings` | `settings`, `scope?`, `scope_id?` | upsert report window/focus + concern cutoffs |
+| `list_webhooks` | — | list webhook endpoints (no secrets) |
+| `register_webhook` | `url`, `events?` | register an endpoint; returns the signing secret once |
+| `delete_webhook` | `webhook_id` | delete an endpoint |
+
+`scope` is `overall` (whole roster), `group` (a coach group), or `athlete` (one athlete) — most-specific wins. `scope_id` is required for `group`/`athlete`.
+
+Config writes are **idempotent by design** — `set_notification_rules` replaces the rule set at a scope, so re-running the same call is a no-op. This is why the MCP path needs no idempotency key.
+
+## The headline use case
+
+The connector is primarily a **configuration surface**, not just a read surface. A coach can describe their monitoring philosophy in plain English and let Claude configure the whole roster:
+
+> *"Only ping me when sodium is under 60% on long rides for my elite group; bundle everyone else into a Friday digest, and POST concern alerts to my system."*
+
+Claude translates that into:
+
+1. `apply_alert_preset` `{ scope: "overall", preset: "balanced" }` — a calm baseline for everyone.
+2. `set_notification_rules` `{ scope: "group", scope_id: "grp_elite", rules: { notification_rules: { under_fuel: { enabled: true, urgent_threshold: 0.6, channels: ["webhook"], cadence: "realtime" } } } }`.
+3. `register_webhook` `{ url: "https://my-system.example.com/saturday" }` — and store the returned secret.
+
+## Lapsed coach
+
+If a coach's tier lapses mid-session, the coach tools quietly disappear on the next entitlement check — but the athlete self-tools remain (they're still a subscriber). No error, no broken state: a clean degrade to "just my own data." Webhook deliveries to an unentitled coach stop.
+
+## See also
+
+- [Coach API](/guides/coach-api) — the REST surface these tools mirror.
+- [OAuth2](/guides/oauth2) — the connector sign-in flow, coach scopes, and RFC 8707 audience binding.
+- [MCP Integration](/guides/mcp-integration) — the full tool catalog and partner-key MCP usage.
