@@ -105,7 +105,7 @@ https://api.saturday.fit/v1/oauth/authorize?
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `client_id` | Yes | Your partner ID |
+| `client_id` | Yes | Your partner ID, or your [Client ID Metadata Document URL](#client-registration) |
 | `redirect_uri` | Yes | Must match a registered redirect URI |
 | `response_type` | Yes | Always `code` |
 | `scope` | Yes | Space-separated list of requested scopes |
@@ -255,6 +255,40 @@ A coach (Pro-Coach tier or higher) can additionally request coach scopes. These 
 When coach scopes are requested, the consent screen discloses that the app will be able to read the coach's athletes' fueling data and manage the coach's alert settings.
 
 Request only the scopes you need. Athletes are more likely to consent when the request is minimal.
+
+## Client registration
+
+Saturday supports two registration mechanisms:
+
+| Mechanism | When to use | How |
+|-----------|------------|-----|
+| **Client ID Metadata Documents (CIMD)** | MCP hosts and any client that controls an HTTPS origin — **no registration step at all** | Use the URL of your hosted metadata document as your `client_id` |
+| **Pre-registered clients** | Server-to-server partners with a standing relationship | Contact [api-support@saturday.fit](mailto:api-support@saturday.fit) for a `client_id` |
+
+### Client ID Metadata Documents
+
+CIMD is the [MCP 2025-11-25 spec's preferred registration mechanism](https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization) ([draft-ietf-oauth-client-id-metadata-document](https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/)). Instead of registering, host a JSON document describing your client at a stable HTTPS URL on a domain you control, and pass that URL as your `client_id`:
+
+```json
+{
+  "client_id": "https://your-app.com/oauth/client-metadata.json",
+  "client_name": "Your App",
+  "redirect_uris": ["https://your-app.com/callback"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none"
+}
+```
+
+Saturday fetches, validates, and caches the document when it first sees your `client_id`. Requirements:
+
+- The URL must be `https`, contain a path, and carry no fragment or userinfo.
+- The document's `client_id` field must **exactly match** the document URL.
+- `redirect_uris` must be `https` URLs or loopback (`http://localhost` / `http://127.0.0.1`) URIs. Loopback URIs match on any port (RFC 8252).
+- CIMD clients are **public clients**: `token_endpoint_auth_method` must be `none` (or absent), and PKCE is mandatory. Confidential CIMD clients (`private_key_jwt`) are not supported.
+- Documents are cached per their `Cache-Control` headers (clamped between 5 minutes and 24 hours), so metadata changes propagate within that window.
+
+Saturday advertises support via `"client_id_metadata_document_supported": true` in its Authorization Server Metadata — spec-compliant MCP clients (including Claude) select CIMD automatically.
 
 ## Discovery (remote MCP connectors)
 
