@@ -134,33 +134,13 @@ The `safety.confidence_score` (0.0-1.0) indicates how personalized the prescript
 | 0.5-0.8 | Good estimates with some personalization | Weight + intensity + thermal stress |
 | 0.0-0.5 | Population-level defaults applied | Minimal inputs (type + duration + weight) |
 
-## Comparing scenarios
+## Comparing across conditions
 
-Compare prescriptions across different conditions — ideal for race-day planning UIs:
+To compare fueling across different conditions (e.g. a cool morning vs. a hot afternoon), call `POST /v1/nutrition/calculate` once per scenario and diff the results yourself, or use `POST /v1/nutrition/calculate/batch` to submit up to 50 scenarios in a single request.
 
-```bash
-POST /v1/nutrition/calculate/compare
-```
-
-```json
-{
-  "athlete_id": "ath_abc123",
-  "activity_type": "run",
-  "duration_min": 240,
-  "intensity_level": 8,
-  "is_race": true,
-  "scenarios": [
-    {
-      "label": "Cool morning",
-      "thermal_stress_level": 3
-    },
-    {
-      "label": "Hot afternoon",
-      "thermal_stress_level": 8
-    }
-  ]
-}
-```
+<Note>
+  **Two prescription shapes.** The `calculate` endpoints return a **flat** response (`carb_g_per_hr`, `sodium_mg_per_hr`, … with a nested `safety` block). The stored-prescription read (`GET /v1/athletes/{id}/activities/{id}/prescription`) returns a **wrapped** response: `{ "prescription": { … }, "safety": { … } }`. Read the fields accordingly depending on which endpoint you called.
+</Note>
 
 ## Teaser vs. full responses
 

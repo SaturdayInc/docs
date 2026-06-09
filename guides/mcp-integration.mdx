@@ -35,7 +35,7 @@ Add Saturday to your MCP client configuration:
 {
   "mcpServers": {
     "saturday": {
-      "url": "https://api.saturday.fit/v1/mcp",
+      "url": "https://api.saturday.fit/mcp",
       "transport": "streamable-http",
       "headers": {
         "Authorization": "Bearer sk_test_abc123def456"
@@ -52,11 +52,11 @@ When your agent connects, it discovers tools including:
 | Tool | Description |
 |------|-------------|
 | `calculate_nutrition` | Calculate fuel/hydration/electrolyte prescription for an activity |
-| `compare_scenarios` | Compare prescriptions across different conditions |
 | `search_products` | Search the curated nutrition product database |
-| `get_athlete_profile` | Retrieve an athlete's profile and settings |
+| `get_athlete` | Retrieve an athlete's profile and settings |
 | `create_activity` | Create an activity for an athlete |
-| `get_prescription` | Get the prescription for an existing activity |
+| `calculate_activity_prescription` | Calculate the prescription for an existing activity |
+| `get_activity_prescription` | Get the stored prescription for an activity |
 | `infer_activity_type` | Infer activity type from metadata |
 | `search_knowledge` | Search Saturday's sports nutrition knowledge base |
 
@@ -104,7 +104,7 @@ from mcp import ClientSession, StdioServerParameters
 async with ClientSession(
     StdioServerParameters(
         command="npx",
-        args=["mcp-remote", "https://api.saturday.fit/v1/mcp"],
+        args=["mcp-remote", "https://api.saturday.fit/mcp"],
         env={"SATURDAY_API_KEY": "sk_test_abc123def456"},
     )
 ) as session:
@@ -134,7 +134,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 const client = new Client({ name: "my-agent", version: "1.0" });
 
 const transport = new StreamableHTTPClientTransport(
-  new URL("https://api.saturday.fit/v1/mcp"),
+  new URL("https://api.saturday.fit/mcp"),
   {
     requestInit: {
       headers: {

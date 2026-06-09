@@ -16,11 +16,11 @@ Authorization: Bearer sk_test_abc123def456
 
 - POST /v1/nutrition/calculate — Calculate fuel/hydration/electrolyte prescription
 - POST /v1/nutrition/calculate/batch — Batch calculate for multiple scenarios
-- POST /v1/nutrition/calculate/compare — Compare prescriptions across conditions
+- POST /v1/nutrition/products/compare — Compare products against a prescription
 - POST /v1/athletes — Create an athlete profile
 - GET /v1/athletes — List partner's athletes
 - POST /v1/athletes/{id}/activities — Create an activity
-- POST /v1/athletes/{id}/activities/{activityId}/prescription — Calculate prescription
+- POST /v1/athletes/{id}/activities/{activityId}/calculate — Calculate prescription
 - POST /v1/ai/conversations — Start AI coaching conversation (SSE streaming)
 - POST /v1/webhooks — Register webhook for real-time events
 
@@ -36,5 +36,5 @@ The API is free for partners. Subscribed athletes get exact numbers; free athlet
 
 - Full docs: https://api.saturday.fit
 - OpenAPI spec: https://api.saturday.fit/openapi.yaml
-- MCP server: https://api.saturday.fit/v1/mcp
+- MCP server: https://api.saturday.fit/mcp
 - Full LLM context: https://api.saturday.fit/llms-full.txt
