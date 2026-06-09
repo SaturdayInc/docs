@@ -241,7 +241,47 @@ const newTokens = await response.json();
 | `nutrition:read` | Calculate nutrition prescriptions |
 | `ai:chat` | AI Coach conversations |
 
+### Coach scopes
+
+A coach (Pro-Coach tier or higher) can additionally request coach scopes. These unlock the [Coach API](/guides/coach-api) and the coach tools in the [Claude connector](/guides/coach-connector). A coach's OAuth token also carries the athlete-self facet — the same token reads the coach's own athlete data on `/v1/athletes/*` and their roster on `/v1/coach/*`; the route decides which applies.
+
+| Scope | Access granted |
+|-------|---------------|
+| `coach:roster` | View the coach's athlete roster and per-athlete needs-attention markers |
+| `coach:reports` | Read roster athletes' fueling rollups, AI reports, and the roster digest |
+| `coach:alerts` | Create and manage the coach's **own** alert rules and report settings |
+| `coach:webhooks` | Register and manage the coach's **own** concern webhooks |
+
+When coach scopes are requested, the consent screen discloses that the app will be able to read the coach's athletes' fueling data and manage the coach's alert settings.
+
 Request only the scopes you need. Athletes are more likely to consent when the request is minimal.
+
+## Discovery (remote MCP connectors)
+
+For the [Claude connector](/guides/coach-connector), clients auto-discover the authorization server — no manual configuration. Saturday serves the standard metadata documents (derived per-environment from the request host):
+
+| Document | Path | Spec |
+|----------|------|------|
+| Protected Resource Metadata | `/.well-known/oauth-protected-resource[/mcp]` | RFC 9728 |
+| Authorization Server Metadata | `/.well-known/oauth-authorization-server[/mcp]` | RFC 8414 |
+
+An unauthenticated request to `/mcp` returns `401` with a `WWW-Authenticate: Bearer resource_metadata="…"` header pointing at the discovery document, which bootstraps the OAuth handshake. The connector is a **public client** (PKCE, no client secret) and may use **loopback redirects** (`http://127.0.0.1:<any-port>`, RFC 8252) for local CLIs such as Claude Code.
+
+## Resource indicators (RFC 8707)
+
+Saturday implements [RFC 8707 Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html) — token audience binding, as required by the MCP authorization spec. A client names the resource it intends to use the token with via the `resource` parameter on the authorize **and** token requests, using the **canonical MCP server URI**:
+
+```
+resource=https://api.saturday.fit/mcp
+```
+
+When a `resource` is supplied, Saturday binds it into the access token's `aud` claim, and the MCP endpoint rejects any token whose audience was issued for a different resource. A token minted for Saturday can only be used against Saturday — it cannot be replayed elsewhere.
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `resource` | Recommended | Canonical URI of the MCP server (`https://api.saturday.fit/mcp`). The MCP 2025-11-25 spec has clients always send it; older clients may omit it. |
+
+A `resource` that is malformed (not an absolute URI, or carries a fragment) or names a resource this server does not serve is rejected with `invalid_target`. On refresh, a `resource` may match the originally-granted resource but cannot retarget the token.
 
 ## Error scenarios
 
@@ -253,7 +293,9 @@ Request only the scopes you need. Athletes are more likely to consent when the r
 | Expired auth code (>10 min) | 400 + "Authorization code has expired" |
 | Reused auth code | 400 + all tokens revoked |
 | Wrong `code_verifier` | 400 + "PKCE verification failed" |
+| Invalid / foreign `resource` | 400 + `invalid_target` |
 | Expired access token | 401 + "access token has expired" |
+| Token used against the wrong resource | 401 + "not issued for this resource" |
 | Revoked refresh token | 400 + "refresh token has been revoked" |
 
 ## Revoking tokens

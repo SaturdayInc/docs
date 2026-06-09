@@ -6,14 +6,15 @@ sidebarTitle: 'Authentication'
 
 # Authentication
 
-Saturday supports two authentication methods depending on your use case:
+Saturday supports three authentication methods depending on your use case:
 
 | Method | Use case | How it works |
 |--------|----------|--------------|
-| **API Key** | Server-to-server integration | Bearer token in Authorization header |
-| **OAuth2** | Athlete-delegated access | Authorization code flow with PKCE |
+| **Partner API Key** | Server-to-server partner integration | `sk_*` Bearer token in Authorization header |
+| **Coach API Key** | A coach's own scripts/automation against their roster | `cp_*` Bearer token in Authorization header |
+| **OAuth2** | Athlete- or coach-delegated access (incl. the Claude connector) | Authorization code flow with PKCE |
 
-Most integrations start with API keys. Add OAuth2 when you need athletes to connect their existing Saturday accounts.
+Most partner integrations start with API keys. Add OAuth2 when you need athletes (or coaches) to connect their existing Saturday accounts. Coaches automating against their own roster use a coach API key — see the [Coach API](/guides/coach-api).
 
 ## API keys
 
@@ -25,8 +26,12 @@ Saturday uses prefixed API keys to prevent environment mistakes:
 
 | Prefix | Environment | Purpose |
 |--------|-------------|---------|
-| `sk_test_` | Sandbox | Development and testing. Returns realistic data, no rate limit pressure. |
-| `sk_live_` | Production | Real athlete data. Standard rate limits apply. |
+| `sk_test_` | Sandbox | Partner key — development and testing. Returns realistic data, no rate limit pressure. |
+| `sk_live_` | Production | Partner key — real athlete data. Standard rate limits apply. |
+| `cp_test_` | Sandbox | Coach key — a coach's roster surface (`/v1/coach/*`) in test. |
+| `cp_live_` | Production | Coach key — a coach's roster surface in production. Requires the Pro-Coach tier or higher. |
+
+Coach keys (`cp_*`) are minted in the [coach portal](https://coach.saturday.fit) under **Settings → API Keys**, not via `api@saturday.fit`. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster + own config.
 
 ```bash
 # Sandbox

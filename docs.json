@@ -49,6 +49,13 @@
             ]
           },
           {
+            "group": "Coach API",
+            "pages": [
+              "guides/coach-api",
+              "guides/coach-connector"
+            ]
+          },
+          {
             "group": "Platform",
             "pages": [
               "guides/feature-gates",
