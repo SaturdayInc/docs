@@ -142,6 +142,18 @@ To compare fueling across different conditions (e.g. a cool morning vs. a hot af
   **Two prescription shapes.** The `calculate` endpoints return a **flat** response (`carb_g_per_hr`, `sodium_mg_per_hr`, … with a nested `safety` block). The stored-prescription read (`GET /v1/athletes/{id}/activities/{id}/prescription`) returns a **wrapped** response: `{ "prescription": { … }, "safety": { … } }`. Read the fields accordingly depending on which endpoint you called.
 </Note>
 
+## Calculation timing
+
+Running the calculator is a deliberate computation window, not an instant lookup — the same processing experience athletes see in the Saturday app:
+
+- **Single calculation** (`POST /v1/nutrition/calculate`, `POST .../activities/{id}/calculate`): expect roughly **1–3 seconds**, scaling gently with activity duration. Recalculating an activity that already has a prescription takes about half that.
+- **Batch** (`POST /v1/nutrition/calculate/batch`): each scenario adds roughly half a single calculation's time. The response headers arrive immediately with `X-Batch-Estimated-Ms` — the expected total processing time — so you can size progress indicators before the body lands. The completed body includes `estimated_ms` and `elapsed_ms`.
+- **Reads are instant.** Fetching a stored prescription (`GET .../prescription`) never carries a computation window.
+
+<Tip>
+  **Show a progress indicator during calculation.** Athletes trust a prescription more when they see it being computed. Use the calculation window to display a "calculating fueling plan…" state rather than a spinner-free freeze.
+</Tip>
+
 ## Teaser vs. full responses
 
 Responses depend on the athlete's Saturday subscription status:
