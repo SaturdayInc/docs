@@ -148,6 +148,7 @@ Running the calculator is a deliberate computation window, not an instant lookup
 
 - **Single calculation** (`POST /v1/nutrition/calculate`, `POST .../activities/{id}/calculate`): expect roughly **1–3 seconds**, scaling gently with activity duration. Recalculating an activity that already has a prescription takes about half that.
 - **Batch** (`POST /v1/nutrition/calculate/batch`): each scenario adds roughly half a single calculation's time. The response headers arrive immediately with `X-Batch-Estimated-Ms` — the expected total processing time — so you can size progress indicators before the body lands. The completed body includes `estimated_ms` and `elapsed_ms`.
+- **Estimate without calculating:** send the same batch payload with `"estimate_only": true` to get `estimated_ms` back instantly, with no calculations run. Useful when your HTTP client can't read streamed headers early.
 - **Reads are instant.** Fetching a stored prescription (`GET .../prescription`) never carries a computation window.
 
 <Tip>
