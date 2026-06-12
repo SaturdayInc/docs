@@ -21,6 +21,7 @@
             "group": "Getting Started",
             "pages": [
               "introduction",
+              "access",
               "quickstart",
               "authentication",
               "error-handling",
@@ -77,13 +78,34 @@
     }
   },
   "redirects": [
-    { "source": "/errors", "destination": "/error-handling" },
-    { "source": "/errors/:code", "destination": "/error-handling" },
-    { "source": "/api-reference", "destination": "/guides/nutrition-calculation" },
-    { "source": "/docs/errors", "destination": "/error-handling" },
-    { "source": "/docs/authentication", "destination": "/authentication" },
-    { "source": "/docs/rate-limiting", "destination": "/rate-limiting" },
-    { "source": "/docs/feature-gates", "destination": "/guides/feature-gates" }
+    {
+      "source": "/errors",
+      "destination": "/error-handling"
+    },
+    {
+      "source": "/errors/:code",
+      "destination": "/error-handling"
+    },
+    {
+      "source": "/api-reference",
+      "destination": "/guides/nutrition-calculation"
+    },
+    {
+      "source": "/docs/errors",
+      "destination": "/error-handling"
+    },
+    {
+      "source": "/docs/authentication",
+      "destination": "/authentication"
+    },
+    {
+      "source": "/docs/rate-limiting",
+      "destination": "/rate-limiting"
+    },
+    {
+      "source": "/docs/feature-gates",
+      "destination": "/guides/feature-gates"
+    }
   ],
   "navbar": {
     "links": [
@@ -105,7 +127,12 @@
     }
   },
   "contextual": {
-    "options": ["copy", "view", "claude", "cursor"]
+    "options": [
+      "copy",
+      "view",
+      "claude",
+      "cursor"
+    ]
   },
   "feedback": {
     "thumbsRating": true,
