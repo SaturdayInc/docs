@@ -109,6 +109,20 @@ Give Saturday a `return_url` (https or deep link) at partner onboarding and the 
 
 If you have a partner-negotiated offer with Saturday (e.g. member pricing for your annual subscribers), assert eligibility by setting `partner_plan: "annual"` on the athlete (`PATCH /v1/athletes/{id}`). Eligible athletes' CTAs carry the offer claim and checkout prices accordingly. You may advertise the offer anywhere; only asserted athletes can redeem it.
 
+### Organization (team) offers
+
+A coach or team on your platform can have a negotiated discount of their own. Record it on the organization (`PUT /v1/organizations/{org_id}/offer`) and assert each athlete's affiliation via `org_id` — see [Organizations → Organization offers](/guides/organizations#organization-offers-negotiated-discounts).
+
+### How discounts stack
+
+When an athlete qualifies for more than one discount source (a partner offer **and** an org offer), the percents combine **multiplicatively** and the total is **hard-capped at 30%**:
+
+```
+20% partner + 15% org → 1 − (0.80 × 0.85) = 32% → capped to 30%
+```
+
+Checkout collapses the stack into a single combined discount, and Saturday's subscribe landing page displays the stacked percent plus which sources contributed — athletes always see the exact number they'll pay, never a per-source figure that checkout won't honor.
+
 ## Testing the loop (test environment)
 
 The test environment has a zero-payment simulator so you can integration-test your webhook handlers and tier handling end to end:
