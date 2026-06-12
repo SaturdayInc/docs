@@ -10,14 +10,16 @@ This guide gets you from zero to a working nutrition calculation in under 5 minu
 
 ## 1. Get your API key
 
-Contact [api@saturday.fit](mailto:api@saturday.fit) to request a sandbox API key. Sandbox keys start with `sk_test_` and work against test data with no rate limit concerns.
+**Self-serve (most builders):** sign up at [saturday.fit/api](https://saturday.fit/api) — $5.39/month, no contract. Your key is revealed once after checkout and emailed to you. An AI agent can do this for you too: `POST /v1/signup` (no auth) returns a hosted checkout link. Not sure self-serve is your lane? See [Getting Access](/access).
+
+**Platform partners:** keys come with your agreement — contact [api@saturday.fit](mailto:api@saturday.fit). Partner sandbox keys start with `sk_test_` and work against test data with no rate limit concerns.
 
 ```
-sk_test_abc123def456...
+sk_live_abc123def456...
 ```
 
 <Note>
-  Sandbox keys return realistic data but never affect production athletes. Use them freely during development.
+  Treat your key like a password — it authenticates every request and spends your daily call allowance.
 </Note>
 
 ## 2. Make your first calculation

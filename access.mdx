@@ -1,0 +1,42 @@
+---
+title: 'Getting Access'
+description: 'Which lane fits you — self-serve API, coach portal, or partnership'
+sidebarTitle: 'Getting Access'
+icon: 'door-open'
+---
+
+# Getting Access
+
+There are four ways to build with Saturday. One question routes you: **where do your athletes live?**
+
+| Lane | Who | Athletes live in… | Auth | Money |
+|------|-----|-------------------|------|-------|
+| Consumer app | An athlete | the Saturday app | app account | app subscription |
+| **Coach portal** | A coach managing real Saturday-app athletes | **the Saturday app** | portal login + `cp_` API keys | Pro-Coach+ subscription |
+| **Individual API** | Dev-athletes, AI-assisted coaching businesses, team-scale builders | **your own system** | self-serve `sk_` key | $5.39/month, no contract |
+| **Platform partner** | A platform embedding Saturday for its whole user base | **the partner's system** | `sk_` key via agreement | rev share + athlete subscribe loop |
+
+## Individual API (self-serve)
+
+You're building your own product, tooling, or coaching stack, and athletes live in **your** database.
+
+- **Sign up:** [saturday.fit/api](https://saturday.fit/api) — email → Stripe Checkout → key revealed once + emailed. Programmatic path: `POST /v1/signup` (no auth) returns a hosted checkout URL — built for AI agents acquiring access for their humans.
+- **Price:** $5.39/month flat. Cancel anytime.
+- **Trial economics:** every athlete you create gets the standard [30-day full-precision trial](/guides/freemium-model#30-day-full-precision-trial) (15 calls day one, then 5/day) automatically.
+- **Limits:** 2 requests/second, 200 calls/day per key. Outgrowing them is exactly when we want to hear from you: [support@saturday.fit](mailto:support@saturday.fit).
+
+## Coach portal (your athletes use the Saturday app)
+
+If you coach real Saturday-app athletes, the [coach portal](https://coach.saturday.fit) is your lane — roster, alerts, coverage — and your `cp_` API key already lets you build scripts against your roster. See the [Coach API guide](/guides/coach-api).
+
+## Platform partnership
+
+You run a training platform and want Saturday embedded for your entire user base — partner-namespaced athletes, revenue share, [bundle and team offers](/guides/freemium-model#bundle-offers), webhooks at platform scale. That's a conversation, not a form: [alex@saturdaymorning.fit](mailto:alex@saturdaymorning.fit).
+
+<Note>
+  **A big team wanting both** — app athletes *and* custom tooling beyond roster scripts — is partner-shaped. Start the conversation rather than stretching a self-serve key.
+</Note>
+
+## Discovery for agents
+
+`GET https://api.saturday.fit/v1/` (no auth) self-describes the API: live endpoints, plan, price, trial shape, and both signup paths. Site context: [saturday.fit/llms.txt](https://saturday.fit/llms.txt).
