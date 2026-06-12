@@ -69,7 +69,7 @@ if (data.tier === "teaser") {
 
 ## 30-day full-precision trial
 
-Every athlete's first calculate request starts a **30-day trial of full-precision responses, capped at 5 calls per athlete per UTC day**. During the trial, full responses carry trial metadata so you can build countdown UX:
+Every athlete's first calculate request starts a **30-day trial of full-precision responses — 15 calls on the first UTC day (exploration allowance), then 5 calls per athlete per UTC day**. During the trial, full responses carry trial metadata so you can build countdown UX:
 
 ```json
 {
