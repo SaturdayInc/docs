@@ -105,7 +105,15 @@ You don't handle payment — Saturday manages the subscription. Two important de
 
 Give Saturday a `return_url` (https or deep link) at partner onboarding and the post-payment success page shows a "Back to your app" button — athletes land back in your product with full precision already flowing.
 
-### Bundle offers
+### Automatic linking by email
+
+Some paying Saturday athletes never touch your subscribe CTA — they subscribed **inside the Saturday app** (Apple/Google in-app purchase) or on saturday.fit before joining your platform. Saturday links these automatically: when the `email` you set on an athlete exactly matches a Saturday account's email (case-insensitive; no fuzzy matching), the records are linked and the athlete's API responses unlock.
+
+- **Opt in by supplying emails.** Set `email` on your athletes (`POST`/`PATCH /v1/athletes`). Matching runs when you write an athlete email, when a Saturday subscription activates, and in a nightly sweep.
+- **You get the same webhook.** When a match links an actively paying account, `subscription.created` fires with `source: "email_match"` — handle it exactly like a checkout unlock.
+- **Ambiguity never auto-links.** Multiple athletes sharing an email, or a conflict with an existing link, goes to Saturday-side human review instead.
+- **No revenue share on matched links.** These subscriptions weren't driven through your platform (many predate it), so they don't appear on your revenue statement.
+- **Only a tier boolean is released.** The match tells your platform the athlete's subscription tier — never payment details, purchase history, or Saturday profile data.
 
 If you have a partner-negotiated offer with Saturday (e.g. member pricing for your annual subscribers), assert eligibility by setting `partner_plan: "annual"` on the athlete (`PATCH /v1/athletes/{id}`). Eligible athletes' CTAs carry the offer claim and checkout prices accordingly. You may advertise the offer anywhere; only asserted athletes can redeem it.
 

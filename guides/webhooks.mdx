@@ -92,7 +92,7 @@ console.log(`Webhook secret: ${webhook.secret}`);
 }
 ```
 
-`source` values: `checkout_subscription`, `checkout_lifetime` (no `expires_at`), `existing_subscription_linked` (an already-subscribed Saturday account tapped your CTA — they were linked without being charged), `simulated` (test env only).
+`source` values: `checkout_subscription`, `checkout_lifetime` (no `expires_at`), `existing_subscription_linked` (an already-subscribed Saturday account tapped your CTA — they were linked without being charged), `email_match` (a paying Saturday account was linked to your athlete automatically by email — see [Freemium Model → Automatic linking by email](/guides/freemium-model#automatic-linking-by-email)), `simulated` (test env only).
 
 `subscription.cancelled` means the athlete's next calculate returns teaser ranges:
 
