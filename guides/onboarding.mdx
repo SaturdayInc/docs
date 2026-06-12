@@ -1,0 +1,76 @@
+---
+title: 'Athlete Onboarding'
+description: 'Four ways to collect an athlete fueling profile — and why exact numbers require it'
+sidebarTitle: 'Athlete Onboarding'
+icon: 'clipboard-check'
+---
+
+Saturday never serves exact-looking numbers computed from guesses. Every calculation response tells you exactly how complete the athlete's fueling profile is, what's missing, and how to fix it. This guide covers the precision model and the four ways an athlete's answers can reach Saturday.
+
+## The precision model
+
+Calculation responses carry a `precision` object on every tier:
+
+```json
+{
+  "tier": "full",
+  "carb_range_g_per_hr": "60-80",
+  "precision": {
+    "profile_complete": false,
+    "missing_fields": [
+      { "field": "sweat_level", "required": true,
+        "band_impact": { "carb_g_per_hr": 0.4, "sodium_mg_per_hr": 86.1, "fluid_ml_per_hr": 79.0 } }
+    ],
+    "message": "Exact numbers unavailable: critical fields missing (sweat_level). Each answer narrows this band.",
+    "onboarding": {
+      "url": "https://saturday.fit/onboard?ot=...",
+      "message": "Answer the missing questions once and this athlete gets exact numbers on every future call..."
+    }
+  }
+}
+```
+
+- **`profile_complete: true`** → the response carries exact numbers (`carb_g_per_hr` etc.).
+- **`profile_complete: false`** → the response carries honest **bands** (`carb_range_g_per_hr` etc.) — never wider than free-tier teaser ranges, never falsely exact. Band width is measured from our engine's real sensitivity to each missing field, so `missing_fields` is sorted most-impactful-first: it is literally your collection roadmap.
+- The 30-day trial clock starts at the athlete's **first narrower-than-full-wide calculation** — any real profile data starts it; zero-data calls never do. Collect the profile first and your athletes get 30 days of genuinely exact numbers.
+
+<Note>
+The required (safety-core) fields are: `sex`, `year_of_birth`/`age`, `weight_kg`, `sweat_level`, `saltiness`, `carb_experience`, `usual_carb_consumption`, plus per-call `duration_min`, `intensity_level`, and `thermal_stress_level`. Recommended fields (`satiety_level`, `fitness_level`, `concerns`, `meal_before_min`, `is_race`) narrow bands further — exactness requires everything.
+</Note>
+
+## Four ways to collect the profile
+
+### 1. Hosted onboarding page (recommended start)
+
+Every incomplete-profile response includes `precision.onboarding.url` — a durable, athlete-scoped link to Saturday's hosted onboarding page, co-branded with your platform. Send the athlete there (button, email, push — your call):
+
+- Asks **only the missing questions**, one per screen, ~2 minutes, mobile-first.
+- Each answer commits immediately — a half-finished session still narrows bands.
+- The finish screen asks the athlete's consent to show fuel for their most recent activity, then deep-links into **your** activity screen if you've registered an `activity_link_template` on your partner account (e.g. `yourapp://activity/{external_id}`) — otherwise it renders the numbers and returns via your `return_url`.
+- The link stays valid: athletes can revisit to edit answers.
+
+### 2. Your UI, our questions (headless)
+
+```bash
+GET /v1/onboarding/questions
+```
+
+Returns the versioned question schema — field names, types, the exact answer values Saturday stores (odd-point scales, not continuous sliders), copy, and which fields are required. Render natively in your app and write answers via [`PATCH /v1/athletes/{id}/settings`](/guides/athletes) or athlete create/update. **Attribution is required** when rendering our questions in your UI (the schema response carries the attribution object, same contract as calculations).
+
+Schema evolution promise: new questions always arrive as *recommended*, and athletes complete under a schema version keep exact numbers until they next edit their profile or 12 months pass — a schema change will never mass-downgrade your athletes.
+
+### 3. Saturday app (once, forever)
+
+If the athlete uses the Saturday app with the **same email address** they have on your platform, their full app onboarding silently powers their numbers on your platform too — live at calculation time, no sync. Their answers are used compute-only and are never exposed through the API; athletes can separately choose to share profile values with you from app settings.
+
+### 4. Pass fields inline
+
+Every calculate call accepts the full profile inline (`sweat_level`, `saltiness`, etc. — see [Nutrition Calculation](/guides/nutrition-calculation)). Inline values always win over stored ones. Good for stateless integrations; you carry the data.
+
+## Finding athletes to nudge
+
+```bash
+GET /v1/athletes?profile_complete=false
+```
+
+Lists athletes still short of exactness. Pair with the `athlete.profile_completed` [webhook](/guides/webhooks) — it fires exactly once when an athlete crosses into completeness, so you can celebrate in your UI the moment their numbers go exact.

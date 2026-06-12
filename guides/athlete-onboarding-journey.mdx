@@ -1,0 +1,59 @@
+---
+title: 'The Athlete Onboarding Journey'
+description: 'Narrative walkthrough of what an athlete sees and what your code should do, step by step'
+sidebarTitle: 'Onboarding Journey'
+icon: 'route'
+---
+
+This page is a **narrative** — written so a developer (or an AI assistant building your integration) can picture the whole athlete experience and know exactly what to implement at each beat. The reference details live in [Athlete Onboarding](/guides/onboarding); this is the story.
+
+## State machine
+
+An athlete on your platform is always in exactly one of these states:
+
+| State | What calculations return | What moves them forward |
+|---|---|---|
+| **No profile** | Widest honest bands + onboarding invite. Trial clock NOT started. | Any single answered field |
+| **Partial profile** | Narrower bands; `missing_fields` shows what's left, most-impactful first. Trial clock running. | More answers (any mechanism) |
+| **Complete, in trial** | Exact numbers, up to 30 days / capped daily calls | Subscribing via the teaser CTA |
+| **Complete, subscribed** | Exact numbers, always | — |
+| **Complete, trial expired** | Teaser ranges + subscribe CTA | Subscribing |
+
+## The journey, narrated
+
+**1. You create the athlete and run their first workout calculation.**
+You've synced an athlete from your database — maybe just their name and email. You call calculate for tomorrow's 2-hour ride. Saturday answers with a band ("60-80 g carbs/hr"), `profile_complete: false`, a sorted list of missing fields, and an `onboarding.url`. Nothing is broken — this is Saturday refusing to fake precision. The athlete's trial hasn't started, so nothing is being wasted either.
+
+*Your code:* show the band, and surface the onboarding invite — a button like "Get your exact numbers (2 min)" linking to `onboarding.url`.
+
+**2. The athlete taps the invite.**
+They land on a Saturday page co-branded with your platform ("YOURAPP × SATURDAY"), greeted by first name. The page says how many questions are left and offers two equal paths: answer right here, or get the free Saturday app (signing up with the same email they use on your platform, so the accounts connect). Either path works; the page is the faster first experience.
+
+*Your code:* nothing. The page only asks what's missing — anything you already sent (sex, weight…) is skipped automatically.
+
+**3. They answer one question per screen.**
+Sweat level, saltiness, carb experience… the same athlete-tested questions Saturday's own app asks, as simple tap-targets. Every answer saves instantly — if they bail at question 4, those 4 answers already narrowed their bands. The link keeps working; they can come back.
+
+**4. The finish moment.**
+On the last answer, the page asks: *"Can we show you fuel for one of your activities?"* If they say yes and you've registered `activity_link_template`, they deep-link straight into **your** activity screen — where your integration now displays exact Saturday numbers. If not, the page shows their most recent activity's exact targets and your `fueling_path_copy` ("In YourApp: open any activity → Fuel tab"), then returns them via your `return_url`.
+
+*Your code:* register `activity_link_template` and `fueling_path_copy` on your partner account (one-time setup) — it turns Saturday's finish screen into a hand-back into your product at its best moment.
+
+**5. The webhook fires.**
+`athlete.profile_completed` arrives exactly once. Their next calculation — and every one after — returns exact numbers. The 30-day trial is running; the teaser CTA handles conversion after that ([Freemium Model](/guides/freemium-model)).
+
+*Your code:* on that webhook, refresh any cached athlete state and consider an in-app moment: "Your fueling numbers are now exact."
+
+## The app path, narrated
+
+Some athletes already use (or will prefer) the Saturday app. When their app account email matches the email you sent on the athlete record, Saturday links them and their full app onboarding feeds your calculations automatically — live, not synced, nothing for you to build. Their app answers are never exposed to you through the API; if they flip "share my fueling profile with {your platform}" in app settings, profile values become visible to you as well.
+
+*Tell your athletes:* "use the same email as your {platform} account" — that one sentence prevents the only silent failure in this path.
+
+## What to build, minimally
+
+1. Show `precision.message` and the invite button whenever `profile_complete` is false.
+2. Register `activity_link_template` + `fueling_path_copy` (one-time).
+3. Handle `athlete.profile_completed` (optional but delightful).
+
+That's the whole integration. Everything else is Saturday's job.
