@@ -69,9 +69,49 @@ console.log(`Webhook secret: ${webhook.secret}`);
 | `activity.updated` | An activity is modified |
 | `prescription.calculated` | A nutrition prescription is generated |
 | `feedback.submitted` | Post-activity feedback is submitted |
-| `subscription.activated` | An athlete subscribes to Saturday |
-| `subscription.canceled` | An athlete's subscription is canceled |
+| `subscription.created` | An athlete unlocks full tier (paid checkout, linked existing subscription, or test-env simulation) |
+| `subscription.updated` | An athlete's subscription changes |
+| `subscription.cancelled` | An athlete's access degrades to teaser (cancellation, expiry, or refund) |
 | `conversation.message_sent` | An AI Coach message is sent |
+
+### Subscription event payloads
+
+`subscription.created` fires once per unlock — after the purchase record exists, never before. A resubscribe after cancellation fires it again.
+
+```json
+{
+  "id": "evt_...",
+  "type": "subscription.created",
+  "created_at": 1765467600000,
+  "data": {
+    "athlete_id": "a1b2c3d4-...",
+    "tier": "full",
+    "expires_at": 1797003600000,
+    "source": "checkout_subscription"
+  }
+}
+```
+
+`source` values: `checkout_subscription`, `checkout_lifetime` (no `expires_at`), `existing_subscription_linked` (an already-subscribed Saturday account tapped your CTA — they were linked without being charged), `simulated` (test env only).
+
+`subscription.cancelled` means the athlete's next calculate returns teaser ranges:
+
+```json
+{
+  "id": "evt_...",
+  "type": "subscription.cancelled",
+  "created_at": 1765467600000,
+  "data": {
+    "athlete_id": "a1b2c3d4-...",
+    "tier": "teaser",
+    "reason": "customer.subscription.deleted"
+  }
+}
+```
+
+<Note>
+  Don't cache tier from webhooks alone — `GET /v1/athletes/{id}` returns a computed `subscription_status` (`full` | `trial` | `teaser`) whenever you need ground truth, e.g. when an athlete returns from checkout.
+</Note>
 
 ## Webhook payload format
 

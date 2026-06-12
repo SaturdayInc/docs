@@ -67,16 +67,68 @@ if (data.tier === "teaser") {
 
 </CodeGroup>
 
+## 30-day full-precision trial
+
+Every athlete's first calculate request starts a **30-day trial of full-precision responses, capped at 5 calls per athlete per UTC day**. During the trial, full responses carry trial metadata so you can build countdown UX:
+
+```json
+{
+  "tier": "full",
+  "tier_source": "trial",
+  "trial_ends_at": 1768063200000,
+  "trial_calls_remaining_today": 3,
+  "carb_g_per_hr": 62.5
+}
+```
+
+Over the daily cap, responses degrade to teaser ranges (never an error) and include `trial_cap_reached: true` plus a human-readable `trial_cap_note` you can surface directly to the athlete — it does the apology and the why for you. Batch scenarios debit the cap individually. After 30 days, responses are teaser tier until the athlete subscribes.
+
 ## Subscription flow
 
 When an athlete wants full precision:
 
 1. Your app shows teaser data with the upgrade CTA
-2. Athlete taps the upgrade link (`subscribe_url` from the `subscription_cta`)
-3. Athlete subscribes on saturday.fit or through the Saturday app
-4. Next API call for that athlete returns full precision data
+2. Athlete taps the upgrade link (`subscribe_url` from the `subscription_cta`) — for athlete-scoped requests it carries a signed token (`pst`) identifying *which* athlete is upgrading
+3. The athlete lands on Saturday's checkout page (partner-branded), pays via Stripe, and is sent back toward your app
+4. Saturday writes the link and fires the `subscription.created` webhook — the athlete's next API call returns full precision data
 
-The `subscribe_url` includes your partner ID for attribution. You don't handle payment — Saturday manages the subscription.
+You don't handle payment — Saturday manages the subscription. Two important details:
+
+- **The unlock requires athlete-scoped requests.** Only CTAs minted from requests that included an `athlete_id` carry the `pst`; identity-less CTAs are attribution-only and can't auto-unlock anyone.
+- **Already-subscribed Saturday users are never double-charged.** If the athlete already has an active Saturday subscription, checkout links their account to your athlete instead of charging, and `subscription.created` fires with `source: "existing_subscription_linked"`.
+
+### Checking entitlement
+
+`GET /v1/athletes/{id}` returns a computed `subscription_status` field — `full` | `trial` | `teaser` — for polling after checkout-return or support lookups.
+
+### Return-to-app handoff
+
+Give Saturday a `return_url` (https or deep link) at partner onboarding and the post-payment success page shows a "Back to your app" button — athletes land back in your product with full precision already flowing.
+
+### Bundle offers
+
+If you have a partner-negotiated offer with Saturday (e.g. member pricing for your annual subscribers), assert eligibility by setting `partner_plan: "annual"` on the athlete (`PATCH /v1/athletes/{id}`). Eligible athletes' CTAs carry the offer claim and checkout prices accordingly. You may advertise the offer anywhere; only asserted athletes can redeem it.
+
+## Testing the loop (test environment)
+
+The test environment has a zero-payment simulator so you can integration-test your webhook handlers and tier handling end to end:
+
+```bash
+curl -X POST {TEST_BASE_URL}/v1/test/athletes/{athlete_id}/simulate-subscription \
+  -H "Authorization: Bearer sk_test_..." \
+  -H "Content-Type: application/json" \
+  -d '{"active": true}'
+```
+
+Your test base URL comes with your `sk_test_` key at onboarding.
+
+`{"active": true}` writes the same link fields and fires the same `subscription.created` webhook as a real purchase; `{"active": false}` fires `subscription.cancelled`. The endpoint does not exist in production.
+
+You can also run a real test checkout with Stripe's `4242 4242 4242 4242` card from the CTA link in any test-env teaser response.
+
+<Note>
+  **iOS partners:** opening Saturday's web checkout from inside your iOS app is an external purchase link for digital content — review Apple's current external-link entitlement rules for your app's situation. The CTA URL works in any browser context.
+</Note>
 
 ## Attribution requirements
 
