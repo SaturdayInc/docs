@@ -106,7 +106,12 @@ POST /v1/athletes/{athlete_id}/activities/{activity_id}/calculate
 
 This uses the activity's parameters and the athlete's profile to generate a personalized prescription. Recalculating overwrites the previous prescription — use this when activity parameters change (e.g., updated weather forecast).
 
-The response is the prescription object itself (carb/sodium/fluid values, totals, per-hour rates).
+The response is tier-aware, with the same semantics as `/v1/nutrition/calculate`:
+
+- **Full tier** (subscribed, covered, or in-trial athletes): `tier: "full"` with the exact `prescription` object (carb/sodium/fluid totals and per-hour rates), stored on the activity. Trial responses also carry `tier_source: "trial"`, `trial_ends_at`, and `trial_calls_remaining_today` — each calculation debits the trial's daily call allowance, exactly like nutrition calculate.
+- **Teaser tier**: `tier: "teaser"` with per-hour *ranges* (`carb_range_g_per_hr`, `sodium_range_mg_per_hr`, `fluid_range_ml_per_hr`), a `subscription_cta` with the athlete's subscribe link, and required attribution. Nothing is stored — `GET .../prescription` keeps returning the last full-tier result, if any.
+
+`safety` metadata is always included regardless of tier.
 
 ## Getting a stored prescription
 
