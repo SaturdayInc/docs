@@ -128,6 +128,98 @@ GET /v1/organizations/{org_id}/subscriptions
 
 This shows the subscription status of every member, making it easy for coaches to see which athletes have full access vs. teaser-only.
 
+## Organization offers (negotiated discounts)
+
+A coach or team admin can negotiate a discount their athletes receive at **personal checkout** — "Team Alpine athletes get 15% off Saturday." You record it as the organization's offer; Saturday applies it automatically when an affiliated athlete follows a subscribe CTA from your app.
+
+Each organization has at most **one active offer**. `PUT` creates or replaces it (previous offers are deactivated, never deleted — the document trail is the negotiation audit log).
+
+### Setting the offer
+
+```bash
+PUT /v1/organizations/{org_id}/offer
+```
+
+<CodeGroup>
+
+```python Python
+response = requests.put(
+    f"https://api.saturday.fit/v1/organizations/{org_id}/offer",
+    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    json={
+        "discount_percent": 15,
+        "applies_to_plan": "12_month",
+        "negotiated_by": "Coach Dana Reyes",
+        "note": "2026 season team agreement",
+    },
+)
+```
+
+```typescript TypeScript
+const response = await fetch(
+  `https://api.saturday.fit/v1/organizations/${orgId}/offer`,
+  {
+    method: "PUT",
+    headers: {
+      Authorization: "Bearer sk_test_abc123def456",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      discount_percent: 15,
+      applies_to_plan: "12_month",
+      negotiated_by: "Coach Dana Reyes",
+      note: "2026 season team agreement",
+    }),
+  }
+);
+```
+
+</CodeGroup>
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `discount_percent` | Yes | `1`–`30`. 30 is the stack cap (see below) — offers above the cap are rejected up front so you never promise athletes a number checkout won't honor. |
+| `applies_to_plan` | No | `"12_month"`, `"1_month"`, or omit to apply to all plans |
+| `negotiated_by` | No | Human label for the audit trail (coach name) — informational, not authentication |
+| `starts_at` / `ends_at` | No | Unix **seconds**. Omit either for an open-ended window |
+| `note` | No | Free text — why this discount exists |
+
+The response echoes the stored offer plus `stack_cap_percent`, the hard ceiling on the total stacked discount (currently `30`).
+
+### Reading and removing the offer
+
+```bash
+GET /v1/organizations/{org_id}/offer      # current active offer; 404 when none
+DELETE /v1/organizations/{org_id}/offer   # deactivates it; idempotent, returns 204
+```
+
+### Which athletes get it
+
+The offer applies to athletes whose `org_id` field references this organization. Assert it when creating or updating the athlete:
+
+```bash
+PATCH /v1/athletes/{athlete_id}
+```
+
+```json
+{
+  "org_id": "org_abc123"
+}
+```
+
+`org_id` is partner-asserted (the same trust posture as `partner_plan`) and the organization must already exist. A seat license is **not** required — the discount is for the athlete's own purchase, not a license entitlement. Set `org_id` to an empty string to remove the affiliation.
+
+### Stacking with partner offers
+
+If your platform also has a partner-level offer (e.g. bundle pricing for your annual subscribers), eligible athletes get **both**: the percents combine multiplicatively, and the total is hard-capped at **30%**.
+
+```
+20% partner offer + 15% org offer
+→ 1 − (0.80 × 0.85) = 32% → capped to 30%
+```
+
+Checkout applies one combined discount, and Saturday's subscribe landing page shows the stacked percent — the exact number the athlete will pay — along with which sources contributed. See [Freemium Model → Bundle offers](/guides/freemium-model#bundle-offers) for the full discount flow.
+
 ## Listing organizations
 
 ```bash
