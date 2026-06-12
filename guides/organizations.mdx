@@ -1,6 +1,6 @@
 ---
 title: 'Organizations'
-description: 'Team management, members, and bulk subscriptions'
+description: 'Teams, member directories, seat licensing, and negotiated discounts'
 sidebarTitle: 'Organizations'
 icon: 'building'
 ---
@@ -20,13 +20,13 @@ response = requests.post(
     "https://api.saturday.fit/v1/organizations",
     headers={"Authorization": "Bearer sk_test_abc123def456"},
     json={
-        "name": "Seattle Running Club",
-        "type": "team",
-        "contact_email": "coach@seattlerunclub.com",
+        "display_name": "Seattle Running Club",
+        "description": "Marathon training group",
+        "sport": "run",
     },
 )
 
-org = response.json()
+org = response.json()  # 201 Created
 org_id = org["id"]
 ```
 
@@ -38,27 +38,29 @@ const response = await fetch("https://api.saturday.fit/v1/organizations", {
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    name: "Seattle Running Club",
-    type: "team",
-    contact_email: "coach@seattlerunclub.com",
+    display_name: "Seattle Running Club",
+    description: "Marathon training group",
+    sport: "run",
   }),
 });
 
-const org = await response.json();
+const org = await response.json(); // 201 Created
 const orgId = org.id;
 ```
 
 </CodeGroup>
 
-## Organization types
+| Field | Required | Description |
+|-------|----------|-------------|
+| `display_name` | Yes | Human-readable organization name |
+| `description` | No | Free text |
+| `sport` | No | Primary sport (e.g. `run`, `bike`, `triathlon`) |
 
-| Type | Use case | Example |
-|------|----------|---------|
-| `team` | Group of athletes with shared coaching | Running club, triathlon team |
-| `enterprise` | Company managing multiple teams | Training platform with B2B clients |
-| `coaching` | Individual coach with multiple athletes | Solo coach managing a roster |
+The response includes server-set `id`, `created_at`, `updated_at`, and a maintained `member_count`.
 
 ## Managing members
+
+Members are the organization's **people directory** (coaches and staff by email). They're separate from athlete records — linking a member row to an athlete via `athlete_id` is optional.
 
 ### Adding members
 
@@ -69,8 +71,9 @@ response = requests.post(
     f"https://api.saturday.fit/v1/organizations/{org_id}/members",
     headers={"Authorization": "Bearer sk_test_abc123def456"},
     json={
-        "athlete_id": "ath_abc123",
-        "role": "athlete",
+        "email": "coach@seattlerunclub.com",
+        "role": "admin",
+        "athlete_id": "a1b2c3d4-...",  # optional link to an athlete record
     },
 )
 ```
@@ -85,8 +88,9 @@ const response = await fetch(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      athlete_id: "ath_abc123",
-      role: "athlete",
+      email: "coach@seattlerunclub.com",
+      role: "admin",
+      athlete_id: "a1b2c3d4-...", // optional link to an athlete record
     }),
   }
 );
@@ -96,37 +100,56 @@ const response = await fetch(
 
 ### Member roles
 
-| Role | Permissions |
-|------|------------|
-| `admin` | Full organization management, can add/remove members |
-| `coach` | View all athletes, manage activities and prescriptions |
-| `athlete` | View own data only |
+| Role | Meaning |
+|------|---------|
+| `admin` | Organization manager (coach, team admin) |
+| `member` | Everyone else |
 
-### Listing members
+### Listing and removing members
 
 ```bash
 GET /v1/organizations/{org_id}/members
-```
-
-Returns all members with their roles and activity status.
-
-### Removing members
-
-```bash
 DELETE /v1/organizations/{org_id}/members/{member_id}
 ```
 
-Removing a member doesn't delete their athlete profile — it only removes their organization association.
+Removing a member never deletes an athlete profile — it only removes the directory entry.
 
-## Bulk subscriptions
+## Seat subscriptions (team licensing)
 
-Organizations can manage subscriptions for all members at once:
+A seat subscription is a block of **paid seats** the organization holds; assigning a license to an athlete grants them full-precision API responses while the subscription is active and in its date window. This is the lane for orgs that pay for their athletes' access directly (vs. athletes paying at personal checkout).
+
+### Create a seat block
 
 ```bash
-GET /v1/organizations/{org_id}/subscriptions
+POST /v1/organizations/{org_id}/subscriptions
 ```
 
-This shows the subscription status of every member, making it easy for coaches to see which athletes have full access vs. teaser-only.
+```json
+{
+  "type": "team",
+  "seats": 25,
+  "start_date": 1765467600,
+  "end_date": 1797003600
+}
+```
+
+`type` is `"team"` or `"enterprise"`; dates are unix seconds (`end_date` optional). The response includes `used_seats` (starts at 0) and `status`. Manage with `GET /v1/organizations/{org_id}/subscriptions` and `PATCH .../subscriptions/{sub_id}` (update `seats`, `status`, `end_date`).
+
+### Assign licenses to athletes
+
+```bash
+POST /v1/organizations/{org_id}/subscriptions/{sub_id}/licenses
+```
+
+```json
+{
+  "licenses": [
+    { "athlete_id": "a1b2c3d4-...", "email": "rider@example.com", "name": "Sam Rider" }
+  ]
+}
+```
+
+`athlete_id` is required per license (email/name are display metadata); the seat limit is enforced. The licensed athlete's next API call returns full precision. `GET .../licenses` lists assignments; `DELETE .../licenses/{athlete_id}` frees the seat (access degrades on the athlete's next call).
 
 ## Organization offers (negotiated discounts)
 
@@ -236,18 +259,11 @@ PATCH /v1/organizations/{org_id}
 
 ```json
 {
-  "name": "Seattle Running Club - Elite Squad",
-  "contact_email": "elite@seattlerunclub.com"
+  "display_name": "Seattle Running Club - Elite Squad",
+  "description": "Elite marathon squad"
 }
 ```
 
-## Organization-scoped queries
+## Finding an organization's athletes
 
-When querying athletes or activities, you can filter by organization:
-
-```bash
-GET /v1/athletes?organization_id=org_abc123
-GET /v1/organizations/{org_id}/members?role=athlete
-```
-
-This makes it easy to build coach dashboards that show all athletes in a team.
+Athletes reference their organization through the `org_id` field on the athlete record (`POST`/`PATCH /v1/athletes`, see [Organization offers](#organization-offers-negotiated-discounts) above). To build a team roster view, track your own athlete→org mapping when you assert `org_id`, or use the seat-subscription [license list](#assign-licenses-to-athletes) for licensed teams — `GET .../licenses` returns exactly the athletes the org covers.
