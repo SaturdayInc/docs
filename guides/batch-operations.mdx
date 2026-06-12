@@ -297,7 +297,25 @@ const response = await fetch(
 
 </CodeGroup>
 
-Imported activities don't automatically get prescriptions calculated — call the prescription endpoint for each activity that needs one, or let the athlete trigger calculations through your UI.
+### Calculating prescriptions during import
+
+Set `calculate: true` at the top level to calculate a prescription for every imported activity, or on individual activities to calculate selectively:
+
+```json
+{
+  "calculate": true,
+  "activities": [
+    { "type": "run", "duration_min": 48 },
+    { "type": "bike", "duration_min": 150, "calculate": true }
+  ]
+}
+```
+
+Each calculation runs the same tier-aware path as the single calculate endpoint: full-tier and in-trial athletes get exact prescriptions (stored on the activity and mirrored on `imported[].prescription`); teaser-tier athletes get per-hour ranges with a `subscription_cta`. Trial athletes debit their daily call allowance per calculated activity — a large import can use up the day's allowance mid-batch, after which remaining items return teaser ranges.
+
+Per-item outcomes ride a `prescriptions` array in the response (`index`, `activity_id`, and the tier-aware `result`). A failed calculation never fails the import — the activity is still created, and the failure appears on that item's `code`/`message`.
+
+Imports also count against rate limits per item, like batch calculate.
 
 ## Error handling in batch operations
 
