@@ -181,3 +181,7 @@ GET /v1/settings/schema
 ```
 
 Returns field definitions with valid ranges, descriptions, and validation rules — useful for building settings UIs without hardcoding Saturday's requirements. This is a global, public schema (the same for every athlete); fetch an individual athlete's current values with `GET /v1/athletes/{id}/settings`.
+
+<Note>
+**Graduated precision (2026-06):** every calculation response now carries a `precision` object — `profile_complete`, impact-sorted `missing_fields`, and an onboarding invite URL. Exact numbers require a complete fueling profile; incomplete profiles get honest bands (never wider than teaser ranges). See [Athlete Onboarding](/guides/onboarding).
+</Note>
