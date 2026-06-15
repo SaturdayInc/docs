@@ -58,7 +58,7 @@ Add Saturday to your MCP client configuration with your partner API key:
 
 The server speaks the MCP **Streamable HTTP** transport and protocol revision **2025-11-25** (negotiating down to older revisions a client offers).
 
-### Available tools
+### Tool catalog
 
 When your agent connects, it discovers tools including:
 
@@ -66,14 +66,21 @@ When your agent connects, it discovers tools including:
 |------|-------------|
 | `calculate_nutrition` | Calculate fuel/hydration/electrolyte prescription for an activity |
 | `search_products` | Search the curated nutrition product database |
-| `get_athlete` | Retrieve an athlete's profile and settings |
+| `analyze_product_fit` | Score how a real product covers an athlete's prescription |
+| `get_athlete` / `update_athlete` | Read or update an athlete's profile and settings |
 | `create_activity` | Create an activity for an athlete |
 | `calculate_activity_prescription` | Calculate the prescription for an existing activity |
 | `get_activity_prescription` | Get the stored prescription for an activity |
+| `build_bottling_plan` | Turn a prescription into a concrete, bottle-by-bottle mix plan (renders the [Bottle Builder app](#bottle-builder-interactive-mcp-app)) |
+| `record_bottling_choice` | Persist the athlete's chosen bottling plan |
 | `infer_activity_type` | Infer activity type from metadata |
 | `search_knowledge` | Search Saturday's sports nutrition knowledge base |
 
-Each tool includes rich descriptions, structured input schemas, and tool annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`) that help AI agents use them correctly.
+This is an illustrative slice; an athlete connection currently exposes ~20 tools and a coach connection more (see the coach note below). Each tool includes rich descriptions, structured input schemas, and tool annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`) that help AI agents use them correctly.
+
+### Bottle Builder (interactive MCP App)
+
+`build_bottling_plan` is an **[MCP App](https://modelcontextprotocol.io/)** — alongside its structured result it returns an interactive HTML view (resource `ui://saturday/bottle-builder`) that renders inline in supporting clients (e.g. Claude.ai). The athlete can drag a strategy slider (even / balanced / concentrated), move fuel between bottles, adjust fill levels, edit their real vessels, and watch carbs/sodium/scoop amounts recompute live. When the target won't fit the bottles on hand, it returns an honest "carry it more concentrated, top up with water" plan rather than a dead end. Clients that don't render MCP App views still receive the full plan as text and structured content.
 
 <Note>
   **Coach tools.** When a **coach** (Pro-Coach tier or higher) connects via the [Claude connector](/guides/coach-connector), an additional set of roster + configuration tools lights up — `get_roster`, `get_roster_digest`, `get_athlete_fueling_rollup`, `get_athlete_report`, `get_session_detail`, `set_notification_rules`, `apply_alert_preset`, `set_report_settings`, `register_webhook`, and more. These are invisible to athlete-only users and to other partners. See the [Claude Connector guide](/guides/coach-connector) for the full coach tool catalog and the [Coach API](/guides/coach-api) for the equivalent REST surface.
