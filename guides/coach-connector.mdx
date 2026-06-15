@@ -25,7 +25,7 @@ https://api.saturday.fit/mcp
 Claude auto-discovers Saturday's authorization server (RFC 9728 / RFC 8414 discovery), walks you through **"Sign in with Saturday,"** and shows a branded consent screen. A coach granting access sees an explicit disclosure that Claude will be able to read their athletes' fueling data and manage their alert settings.
 
 <Note>
-  **Subscriber wall.** Only an active Saturday subscriber can complete the connect flow. A non-subscriber sees a clean "subscription required" page with no account side-effects. A lapsed subscriber loses access within ~1 hour (on the next token refresh).
+  **Subscriber wall.** Only an active Saturday subscriber can complete the connect flow. A non-subscriber sees a clean "subscription required" page — with a **Subscribe** link to plans and a **"Use a different account"** option (to re-authenticate if they signed in with the wrong account) — and no account side-effects. A lapsed subscriber loses access within ~1 hour (on the next token refresh).
 </Note>
 
 ### Transport & protocol
@@ -39,6 +39,7 @@ When an athlete connects, Claude can read and (carefully) write their own Saturd
 - `get_athlete`, `update_athlete` — read/update their own profile.
 - `list_activities`, `get_activity`, `create_activity` — manage their own activities.
 - `calculate_activity_prescription`, `get_activity_prescription` — Saturday's engine computes the prescription (it is never writable by hand).
+- `build_bottling_plan`, `record_bottling_choice` — turn the prescription into a bottle-by-bottle mix plan; `build_bottling_plan` renders the interactive [Bottle Builder app](/guides/mcp-integration#bottle-builder-interactive-mcp-app).
 - `calculate_nutrition`, `search_products`, `analyze_product_fit`, `get_athlete_insights`, `search_knowledge`.
 
 <Warning>
