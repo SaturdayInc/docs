@@ -15,7 +15,58 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Coaching",
+        "icon": "whistle",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "coaching/overview",
+              "coaching/become-a-coach",
+              "coaching/first-athlete"
+            ]
+          },
+          {
+            "group": "Billing",
+            "pages": [
+              "coaching/billing/who-pays",
+              "coaching/billing/coach-paid-athletes",
+              "coaching/billing/take-over-relinquish",
+              "coaching/billing/volume-discount"
+            ]
+          },
+          {
+            "group": "Roster & alerts",
+            "pages": [
+              "coaching/roster/flags-and-groups",
+              "coaching/roster/ai-report",
+              "coaching/roster/configuring-alerts"
+            ]
+          },
+          {
+            "group": "Team & assistants",
+            "pages": [
+              "coaching/team/add-assistants",
+              "coaching/team/assign-athletes",
+              "coaching/team/team-rollup",
+              "coaching/team/permissions"
+            ]
+          },
+          {
+            "group": "Nutrition curriculum",
+            "pages": [
+              "coaching/nutrition/overview",
+              "coaching/nutrition/bottling-fill-mix",
+              "coaching/nutrition/gluc-fruc-ratio",
+              "coaching/nutrition/eco-mode-vs-products",
+              "coaching/nutrition/setup-dials"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Guides",
+        "icon": "code",
         "groups": [
           {
             "group": "Getting Started",
