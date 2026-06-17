@@ -243,7 +243,7 @@ const newTokens = await response.json();
 
 ### Coach scopes
 
-A coach (Pro-Coach tier or higher) can additionally request coach scopes. These unlock the [Coach API](/guides/coach-api) and the coach tools in the [Claude connector](/guides/coach-connector). A coach's OAuth token also carries the athlete-self facet — the same token reads the coach's own athlete data on `/v1/athletes/*` and their roster on `/v1/coach/*`; the route decides which applies.
+A coach (Business tier or higher) can additionally request coach scopes. These unlock the [Coach API](/guides/coach-api) and the coach tools in the [Claude connector](/guides/coach-connector). A coach's OAuth token also carries the athlete-self facet — the same token reads the coach's own athlete data on `/v1/athletes/*` and their roster on `/v1/coach/*`; the route decides which applies.
 
 | Scope | Access granted |
 |-------|---------------|

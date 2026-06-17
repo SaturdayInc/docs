@@ -30,7 +30,7 @@ There is **one** Saturday connector. The data it can touch depends on who signs 
 | Principal | Who | What the connector can reach |
 |-----------|-----|------------------------------|
 | **Athlete** (consumer) | Any active Saturday subscriber | **Their own** Saturday data only — their profile and their activities/sessions under `users/{their-uid}`. |
-| **Coach** (Pro-Coach tier or higher) | A subscriber who also holds a coach tier | Everything an athlete can reach for themselves, **plus** read access to the fueling data of athletes **on their own roster**, and write access to **their own** alerting/report configuration. |
+| **Coach** (Business tier or higher) | A subscriber who also holds an API-eligible coach tier | Everything an athlete can reach for themselves, **plus** read access to the fueling data of athletes **on their own roster**, and write access to **their own** alerting/report configuration. |
 
 A coach is also an athlete; the same sign-in serves both facets. An athlete-only subscriber can never reach any
 coach data or another person's data.
