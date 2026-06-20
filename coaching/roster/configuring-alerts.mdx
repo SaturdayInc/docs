@@ -7,11 +7,11 @@ icon: 'bell'
 
 # Configuring alerts
 
-Alerts are how Saturday tells you an athlete needs attention without you having to check the roster constantly. You decide **what** to be alerted about, **how loud**, and **where** it lands. The goal: real-time for what's urgent, a calm digest for the rest.
+Alerts are how Saturday tells you an athlete needs attention without you having to check the roster constantly. From your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**, you decide **what** to be alerted about, **how loud**, and **where** it lands. The goal: real-time for what's urgent, a calm digest for the rest.
 
 ## Start with a preset
 
-The fastest setup is a preset applied across your whole roster, which you then tweak:
+The fastest setup is a preset applied across your whole roster, which you then tweak. Pick one in your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**:
 
 | Preset | Behavior |
 |--------|----------|
@@ -24,19 +24,21 @@ The fastest setup is a preset applied across your whole roster, which you then t
 Alerts resolve at three scopes, and the **most specific wins**:
 
 - **Overall** — your whole roster.
-- **Group** — one group (e.g. your elite squad gets real-time, everyone else gets a digest).
+- **Group** — one group (e.g. your elite squad gets real-time, everyone else gets a digest). Create groups first in **[athlete management](https://coach.saturday.fit/dashboard?view=manage)**.
 - **Athlete** — a single athlete.
 
-So you might run "Balanced" overall, "Hands on" for your race-prep group, and a custom rule for one athlete you're watching closely.
+So you might run "Balanced" overall, "Hands on" for your race-prep group, and a custom rule for one athlete you're watching closely — all from your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**.
 
 ## What you can configure
 
 - **Concern types (triggers):** under-fueling, symptoms, low session ratings, a hyponatremia pattern, a dialing-down trend, a sleep trend, or an athlete who's gone quiet.
 - **Thresholds:** the line that counts as a concern (e.g. sodium under 60%), and a separate urgent line for real-time pings.
 - **Urgent vs. digest:** real-time for the urgent stuff, a once-a-day bundle for the rest — one calm item per athlete.
-- **Channels:** in-portal, email, mobile push, and webhook (for power users / Enterprise pushing into their own systems). SMS is not offered for now.
+- **Channels:** in-portal, email, mobile push, and **[webhook](https://coach.saturday.fit/admin/webhooks)** (for power users / Enterprise pushing into their own systems). SMS is not offered for now.
 - **Quiet hours:** suppress non-urgent pings overnight.
 - **Combinations:** "ping me only when sodium is short **and** there's a symptom in the same session" — bounded two-trigger rules so you're not drowned in noise.
+
+Build all of this in your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**.
 
 <Note>
   **It's a friendly rule-builder, not a config file.** You build alert rules in plain GUI controls. Power users can also drive the exact same config over the [Coach API](/guides/coach-api) or the [Claude connector](/guides/coach-connector) — they're two views of one model.
@@ -44,7 +46,7 @@ So you might run "Balanced" overall, "Hands on" for your race-prep group, and a 
 
 ## Payment-failure alerts
 
-You can be alerted when **any** roster athlete — coach-paid or self-paying — has a payment failure, so an athlete never quietly loses access on your watch. When the athlete is the payer, they're alerted too (at a noise level you set), and they're deep-linked to update their card. See [Take over & relinquish](/coaching/billing/take-over-relinquish) for the grace-window behavior behind this.
+Turn these on in your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**: you can be alerted when **any** roster athlete — coach-paid or self-paying — has a payment failure, so an athlete never quietly loses access on your watch. When the athlete is the payer, they're alerted too (at a noise level you set), and they're deep-linked to update their card. Who pays for each athlete is managed in **[billing](https://coach.saturday.fit/admin/billing)**; see [Take over & relinquish](/coaching/billing/take-over-relinquish) for the grace-window behavior behind this.
 
 ## See also
 
