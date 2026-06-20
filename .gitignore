@@ -1,0 +1,4 @@
+# Claude Code session scratch — never ship prompts/plans/handoffs into the docs site.
+# Keep only the tracked project instructions (.claude/CLAUDE.md).
+.claude/*
+!.claude/CLAUDE.md
