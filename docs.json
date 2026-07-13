@@ -112,6 +112,7 @@
           {
             "group": "Platform",
             "pages": [
+              "guides/attribution",
               "guides/feature-gates",
               "guides/data-policy",
               "guides/deployment"
