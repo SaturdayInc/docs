@@ -1,0 +1,167 @@
+---
+title: 'Brand & Attribution'
+description: 'When to show the Saturday mark, where it goes, and how it should look'
+sidebarTitle: 'Brand & Attribution'
+icon: 'badge-check'
+---
+
+# Brand & Attribution
+
+Building with Saturday is welcome, and we want athletes to know when Saturday's nutrition
+intelligence is behind what they see. Attribution is how that works. It credits the engine doing
+the fueling math, keeps the athlete's picture honest about where the numbers come from, and gives
+every partner surface a path back to Saturday for athletes who want full precision.
+
+This page is the single source for what to display, where, and how. The one-line requirement also
+lives in the [API terms](/guides/data-policy); the pixels live here so they can improve without
+reopening an agreement.
+
+## When attribution is required
+
+Saturday's freemium model sets the line. See [Freemium Model](/guides/freemium-model) for how
+teaser and full responses differ.
+
+| Your situation | Attribution |
+|---|---|
+| **Teaser data** (free ranges) shown to any user | **Required.** The "Powered by Saturday" mark, linking out, near the data. |
+| **Full data** (subscribed athlete, exact numbers) | **Required, lighter.** A compact "Powered by Saturday" mark wherever Saturday data appears. Placement is yours; presence is not optional. |
+| **Personal, single-account use** (your own data, no third-party users) | The marks are welcome and appreciated. No pre-launch review. |
+
+<Note>
+  **Safety metadata is never gated and never stripped.** Whatever tier you show, the safety
+  fields ship with it. Attribution rules govern the brand mark, not the safety data.
+</Note>
+
+## What to display
+
+Refer to Saturday one of two ways, and no other:
+
+- **"Powered by Saturday"** wherever Saturday nutrition data appears.
+- **"Compatible with Saturday"** when you describe interoperability in prose without rendering data.
+
+Two rules on the words:
+
+- **Link the mark** to `https://saturday.fit` (or to the `subscribe_url` from a teaser response, so
+  the athlete lands on their own upgrade path). A linked mark is how a curious athlete finds full
+  precision. That link is the whole deal: you get free nutrition intelligence, Saturday gets a way
+  to reach the athlete.
+- **Plain text is a valid fallback.** Where a logo will not fit, appropriately sized text reading
+  "Powered by Saturday" satisfies the requirement. You never have an excuse not to attribute.
+
+Do not put "Saturday" in your product's name, and do not imply Saturday developed, sponsored, or
+endorsed your app. Truthful, factual references to Saturday in your feature descriptions are fine.
+
+## Where it goes
+
+Attribution sits **with the data it credits**, visible without interaction.
+
+- Place it directly beside or beneath the nutrition figures, above the fold, visually tied to the
+  numbers it supports.
+- Never bury it in a tooltip, footnote, settings screen, "info" modal, or a collapsed or expandable
+  panel. If the athlete can see Saturday's numbers, they can see the mark without tapping anything.
+- For a list or feed of many entries, you may attribute once in a section header or footer, or once
+  per entry. Either is fine as long as the mark travels with the data.
+
+Scope it by surface:
+
+| Surface | What to show |
+|---|---|
+| **Summary card / feed / overview** | "Powered by Saturday" beside the fuel, hydration, or sodium figures. |
+| **Detail view / report / history** | The same mark, once in the header or per entry. |
+| **Exports and downstream transfer** (CSV, PDF, another API, a webhook you forward) | Keep the attribution adjacent to the data and repeated per page. If you pass Saturday data to another system, carry the requirement forward in your own terms. |
+| **Derived or blended output** (Saturday data fed into your analytics, a model, or merged with other sources) | Name Saturday as a contributing data source. Do not imply Saturday endorses the combined result. |
+| **Shared images / social** (a card or infographic a user exports) | The mark stays visible in the image. |
+
+When your integration also relays a third party's data alongside Saturday's (for example a wearable's
+device data), honor that source's attribution too. Name the origin, not only the vendor.
+
+## How it should look
+
+Saturday provides the "Powered by Saturday" mark in light and dark variants, stacked and
+horizontal, as a drop-in asset. Stacked is the primary form; use horizontal where vertical
+space is limited. Use the asset as shipped.
+
+<Frame>
+  <img src="/images/powered-by-saturday.svg" alt="Powered by Saturday" height="28" noZoom />
+</Frame>
+
+- **Minimum size:** stacked, 32px tall on screen (40px or larger recommended), 12mm in print;
+  horizontal, 16px tall on screen (20px or larger recommended), 6mm in print. Below that, use
+  the plain-text form.
+- **Clear space:** keep open space around the mark equal to at least half the mark's own height on
+  every side. This scales with the mark, so there is one rule at every size.
+- **Contrast:** use the light mark on dark backgrounds and the dark mark on light. Keep it legible.
+- **Do not** recolor, restretch, rotate, animate, add effects to, or rebuild the mark, and do not use
+  it, or any part of it, as your app icon or avatar.
+- **Keep your brand dominant.** The Saturday mark appears near your own name but stays separate from
+  it and never larger or more prominent than your own branding. Present, not loud.
+
+Do not rename or rebrand Saturday's fueling terms and metrics. Call them what Saturday calls them so
+athletes carry one vocabulary across every app they use.
+
+## Data license
+
+Attribution rides alongside the data-use terms every response already carries in its headers
+(`X-Saturday-Data-License`, `X-Saturday-Data-Training`, `X-Saturday-Data-Attribution`). Saturday's
+prescriptions, product database, and knowledge base are proprietary: no training or fine-tuning of
+models on response data, no reverse-engineering the calculations, no reselling or building a derived
+database. Full terms: [Data Policy](/guides/data-policy).
+
+## If your use is commercial
+
+Putting Saturday in front of other people commercially (a platform, an app in a store, a coaching
+business charging clients, anything that resells or bundles Saturday output) gets a quick brand
+review before launch. Send mockups or screenshots of the surfaces that show Saturday data to
+[api@saturday.fit](mailto:api@saturday.fit) and we confirm the attribution reads well. It is a short
+step, not a gate on every build, and it is only for new display surfaces.
+
+Personal, single-account use skips this. Build freely.
+
+## Example
+
+<CodeGroup>
+
+```html Web
+<div class="nutrition">
+  <p>Carbohydrates: 60-80 g/hr</p>
+  <p>Hydration: 600-900 mL/hr</p>
+  <p>Sodium: 300-600 mg/hr</p>
+
+  <a href="https://saturday.fit/subscribe?ref=your_partner_id" class="saturday-attribution">
+    <img src="https://saturday.fit/brand/powered-by-saturday/powered-by-saturday-stacked-dark.svg"
+         alt="Powered by Saturday" height="40">
+  </a>
+</div>
+```
+
+```dart Flutter
+Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Text('Carbohydrates: 60-80 g/hr'),
+    Text('Hydration: 600-900 mL/hr'),
+    Text('Sodium: 300-600 mg/hr'),
+    GestureDetector(
+      onTap: () => launchUrl(Uri.parse(subscribeUrl)),
+      child: SvgPicture.asset('assets/powered-by-saturday-stacked.svg', height: 40),
+    ),
+  ],
+)
+```
+
+</CodeGroup>
+
+## Brand assets
+
+<Card title="Saturday brand kit" icon="download" href="https://saturday.fit/brand">
+  The "Powered by Saturday" and "Compatible with Saturday" marks (light and dark, stacked and
+  horizontal, SVG and PNG) plus ready-to-paste HTML and Flutter snippets. Download the kit at
+  saturday.fit/brand, or email [api@saturday.fit](mailto:api@saturday.fit) and we will send it.
+</Card>
+
+## Reviews and changes
+
+Saturday may review an integration for attribution compliance and ask for changes. Reach
+[api@saturday.fit](mailto:api@saturday.fit) any time and we will help you get it right. Unresolved
+noncompliance may lead to suspension or termination of API access. Saturday may update these
+guidelines; the current version here governs.
