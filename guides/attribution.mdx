@@ -1,4 +1,3 @@
-{/* DRAFT: brand + legally sensitive. Pending Alex + counsel review before this PR merges. */}
 ---
 title: 'Brand & Attribution'
 description: 'When to show the Saturday mark, where it goes, and how it should look'
@@ -78,15 +77,17 @@ device data), honor that source's attribution too. Name the origin, not only the
 
 ## How it should look
 
-Saturday provides the "Powered by Saturday" mark in light and dark variants, horizontal and
-stacked, as a drop-in asset. Use the asset as shipped.
+Saturday provides the "Powered by Saturday" mark in light and dark variants, stacked and
+horizontal, as a drop-in asset. Stacked is the primary form; use horizontal where vertical
+space is limited. Use the asset as shipped.
 
 <Frame>
   <img src="/images/powered-by-saturday.svg" alt="Powered by Saturday" height="28" noZoom />
 </Frame>
 
-- **Minimum size:** 16px tall on screen (20px or larger recommended), 6mm in print. Below that,
-  use the plain-text form.
+- **Minimum size:** stacked, 32px tall on screen (40px or larger recommended), 12mm in print;
+  horizontal, 16px tall on screen (20px or larger recommended), 6mm in print. Below that, use
+  the plain-text form.
 - **Clear space:** keep open space around the mark equal to at least half the mark's own height on
   every side. This scales with the mark, so there is one rule at every size.
 - **Contrast:** use the light mark on dark backgrounds and the dark mark on light. Keep it legible.
@@ -127,8 +128,8 @@ Personal, single-account use skips this. Build freely.
   <p>Sodium: 300-600 mg/hr</p>
 
   <a href="https://saturday.fit/subscribe?ref=your_partner_id" class="saturday-attribution">
-    <img src="https://saturday.fit/brand/powered-by-saturday/powered-by-saturday-horizontal-dark.svg"
-         alt="Powered by Saturday" height="20">
+    <img src="https://saturday.fit/brand/powered-by-saturday/powered-by-saturday-stacked-dark.svg"
+         alt="Powered by Saturday" height="40">
   </a>
 </div>
 ```
@@ -142,7 +143,7 @@ Column(
     Text('Sodium: 300-600 mg/hr'),
     GestureDetector(
       onTap: () => launchUrl(Uri.parse(subscribeUrl)),
-      child: SvgPicture.asset('assets/powered-by-saturday.svg', height: 20),
+      child: SvgPicture.asset('assets/powered-by-saturday-stacked.svg', height: 40),
     ),
   ],
 )
@@ -153,8 +154,8 @@ Column(
 ## Brand assets
 
 <Card title="Saturday brand kit" icon="download" href="https://saturday.fit/brand">
-  The "Powered by Saturday" and "Compatible with Saturday" marks (light and dark, horizontal and
-  stacked, SVG and PNG) plus ready-to-paste HTML and Flutter snippets. Download the kit at
+  The "Powered by Saturday" and "Compatible with Saturday" marks (light and dark, stacked and
+  horizontal, SVG and PNG) plus ready-to-paste HTML and Flutter snippets. Download the kit at
   saturday.fit/brand, or email [api@saturday.fit](mailto:api@saturday.fit) and we will send it.
 </Card>
 
