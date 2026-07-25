@@ -96,9 +96,11 @@ Saturday bounds every calculation. The limits are computed per athlete and per a
 
 These apply on every calculation and are not partner-overridable. Note that the sodium cap is the one limit that scales with the athlete: a 70 kg athlete reaches it at roughly 1700 mg/hr, far below the 5000 mg/hr absolute.
 
-<Warning>
-  Teaser ranges are display buckets rounded outward from the computed value, and the rounding is not clamped to the caps above. A teaser upper bound can therefore read slightly higher than the engine would ever prescribe, for example `1500-2000` mL/hr against a 1801 mL/hr cap. Treat the upper number in a teaser range as the top of a bucket, not as a target, and never render it as a recommended intake.
-</Warning>
+<Note>
+  Teaser ranges are display buckets, and both ends are bounded. The upper bound never exceeds the caps above: a 1700 mL/hr fluid prescription renders `1300-1800`, not `1500-2000`. The lower bound never reads zero for a value the engine actually prescribed, so a 350 mg/hr sodium prescription renders `200-500` rather than `0-500`. A zero low bound means the prescribed value is genuinely near zero.
+
+  The bounds still describe a bucket rather than a target. Render the range as a range, and do not treat either endpoint as a recommended intake.
+</Note>
 
 ## Confidence score
 
