@@ -1,43 +1,45 @@
 ---
 title: 'The AI report'
-description: 'A plain-language read on each athlete''s fueling — grounded only in their real numbers'
+description: 'A plain-language read on each athlete''s fueling, computed from their own session numbers'
 sidebarTitle: 'The AI report'
 icon: 'file-lines'
 ---
 
 # The AI report
 
-Every athlete on your **[roster](https://coach.saturday.fit/dashboard)** has an **AI fueling report** — a short, plain-language narrative of how their fueling has been going, grounded only in their real numbers, plus the structured summary behind it. To read one, open an athlete from your **[roster](https://coach.saturday.fit/dashboard)**. It's the fastest way to understand an athlete before a conversation.
+Every athlete on your [roster](https://coach.saturday.fit/dashboard) has an AI fueling report: a short narrative of how their fueling has been going, plus the structured summary it was built from. Open an athlete from your roster to read one.
 
 ## What's in it
 
-- **A narrative** — a calm, third-person read ("Over the last two weeks, this athlete has hit carb targets consistently but run low on sodium on long rides…"). No hype, no scare tactics, just what the data says.
-- **The structured summary** — the concern breakdown (carb / sodium / fluid adherence, symptoms, patterns) that the narrative is built from.
-- **Window & focus controls** — look back 7, 14, or 30 days; focus on the worst sessions, a rolling view, or key sessions.
+- **A narrative.** A calm, third-person read, for example "Over the last two weeks, this athlete has hit carb targets consistently but run low on sodium on long rides." It is written only from server-computed session numbers, never from free text.
+- **The structured summary.** The concern breakdown behind the narrative: carb, sodium and fluid adherence, symptoms, and patterns. See [the concern cutoffs](/coaching/roster/flags-and-groups) for what counts as a concern.
+- **Window and focus.** Look back 7, 14, or 30 days, and focus on the worst sessions, a rolling view, or key sessions. The default is 14 days on worst sessions.
 
-The report is served from cache and regenerates when a newer session lands (or when you refresh it). Open an athlete from your **[roster](https://coach.saturday.fit/dashboard)** to see all of this.
+The report is served from cache and regenerates when a newer in-window session lands, or when you refresh it. If generation fails, you get a deterministic summary built from the same numbers rather than an error.
+
+<Note>
+  **Window and focus selection needs Pro Coach or higher.** On the free Coach tier the report runs at your resolved default window and focus, and refreshes once per athlete per 24 hours. You still get a report at any time; between refreshes it comes from cache.
+</Note>
 
 ## Make it actionable
 
-The report isn't just a read — it's a launch point:
+From the report you can:
 
-- **Apply this plan to their Setup** — bridge straight from the report to [Adjust Setup](/coaching/nutrition/setup-dials), pre-filled from the AI plan. Open an athlete from your **[roster](https://coach.saturday.fit/dashboard)** to do this; the report becomes a one-click adjustment.
-- **Reach out** — start an email or **[message](https://coach.saturday.fit/dashboard/messages)** to the athlete from here.
+- **Open the athlete's Setup.** "Apply this plan to their Setup" opens [Adjust Setup](/coaching/nutrition/setup-dials) alongside the report so you can act on what you just read. The dials open on the athlete's current values, not on values copied from the plan, so you decide what to change.
+- **Reach out.** Start an email or a [message](https://coach.saturday.fit/dashboard/messages) to the athlete.
 
 ## The privacy line
 
-An athlete's **derived** fueling plan and report are shared with you. Their **raw AI conversations are not** — that's the single thing Saturday keeps private from a coach. There's no way to read an athlete's chat transcript. Everything else about the athlete's fueling is visible to you by default when you open them from your **[roster](https://coach.saturday.fit/dashboard)**.
+An athlete's derived fueling plan and report are shared with you. Their raw AI conversations are not. There is no way to read an athlete's chat transcript, and no permission exists that would grant it. Everything else about the athlete's fueling is visible to you by default.
 
-<Note>
-  **Why the carve-out?** Athletes talk to Saturday's AI candidly. Keeping those raw conversations private is what keeps them candid — and you still get the full, useful result: the plan and the report.
-</Note>
+Athletes talk to Saturday's AI candidly, and keeping those conversations private is what keeps them candid. The derived plan and report carry the result.
 
-## Athletes never see these metrics
+## Coach-facing metrics
 
-The flags on your **[roster](https://coach.saturday.fit/dashboard)**, the concern summaries, the roll-up — these are **coach-facing only**. Saturday deliberately does not show athletes trend graphs, scores, or gap metrics; athletes get a plain, supportive mirror of their own fueling. Your coaching view is a distinct surface — it never leaks to the athlete.
+The flags on your roster, the concern summaries, and the [team roll-up](/coaching/team/team-rollup) are coach-facing only. Saturday does not show athletes trend graphs, scores, or gap metrics; athletes get a plain, supportive mirror of their own fueling. Your coaching view is a separate surface and never reaches the athlete.
 
 ## See also
 
-- [Flags & groups](/coaching/roster/flags-and-groups) — where the report's flags surface.
-- [The Setup](/coaching/nutrition/setup-dials) — turn the report into an adjustment.
-- [Configuring alerts](/coaching/roster/configuring-alerts) — get told when a report would change.
+- [Flags & groups](/coaching/roster/flags-and-groups) for where the report's flags surface.
+- [The Setup](/coaching/nutrition/setup-dials) to turn the report into an adjustment.
+- [Configuring alerts](/coaching/roster/configuring-alerts) to be told when a report would change.

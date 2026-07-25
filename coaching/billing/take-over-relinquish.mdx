@@ -1,61 +1,66 @@
 ---
 title: 'Take over & relinquish'
-description: 'Start covering an athlete, or hand payment back — always clear, always reversible, never a surprise'
+description: 'Start covering an athlete, or hand payment back: what each side sees and what it costs'
 sidebarTitle: 'Take over & relinquish'
 icon: 'arrow-right-arrow-left'
 ---
 
 # Take over & relinquish
 
-Coverage moves in two directions: you can **take over** an athlete's payments (start covering them), or **relinquish** them (hand payment back). You do both from your **[billing](https://coach.saturday.fit/admin/billing)** page. Both are fully previewed and reversible.
+Coverage moves in two directions. You can **take over** an athlete's payments, or **relinquish** them and hand payment back. You do both from the athlete's row menu or billing drawer on your **[roster](https://coach.saturday.fit/dashboard)**, and both show their consequences before you confirm.
 
 ## See it before you do it
 
-Any coverage change on your **[billing](https://coach.saturday.fit/admin/billing)** page shows a **billing-impact preview** before you confirm. The preview tells you:
+Every coverage change opens a **billing-impact preview**. It tells you:
 
-- The **$ that stops** and the **paid-through date**.
-- **Who pays next** (you, or the athlete on takeover) and that the athlete will be notified.
-- The **refund/proration** state.
-- **Reversibility** — whether you can undo or re-cover within the grace window.
-- Reassuring terms for the athlete: access continues through end-of-period **plus a 14-day grace**.
-- That there are **multiple easy ways to pay** and a one-time **20%-off annual** offer.
+- The amount that stops and the paid-through date.
+- Who pays next, and that the athlete will be notified.
+- The refund and proration state.
+- Whether you can undo, and how long you can re-cover.
+- What the athlete gets: access through the end of the paid period plus a 14-day grace, a one-time 20%-off annual offer, and several ways to pay.
 
 ## Take over payments
 
-From your **[billing](https://coach.saturday.fit/admin/billing)** page or your **[roster](https://coach.saturday.fit/dashboard)**, choose **Take over payments**. What happens depends on how the athlete was paying:
+Use **Cover** from the athlete's row menu, or **Take over** in their billing drawer. Both buttons carry the athlete's name. What happens next depends on how the athlete was paying:
 
-- **Self-paying monthly:** their subscription is canceled at period end; your coverage begins seamlessly so there's **never a double-charge**.
-- **Self-paying annually:** their subscription is canceled with a **prorated refund**, and your coverage begins now.
-- **In a trial:** your coverage simply takes over — no gap.
+- **Self-paying monthly:** their subscription is cancelled at period end and your coverage begins there, so the same period is never billed twice. Your add-on starts on your next cycle rather than immediately.
+- **Self-paying annually:** their subscription is cancelled with a prorated refund and your coverage begins now, so your add-on bills now.
+- **In a trial:** your coverage takes over with no gap.
+- **Paying through the App Store or Google Play:** Apple and Google own that subscription and Saturday cannot cancel it. Your coverage starts, and the portal tells you the athlete has to cancel the store subscription themselves to stop paying.
 
-The athlete gets a good-news notification: **"Your coach is now covering your Saturday membership."**
+If Stripe fails partway, the cover is aborted rather than allowed to double-charge.
+
+The athlete gets a push notification naming you as the coach now covering their membership.
 
 ## Relinquish (hand payment back)
 
-When you stop covering an athlete from your **[billing](https://coach.saturday.fit/admin/billing)** page — by choice, on downgrade, or when you stop coaching — the athlete becomes payment-responsible:
+When you stop covering an athlete, by choice, on a downgrade, or when you stop coaching, the athlete becomes payment-responsible:
 
-1. The athlete keeps access through the **end of the current paid period plus a 14-day grace**.
-2. They get a friendly notification and a persistent **"Your subscription is ending"** screen with a countdown and a clear take-over button.
-3. They're offered a one-time, grace-window **20%-off annual** deal — "multiple easy ways to pay."
-4. If they're an **unlinked self-payer**, the message is purely about unlinking — no payment talk at all.
+1. Your charge stops. You are paid through the current period, with no mid-cycle charge and no refund for the remainder.
+2. The athlete keeps access through the end of that paid period plus a **14-day grace**.
+3. They get a notification ("Your membership is ending soon") and a persistent screen with a countdown and a take-over button.
+4. They are offered a one-time 20%-off annual deal, valid for the grace window, and emailed a secure link to redeem it.
+5. If they are an unlinked self-payer, the message is about unlinking only, with no payment talk.
 
 <Note>
-  **The 14-day grace is real.** Even after the paid period ends, an athlete keeps Saturday for 14 more days. Plenty of room for them to take over without ever losing access.
+  The 14-day grace runs *after* the paid period ends. An athlete keeps Saturday for those 14 extra days, which is the window in which they can take over without ever losing access.
 </Note>
 
 ## Undo and reversibility
 
-Both takeover and relinquish are reversible within the grace window — from your **[billing](https://coach.saturday.fit/admin/billing)** page you can **re-cover** an athlete you just relinquished, and a fresh relinquish offers an immediate undo. Side effects (like the athlete notification) are held through the undo window so an accidental click doesn't fire anything you'd regret.
+A fresh relinquish offers an immediate undo for a few seconds. After that window the athlete's grace has started and the undo is replaced by a **Re-cover** button in their billing drawer, available any time until the grace ends. Side effects such as the athlete notification are held through the undo window, so a mis-click does not fire anything.
 
-## Org-paid athletes (assistants, note)
+## Org-paid athletes
 
-If you're an **assistant coach**, you can't end an **org-paid** arrangement unless your head coach or org owner has explicitly granted you that permission from the **[team](https://coach.saturday.fit/dashboard/team)** page. See [Permissions](/coaching/team/permissions).
+If you are an assistant coach, you cannot end an **org-paid** arrangement unless an org admin has granted you that permission explicitly. It is a separate grant from the general billing-coverage delegation, so being able to cover and uncover your own athletes does not carry it with it. Org admins manage both on the **Access & Roles** page, where role assignment and assistant delegation are available on every plan. See [Permissions](/coaching/team/permissions).
 
 ## When you cancel your plan or stop coaching
 
-Canceling your coaching plan from your **[billing](https://coach.saturday.fit/admin/billing)** page, or offboarding entirely, routes **every coach-paid athlete** through this same relinquish flow — 14-day grace, friendly notification, and the 20%-annual offer. Self-pay athletes simply unlink. Nobody is left stranded. You can also issue refunds directly from your **[billing](https://coach.saturday.fit/admin/billing)** page (see [Who pays](/coaching/billing/who-pays)).
+Cancelling your coaching plan from **[Coach Subscription](https://coach.saturday.fit/admin/subscription)** takes effect at the end of your paid period, and your covered athletes move to self-pay on that date through this same relinquish flow: 14-day grace, notification, and the 20%-off annual offer. Self-pay athletes unlink. You can undo the cancellation before its effective date.
+
+Separately, if you bill athletes a coaching fee through Stripe Connect, you can refund one of those charges from the **$ Earning** page. That refunds your coaching fee, not the athlete's Saturday subscription.
 
 ## See also
 
-- [Coach-paid athletes](/coaching/billing/coach-paid-athletes) — what coverage costs.
-- [Who pays](/coaching/billing/who-pays) — all the billing modes.
+- [Coach-paid athletes](/coaching/billing/coach-paid-athletes), what coverage costs.
+- [Who pays](/coaching/billing/who-pays), all the billing modes.

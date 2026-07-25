@@ -1,6 +1,6 @@
 ---
 title: 'The Setup'
-description: 'Where all four dials live for an athlete — read it, adjust it, and it syncs instantly'
+description: 'Where an athlete''s dials live, how you adjust them, and what the athlete sees'
 sidebarTitle: 'The Setup'
 icon: 'gear'
 ---
@@ -9,38 +9,43 @@ icon: 'gear'
 
 <div id="the-setup" />
 
-**What it is.** The **Setup** is the single object where an athlete's four dials live together — their carriage and fill/mix, their [gluc:fruc ratio](/coaching/nutrition/gluc-fruc-ratio), and their [eco-mode vs products](/coaching/nutrition/eco-mode-vs-products) choice. It's the one place you go to read or change how an athlete fuels — open an athlete from your **[roster](https://coach.saturday.fit/dashboard)** to find it.
+**What it is.** The Setup is the object holding an athlete's fueling dials together: their carriage and fill, their [gluc:fruc ratio](/coaching/nutrition/gluc-fruc-ratio), and their [eco-mode position](/coaching/nutrition/eco-mode-vs-products). It is the one place to read or change how an athlete fuels.
 
-**When to turn it.** Any time you onboard, review, or troubleshoot an athlete's fueling — it's your control panel for everything on the dial pages. Reach it from your **[roster](https://coach.saturday.fit/dashboard)**.
+**When to open it.** Any time you onboard, review, or troubleshoot an athlete's fueling.
 
-**What changes for the athlete.** Their whole bottle and consumption plan updates and **syncs instantly** to their app. The athlete is always notified and can always revert it on their own device. (See [Co-piloting, not locking](/coaching/overview).)
+**What changes for the athlete.** Their bottle and consumption plan updates and syncs to their app immediately. The Setup lives on the same record the app watches in real time, so there is no separate publish step.
 
 **The question it answers.** *"Where do I actually go to change any of this?"*
 
-## Adjust Setup, from athlete-detail
+## Adjusting a Setup
 
-Open an athlete from your **[roster](https://coach.saturday.fit/dashboard)**, then **Adjust Setup**. A panel opens alongside the athlete's context:
+Open an athlete from your [roster](https://coach.saturday.fit/dashboard), then **Adjust Setup**. A panel opens alongside the athlete's context.
 
-1. **You see ground truth first.** The Setup opens showing the athlete's **current** dials read-only, with an Edit affordance — so you never make a blind change.
-2. **You edit the dials.** Carriage count and concentration, the fill & mix mapping, the gluc:fruc ratio, and the eco-mode toggle — using the same allowed ranges the app enforces, so you can never set a value the app would reject.
-3. **You see the impact in a sentence.** As you change a dial, Saturday shows a one-line preview ("This raises Sam's carb target to ~Xg/hr") — a sentence, not a graph.
-4. **You save, and it syncs.** A confirming toast with **Undo**; the change reaches the athlete's app immediately.
+1. **You see ground truth first.** The panel opens read-only on the athlete's current dials, with an edit affordance, so you never make a blind change.
+2. **You edit the dials.** Carriage slots for the chosen activity type, the gluc:fruc ratio, and the eco-mode control.
+3. **You see the impact in a sentence.** As you change a dial, Saturday recomputes and shows one line naming the athlete and their resulting carbohydrate, sodium and fluid per hour under the Setup you are contemplating. A sentence, not a graph.
+4. **You save.** The change reaches the athlete's app immediately, and a confirming toast offers a short undo window.
 
 ## The trust model
 
-- **The athlete is always told.** A coach Setup change fires a good-news notification to the athlete with a "see what changed / revert" option.
-- **The athlete's revert is the ultimate undo.** They can always undo a coach change on their own device. You co-pilot; they keep the wheel.
-- **You can undo too.** A short soft-undo window on save reverses to the pre-change snapshot before any athlete notification fires.
-- **Every edit is recorded.** Coach Setup edits are written to the org audit log with before/after, so there's always a record of what changed. You make these edits from an athlete in your **[roster](https://coach.saturday.fit/dashboard)**.
+- **The athlete is told.** A coach Setup change sends the athlete a notification naming you, linking to a screen showing that their Setup changed.
+- **The athlete keeps control.** They can open their Setup and change anything you set. You co-pilot; they keep the wheel.
+- **You get a brief undo.** For about seven seconds after saving, the toast offers Undo, which writes the previous values back. It re-reads first, so an undo cannot clobber a change the athlete made in the meantime.
+- **Every edit is recorded.** Coach Setup edits are written to the org audit log with before and after values.
+
+<Note>
+  **Undo does not un-send the notification.** The athlete is notified as soon as you save, not after the undo window closes. If you save and then undo, the athlete may already have been pinged, and undoing sends a second notification. When you are unsure of a change, use the impact sentence to check it before saving rather than relying on the undo.
+</Note>
 
 ## Edge cases worth knowing
 
-- **No Setup yet?** Open the athlete from your **[roster](https://coach.saturday.fit/dashboard)** and pre-fill it from defaults to help a less-techy athlete get started — they'll see it when they open the app (assisted onboarding).
-- **Athlete editing at the same time?** If the athlete changes their Setup while you're editing, Saturday shows you what they now have and lets you decide — it never blindly clobbers the athlete's own change.
-- **No edit permission?** If you're an assistant without Setup-edit access, the Adjust Setup action is hidden — ask your head coach to grant it from your **[team](https://coach.saturday.fit/dashboard/team)** settings. See [Permissions](/coaching/team/permissions).
+- **The athlete has no Setup yet.** Open them from your roster and pre-fill from defaults, so a less technical athlete arrives to a working plan.
+- **The athlete edits at the same time.** If the athlete changes their Setup while you are editing, your save is rejected rather than applied. Saturday shows you what they now have and lets you keep yours, take theirs, or merge. It never silently overwrites the athlete's own change.
+- **You lack Setup-edit access.** Adjusting a Setup is a separate grant an assistant coach does not hold by default. Without it, your save is refused and you are told to ask your head coach for access. See [Permissions](/coaching/team/permissions).
+- **A malformed change is refused whole.** If a Setup write arrives in the wrong shape, Saturday rejects the entire write rather than applying part of it, so a bad request can never half-land on the athlete's record.
 
 ## See also
 
-- [The dials overview](/coaching/nutrition/overview) — the model behind the Setup.
-- [The AI report](/coaching/roster/ai-report) — apply an AI plan straight into the Setup.
-- [Bottling — fill & mix](/coaching/nutrition/bottling-fill-mix) · [Gluc:fruc ratio](/coaching/nutrition/gluc-fruc-ratio) · [Eco-mode vs products](/coaching/nutrition/eco-mode-vs-products)
+- [The dials overview](/coaching/nutrition/overview) for the model behind the Setup.
+- [The AI report](/coaching/roster/ai-report) to open a Setup straight from an athlete's report.
+- [Bottling: fill & mix](/coaching/nutrition/bottling-fill-mix) · [Gluc:fruc ratio](/coaching/nutrition/gluc-fruc-ratio) · [Eco-mode vs products](/coaching/nutrition/eco-mode-vs-products)

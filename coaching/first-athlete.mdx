@@ -1,57 +1,62 @@
 ---
 title: 'Invite your first athlete'
-description: 'Invite, create, or bulk-import athletes — and what happens when they accept'
+description: 'Invite, create, or bulk-import athletes, and what happens when they accept'
 sidebarTitle: 'Your first athlete'
 icon: 'paper-plane'
 ---
 
 # Invite your first athlete
 
-Your **[roster](https://coach.saturday.fit/dashboard)** starts empty. Here's how to fill it — one athlete, a paste of many, or a CSV.
+Your **[roster](https://coach.saturday.fit/dashboard)** starts empty. You can fill it one athlete at a time, from a pasted block of emails, or from a CSV. Another coach can also transfer an athlete to you.
 
 ## Invite one athlete
 
-From your **[roster](https://coach.saturday.fit/dashboard)**, click **Invite** → **One athlete**. Enter their email (and optionally their name, which personalizes the invite). They get a branded email with a link to accept.
+From your **[roster](https://coach.saturday.fit/dashboard)**, click **Invite**, then the **One athlete** tab. Enter their email and, optionally, their name, which personalizes the invite. Saturday emails them a link and also gives you a shareable invite link you can send yourself.
 
-When they accept, they choose to share their Saturday data with you, and they appear on your **[roster](https://coach.saturday.fit/dashboard)**. If they don't have a Saturday account yet, the invite walks them through creating one.
+By default the invite says nothing about who pays: *"This athlete will be self-pay unless you cover them after they accept."* You can instead tick **I'll cover this athlete's Saturday subscription (coach-paid)** before sending. That commits you: when they accept, their billing switches to coach-paid, and the modal shows the estimated monthly cost first. If they already pay for Saturday, their existing plan is cancelled and the unused portion refunded. Lifetime members cost you nothing. The athlete sees the change before they accept.
+
+When they accept, they choose to share their Saturday data with you and they appear on your **[roster](https://coach.saturday.fit/dashboard)**. If they have no Saturday account yet, the invite walks them through creating one.
 
 <Note>
-  **Consent is built in.** An athlete always explicitly accepts coaching and agrees to share their data. You never silently gain access to someone's account.
+  **Consent is built in.** An athlete explicitly accepts coaching and agrees to the requested permissions. They can also decline. You never silently gain access to someone's account.
 </Note>
 
 ## Invite many at once
 
-From your **[roster](https://coach.saturday.fit/dashboard)**, click **Invite** → **Many (paste or CSV)**.
+From your **[roster](https://coach.saturday.fit/dashboard)**, click **Invite**, then the **Many (paste or CSV)** tab.
 
-- **Paste tab:** drop in a block of emails — commas, spaces, or one per line, mixed however. Saturday sorts them out as you type: valid emails turn green, duplicates collapse, typos get flagged for a quick fix, and anyone already on your roster is skipped. A running count shows "42 valid · 3 duplicates · 1 invalid."
-- **CSV tab:** drag in a `.csv`. Saturday auto-detects the email column (and an optional name column to personalize each invite). If it's ambiguous, you pick the column.
+- **Paste:** drop in a block of emails separated by commas, spaces, or newlines, mixed however they came. Saturday sorts them as you type. Valid addresses are marked for sending, duplicates collapse, anything that isn't an email is flagged for a quick fix, and anyone already on your roster is skipped. A running line counts all four: valid, duplicates, invalid, and already on roster.
+- **CSV:** drag in a `.csv` or click to choose one. Saturday detects the email column and an optional name column; if it is ambiguous, you pick the column. Very large files are rejected with a nudge to paste instead.
 
-Before sending, you'll see the **seat impact** — for example, "Inviting 42 athletes. Your plan includes 5 seats; the rest will be self-pay unless you cover them." Invites never auto-charge you; you decide coverage per athlete after they accept.
+Before sending you see the seat impact: your plan's included seats cover some of the batch, and the rest are self-pay unless you cover them. A **Cover all invited athletes (coach-paid)** toggle commits to covering the whole batch. Leave it off and no invite charges you; you decide coverage per athlete after each one accepts.
 
-## Create / set up an athlete for them
+## Set an athlete up for them
 
-Coaching a less-techy athlete? From **[athlete management](https://coach.saturday.fit/dashboard?view=manage)** you can **set up their fueling on their behalf** — pre-fill their [Setup](/coaching/nutrition/setup-dials) (bottles, mix, ratio) before they ever open the app — then hand off a one-tap "claim your account" invite. They arrive to a working configuration instead of a blank slate.
+Coaching a less-techy athlete? You can build their fueling **[Setup](/coaching/nutrition/setup-dials)** (bottles, mix, ratio) before they ever open the app, then use **Invite to claim their account** from the athlete's row menu. Saturday emails them a link to take ownership. They keep everything already there, their activities, products, and fueling plan, and you stay their coach. Nothing changes for you until they accept.
 
-## Manage pending invites
+## Manage invites and relationships
 
-Do this from **[athlete management](https://coach.saturday.fit/dashboard?view=manage)**.
+| Action | Where | What it does |
+|--------|-------|--------------|
+| **Cancel invite** | The pending athlete's row on your **[roster](https://coach.saturday.fit/dashboard)** | Withdraws an invite before it's accepted |
+| **Re-invite** | The **Invite** modal, same email | Sends the invitation again. A cooldown blocks rapid repeats, and an invitation that has expired needs a fresh one |
+| **Transfer or share** | Row menu, for an athlete already on your roster | Moves the athlete to another coach, or adds a second coach who can see their training |
+| **Remove from roster** | Row menu | Unlinks the athlete. They stay a Saturday user; you lose access to their fueling and can re-invite later |
 
-| Action | What it does |
-|--------|--------------|
-| **Resend** | Re-send an invite that hasn't been accepted yet |
-| **Cancel / revoke** | Withdraw an invite before it's accepted |
-| **Transfer** | Hand off an athlete to (or from) another coach — the athlete consents |
+An athlete awaiting acceptance carries a **Pending** badge on the roster.
+
+**Transfer** hands the athlete to another coach: your coverage ends at period end plus a 14-day grace, and the new coach can cover them or the athlete can take over. **Share** adds a viewer-coach who can see the athlete's training while you stay primary and keep handling their membership. Both wait on the receiving coach accepting the handoff, and the handoff link expires after 7 days.
 
 ## After they accept
 
 Once an athlete is on your **[roster](https://coach.saturday.fit/dashboard)** you can:
 
-- See their fueling history, adherence, and flags — see [Flags & groups](/coaching/roster/flags-and-groups).
-- Read their AI fueling report — see [AI report](/coaching/roster/ai-report).
-- View and adjust their **Setup** — see [The Setup](/coaching/nutrition/setup-dials).
-- Decide who pays for their Saturday subscription in **[billing](https://coach.saturday.fit/admin/billing)** — see [Who pays](/coaching/billing/who-pays).
-- **[Message](https://coach.saturday.fit/dashboard/messages)** them, or add them to a group from **[athlete management](https://coach.saturday.fit/dashboard?view=manage)**.
+- See their fueling history, adherence, and flags. See [Flags & groups](/coaching/roster/flags-and-groups).
+- Read their AI fueling report. See [AI report](/coaching/roster/ai-report).
+- View and adjust their **Setup**. See [The Setup](/coaching/nutrition/setup-dials).
+- Decide who pays for their Saturday subscription from their row. See [Who pays](/coaching/billing/who-pays).
+- **[Message](https://coach.saturday.fit/dashboard/messages)** them, or add them to a group.
 
 <Tip>
-  **The fastest first win:** invite an athlete from your **[roster](https://coach.saturday.fit/dashboard)**, open their AI report, and use "Apply this plan to their Setup."
+  A quick first pass: invite an athlete, open their fueling plan, and use **Apply this plan to Setup**.
 </Tip>

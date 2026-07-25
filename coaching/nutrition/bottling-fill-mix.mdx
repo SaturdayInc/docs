@@ -1,30 +1,40 @@
 ---
-title: 'Bottling — fill & mix'
-description: 'How Saturday turns per-hour targets into real bottles (carriage → consumption)'
-sidebarTitle: 'Bottling — fill & mix'
+title: 'Bottling: fill & mix'
+description: 'How Saturday turns per-hour targets into real bottles'
+sidebarTitle: 'Bottling: fill & mix'
 icon: 'bottle-water'
 ---
 
-# Bottling — fill & mix
+# Bottling: fill & mix
 
 <div id="bottling-fill-mix" />
 
-**What it is.** An athlete's **Setup** describes the bottles and flasks they carry — their **carriage** — and how each one is filled and mixed. Saturday maps the per-hour prescription onto that carriage so the athlete knows exactly what to put in each bottle and when to drink it. That's the whole journey: **carriage → consumption.** Open an athlete from your **[roster](https://coach.saturday.fit/dashboard)** to see their carriage.
+**What it is.** An athlete's Setup describes the vessels they carry, their **carriage**, and how each one is filled and mixed. Saturday maps the per-hour prescription onto that carriage, so the athlete knows what goes in each bottle and when to drink it.
 
-**When to turn it.** When the athlete's gear changes (more or fewer bottles, a bigger flask, a feed zone on course), when a too-concentrated mix is causing stomach trouble, or when what they carry doesn't cover the session's duration. Make the change from their Setup — open the athlete from your **[roster](https://coach.saturday.fit/dashboard)**.
+**When to change it.** When the athlete's gear changes, such as more or fewer bottles, a bigger flask, or a feed zone on course. When a mix that is too concentrated is causing stomach trouble. When what they carry does not cover the session's duration.
 
-**What changes for the athlete.** A concrete bottle plan — fill volumes, scoop counts, and a drink cadence — with none of the math left to them. They just drink the plan.
+**What the athlete gets.** A concrete bottle plan with fill volumes, scoop counts, and a drink cadence, with none of the math left to them.
 
-**The question it answers.** *"How much do I actually put in each bottle, and how often do I drink?"*
+**The question it answers.** *"How much do I put in each bottle, and how often do I drink?"*
+
+## How carriage is structured
+
+Carriage is stored per activity type, not globally. A cycling Setup and a running Setup are separate, each an ordered list of **slots**. A slot is one vessel with a maximum volume.
+
+So "how many bottles" is the slot count for that activity type, and "how big" is each slot's volume ceiling.
+
+<Note>
+  **There is no concentration dial.** Concentration is an outcome, not an input. You set what the athlete carries and how large each vessel is; Saturday works out how much carbohydrate and sodium go into each one to hit the prescription. To make a mix less concentrated, give the athlete more fluid capacity to spread the same carbohydrate across.
+</Note>
 
 ## What you do as a coach
 
-- **Read it first.** Open the athlete's current carriage from your **[roster](https://coach.saturday.fit/dashboard)** before changing anything — see ground truth, then adjust.
-- **Adjust the count and concentration.** Tap Adjust Setup to change how many bottles they carry and how concentrated each is. Saturday re-maps the consumption plan and shows a live impact sentence. ([How the Setup works](/coaching/nutrition/setup-dials).)
-- **Pre-fill for a new athlete.** Setting up a less-techy athlete? From your **[roster](https://coach.saturday.fit/dashboard)**, open them and dial in their bottling before they ever open the app — they arrive to a working plan (assisted onboarding).
+- **Read it first.** Open the athlete's current carriage before changing anything, so you are adjusting from ground truth rather than a guess.
+- **Edit the slots.** Pick the activity type, then add, remove, or resize slots. Saturday re-maps the consumption plan and shows a one-line impact preview as you go. See [The Setup](/coaching/nutrition/setup-dials).
+- **Pre-fill for a new athlete.** For an athlete who is less comfortable with the app, you can dial in their bottling from your roster before they ever open it, so they arrive to a working plan.
 
 ## See also
 
-- [The Setup](/coaching/nutrition/setup-dials) — where carriage and mix live and how to adjust them.
-- [Gluc:fruc ratio](/coaching/nutrition/gluc-fruc-ratio) — what goes *into* the mix.
-- [Eco-mode vs products](/coaching/nutrition/eco-mode-vs-products) — what you fill bottles with.
+- [The Setup](/coaching/nutrition/setup-dials) for where carriage lives and how to adjust it.
+- [Gluc:fruc ratio](/coaching/nutrition/gluc-fruc-ratio) for what goes into the mix.
+- [Eco-mode vs products](/coaching/nutrition/eco-mode-vs-products) for what you fill bottles with.
