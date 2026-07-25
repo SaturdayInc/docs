@@ -9,7 +9,7 @@ Saturday calculates personalized fuel, hydration, and electrolyte recommendation
 All requests require a Bearer token in the Authorization header. Partner API keys use the `sk_test_` (sandbox) or `sk_live_` (production) prefix.
 
 ```
-Authorization: Bearer sk_test_abc123def456
+Authorization: Bearer $SATURDAY_API_KEY
 ```
 
 Coaches have their own surface with its own credentials: a `cp_live_` / `cp_test_` coach API key, or an OAuth2 token carrying coach scopes.
