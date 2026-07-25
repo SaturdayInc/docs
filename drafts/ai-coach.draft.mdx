@@ -7,15 +7,17 @@ icon: 'robot'
 
 # AI Coach Integration
 
-Saturday's AI Coach provides conversational nutrition coaching powered by Claude and Gemini. Partners can embed this coaching experience directly in their platforms — athletes get personalized nutrition advice without leaving your app.
+Saturday's AI Coach is conversational nutrition coaching, powered by Claude and Gemini, that partners can embed in their own platforms so athletes get nutrition advice without leaving your app.
 
 <Note>
-  The AI Coach feature is currently in **STEALTH** stage and requires explicit alpha access. Contact [api@saturday.fit](mailto:api@saturday.fit) to request access.
+  The AI Coach endpoints are in **STEALTH** stage and require explicit alpha access. Until your partner account is enabled for them, every AI Coach path returns `404` with the same body as any unknown route, before authentication, so a `404` here means "not enabled for you", not "wrong URL". Contact [api@saturday.fit](mailto:api@saturday.fit) to request access.
 </Note>
+
+The examples read your key from a `SATURDAY_API_KEY` environment variable, as in [Quickstart](/quickstart). Sandbox keys are issued with their own base URL; using one against `api.saturday.fit` returns `401 invalid_api_key`.
 
 ## How it works
 
-The AI Coach is a context-aware nutrition expert that knows each athlete's profile, activity history, fueling preferences, and past feedback. It can:
+The AI Coach answers against each athlete's profile, activity history, fueling preferences, and past feedback. It can:
 
 - Answer nutrition questions specific to the athlete's situation
 - Explain why a prescription was calculated the way it was
@@ -23,29 +25,49 @@ The AI Coach is a context-aware nutrition expert that knows each athlete's profi
 - Recommend products based on preferences and tolerances
 - Provide pre-activity preparation instructions
 
-Communication happens via Server-Sent Events (SSE) for real-time streaming responses.
+Responses stream over Server-Sent Events (SSE).
 
 ## Conversation lifecycle
 
-```
-Create conversation → Send messages (SSE stream) → Get history → (Optional) Delete
-```
+Create a conversation, which streams its first response; send further messages, each streaming its own response; read history; optionally delete.
 
 ### Creating a conversation
+
+Creating a conversation sends the athlete's first message in the same call. Both `athlete_id` and `message` are required, and the response is an SSE stream, not a JSON body. The conversation ID arrives in the first event.
 
 <CodeGroup>
 
 ```python Python
+import json
+import os
 import requests
 
 response = requests.post(
     "https://api.saturday.fit/v1/ai/conversations",
-    headers={"Authorization": "Bearer sk_test_abc123def456"},
-    json={"athlete_id": "ath_abc123"},
+    headers={
+        "Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}",
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+    },
+    json={
+        "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+        "message": "What should I eat before my marathon on Saturday?",
+    },
+    stream=True,
 )
 
-conversation = response.json()
-conv_id = conversation["id"]
+conv_id = None
+event = None
+for line in response.iter_lines():
+    line = line.decode("utf-8") if line else ""
+    if line.startswith("event: "):
+        event = line[7:]
+    elif line.startswith("data: "):
+        data = json.loads(line[6:])
+        if event == "message_start":
+            conv_id = data["conversation_id"]
+        elif event == "text_delta":
+            print(data["delta"], end="", flush=True)
 ```
 
 ```typescript TypeScript
@@ -54,48 +76,45 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer sk_test_abc123def456",
+      Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
       "Content-Type": "application/json",
+      Accept: "text/event-stream",
     },
-    body: JSON.stringify({ athlete_id: "ath_abc123" }),
+    body: JSON.stringify({
+      athlete_id: "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      message: "What should I eat before my marathon on Saturday?",
+    }),
   }
 );
 
-const conversation = await response.json();
-const convId = conversation.id;
+let convId: string | undefined;
+for await (const { event, data } of readSSE(response)) {
+  if (event === "message_start") convId = data.conversation_id;
+  else if (event === "text_delta") process.stdout.write(data.delta);
+}
 ```
 
 </CodeGroup>
 
 ### Sending a message (SSE streaming)
 
-Messages return responses via Server-Sent Events. The AI streams its response token-by-token for a real-time typing experience.
+Subsequent messages go to the conversation's own path. The response streams exactly as above.
 
 <CodeGroup>
 
 ```python Python
-import requests
+import os
 
-# SSE streaming requires reading the response as a stream
 response = requests.post(
     f"https://api.saturday.fit/v1/ai/conversations/{conv_id}/messages",
     headers={
-        "Authorization": "Bearer sk_test_abc123def456",
+        "Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}",
         "Content-Type": "application/json",
         "Accept": "text/event-stream",
     },
-    json={"message": "What should I eat before my marathon on Saturday?"},
+    json={"message": "Can I swap the gel for real food?"},
     stream=True,
 )
-
-for line in response.iter_lines():
-    if line:
-        decoded = line.decode("utf-8")
-        if decoded.startswith("data: "):
-            chunk = decoded[6:]  # Strip "data: " prefix
-            if chunk == "[DONE]":
-                break
-            print(chunk, end="", flush=True)
 ```
 
 ```typescript TypeScript
@@ -104,96 +123,83 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer sk_test_abc123def456",
+      Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
       "Content-Type": "application/json",
       Accept: "text/event-stream",
     },
-    body: JSON.stringify({
-      message: "What should I eat before my marathon on Saturday?",
-    }),
+    body: JSON.stringify({ message: "Can I swap the gel for real food?" }),
   }
 );
-
-const reader = response.body!.getReader();
-const decoder = new TextDecoder();
-
-while (true) {
-  const { done, value } = await reader.read();
-  if (done) break;
-
-  const chunk = decoder.decode(value);
-  const lines = chunk.split("\n");
-
-  for (const line of lines) {
-    if (line.startsWith("data: ")) {
-      const data = line.slice(6);
-      if (data === "[DONE]") break;
-      process.stdout.write(data);
-    }
-  }
-}
 ```
 
 </CodeGroup>
 
 ### SSE event format
 
-```
-event: token
-data: The recommended
+Every event has a named type and a JSON `data` payload. There is no `[DONE]` sentinel; the stream ends with `message_end`.
 
-event: token
-data:  carbohydrate intake
+```
+event: message_start
+data: {"conversation_id": "9f3c1a7e-2b48-4d05-a6c1-7e0b3d5f8a12"}
+
+event: text_delta
+data: {"delta": "The recommended"}
+
+event: text_delta
+data: {"delta": " carbohydrate intake"}
 
 event: tool_call
-data: {"tool": "calculate_fuel", "status": "started"}
+data: {"tool": "calculate_fuel"}
 
 event: tool_result
 data: {"tool": "calculate_fuel", "result": {"carb_g_per_hr": 72}}
 
-event: token
-data:  for your marathon is 72g per hour
+event: text_delta
+data: {"delta": " for your marathon is 72g per hour"}
 
-event: done
-data: [DONE]
+event: message_end
+data: {"conversation_id": "9f3c1a7e-2b48-4d05-a6c1-7e0b3d5f8a12"}
 ```
 
-| Event type | Description |
-|------------|-------------|
-| `token` | A text chunk of the AI's response |
-| `tool_call` | The AI is calling an internal tool (calculation, product search, etc.) |
-| `tool_result` | The result of a tool call (informational — you don't need to act on this) |
-| `done` | Stream complete |
+| Event type | Payload | Meaning |
+|------------|---------|---------|
+| `message_start` | `{"conversation_id"}` | Stream opened. On conversation creation this is where you learn the new ID |
+| `text_delta` | `{"delta"}` | A chunk of the response text. Concatenate these in order |
+| `tool_call` | `{"tool"}` | The AI is about to call an internal tool |
+| `tool_result` | `{"tool", "result"}` | That tool's result. Informational; you do not need to act on it |
+| `safety_warning` | `{"message"}` | Safety text that must be shown to the athlete, see below |
+| `error` | `{"message"}` | Generation failed. The stream still closes normally |
+| `message_end` | `{"conversation_id"}` | Stream complete |
+
+Handle unknown event types by ignoring them; more may be added.
+
+Text is validated before it reaches you, one sentence at a time, so a `text_delta` lags the model slightly rather than arriving token by token. Two consequences worth handling:
+
+- A sentence that fails validation is replaced with a bracketed redaction placeholder delivered as an ordinary `text_delta`, so the response stays readable but is not what the model wrote.
+- If generation crosses an absolute safety limit, the remaining text is dropped and you receive a `safety_warning` event explaining that generation was halted. `message_end` still fires afterwards, so `message_end` alone does not mean the answer is complete. Surface `safety_warning` content to the athlete rather than discarding it, and point them at the structured prescription from the calculate endpoints for the actual numbers.
 
 ## Tool call budgets
 
-The AI Coach has access to internal tools (fuel calculations, product lookups, knowledge base search). Each conversation has a per-message tool call budget to prevent runaway costs:
+The AI Coach calls internal tools to do its work, such as running a fuel calculation or searching the product database. Saturday enforces the budgets; partners neither set nor see them:
 
-| Context | Budget | Tools available |
-|---------|--------|-----------------|
-| Standard message | 5 calls | calculate_fuel, search_products, search_knowledge, get_athlete_settings, prep_simulation |
-| Complex planning | 8 calls | All standard + compare_scenarios, batch_calculate, gear_analysis |
+| Budget | Limit |
+|--------|-------|
+| Tool calls per message turn | 10 |
+| Tool calls per conversation | 100 |
+| Tool calls per partner per day | 5,000 |
 
-Partners don't manage this budget — Saturday enforces it automatically. If the AI exhausts its budget, it provides the best answer possible with the tools it already called.
+When a budget is exhausted the blocked call returns an error to the model rather than failing your request, and the AI answers with what it already gathered. The tool names that appear in `tool_call` events are internal and can change; do not branch on them.
 
 ## Wrapping Saturday AI in your AI
 
-If your platform already has its own AI assistant, you can wrap Saturday's coaching into it:
+If your platform already has its own AI assistant, it can act as the orchestrator: it sends the athlete's question to the AI Coach on their behalf, reads the streamed response, and incorporates it into its own output. The athlete never sees Saturday's interface, and you still get coaching grounded in their Saturday profile.
 
-### Architecture pattern
+### Constraints for AI-to-AI use
 
-```
-Your AI (orchestrator) → Saturday AI Coach API → Response to your AI → Your AI presents to athlete
-```
-
-Your AI sends questions to Saturday's AI Coach on behalf of the athlete, receives the streamed response, and incorporates it into your own AI's output. This avoids exposing Saturday's UI directly while still getting personalized nutrition coaching.
-
-### Important constraints for AI-to-AI
-
-- **Respect `not_instructions: true`** — Saturday's responses are guidance for human consideration, not commands for automated execution
-- **Don't strip safety warnings** — if Saturday's AI mentions a safety concern, your AI must surface it to the athlete
-- **Don't modify prescriptions** — your AI should present Saturday's numbers as-is, not adjust them
-- **Include attribution** — for teaser tier, "Powered by Saturday" must be visible to the athlete
+- **Respect `not_instructions: true`.** Saturday's responses are guidance for a human to consider, not commands for automated execution.
+- **Don't strip safety warnings.** If a response raises a safety concern, your AI must surface it to the athlete.
+- **Don't modify prescriptions.** Present Saturday's numbers as returned rather than adjusting them.
+- **Include attribution.** For teaser tier, "Powered by Saturday" must be visible to the athlete.
 
 ## Conversation history
 
@@ -202,9 +208,11 @@ Retrieve past messages for a conversation:
 <CodeGroup>
 
 ```python Python
+import os
+
 response = requests.get(
     f"https://api.saturday.fit/v1/ai/conversations/{conv_id}/messages",
-    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
 )
 
 messages = response.json()["messages"]
@@ -216,7 +224,7 @@ for msg in messages:
 const response = await fetch(
   `https://api.saturday.fit/v1/ai/conversations/${convId}/messages`,
   {
-    headers: { Authorization: "Bearer sk_test_abc123def456" },
+    headers: { Authorization: `Bearer ${process.env.SATURDAY_API_KEY}` },
   }
 );
 
@@ -232,7 +240,7 @@ messages.forEach((msg: any) => console.log(`[${msg.role}] ${msg.content}`));
 GET /v1/athletes/{athlete_id}/ai/conversations
 ```
 
-Returns all conversations for an athlete, with metadata (message count, last activity, summary).
+Returns all conversations for an athlete with their metadata: message count, last activity, and summary.
 
 ## Deleting a conversation
 
@@ -240,16 +248,19 @@ Returns all conversations for an athlete, with metadata (message count, last act
 DELETE /v1/ai/conversations/{conv_id}
 ```
 
-Permanently removes the conversation and all messages. This supports GDPR right to erasure.
+Returns `204` and removes the conversation document and every message in it, which is what you call to service a GDPR erasure request. Deleting also releases the concurrency slot, so delete conversations you are done with rather than leaving them open.
 
-## Rate limiting for AI
+## Limits
 
-AI Coach endpoints have separate rate limits from standard API calls due to higher compute cost:
+AI Coach endpoints carry their own limits on top of your account's standard rate limit, because each call costs far more compute than a calculate:
 
 | Limit | Value |
 |-------|-------|
-| Messages per minute per athlete | 10 |
-| Concurrent conversations per partner | 50 |
-| Max message length | 2,000 characters |
+| Concurrent open conversations per partner | 10 |
+| New conversations per partner per day | 1,000 |
+| `message` field | 10 KB |
+| Whole request body | 32 KB |
 
-Exceeding these limits returns a standard `429` response with `Retry-After` header.
+Exceeding a conversation limit returns `429` with a `Retry-After` header and the code `conversation_limit_exceeded`. An oversized message returns `400` with `message_too_long`.
+
+A conversation slot is held for as long as the stream is open and released when you delete the conversation. Abandoned streams are reclaimed after two hours of inactivity, so a client that drops connections without deleting conversations will eventually hit the concurrency limit.

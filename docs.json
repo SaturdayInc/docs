@@ -94,7 +94,6 @@
           {
             "group": "Integration Guides",
             "pages": [
-              "guides/ai-coach",
               "guides/webhooks",
               "guides/oauth2",
               "guides/organizations",
