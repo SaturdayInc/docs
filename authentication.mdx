@@ -6,67 +6,65 @@ sidebarTitle: 'Authentication'
 
 # Authentication
 
-Saturday supports three authentication methods depending on your use case:
+Saturday has three authentication methods, one per principal type:
 
 | Method | Use case | How it works |
 |--------|----------|--------------|
-| **Partner API Key** | Server-to-server partner integration | `sk_*` Bearer token in Authorization header |
-| **Coach API Key** | A coach's own scripts/automation against their roster | `cp_*` Bearer token in Authorization header |
-| **OAuth2** | Athlete- or coach-delegated access (incl. the Claude connector) | Authorization code flow with PKCE |
+| **Partner API Key** | Server-to-server partner integration | `sk_*` Bearer token in the `Authorization` header |
+| **Coach API Key** | A coach's own scripts against their roster | `cp_*` Bearer token in the `Authorization` header |
+| **OAuth2** | Athlete- or coach-delegated access, including the Claude connector | Authorization code flow with PKCE |
 
-Most partner integrations start with API keys. Add OAuth2 when you need athletes (or coaches) to connect their existing Saturday accounts. Coaches automating against their own roster use a coach API key — see the [Coach API](/guides/coach-api).
+Most partner integrations start with API keys. Add OAuth2 when you need athletes or coaches to connect their existing Saturday accounts. Coaches automating against their own roster use a coach API key, covered in the [Coach API](/guides/coach-api).
 
 ## API keys
 
-All server-to-server requests use API keys passed in the `Authorization` header as Bearer tokens.
+All server-to-server requests pass the key in the `Authorization` header as a Bearer token.
 
 ### Key types
 
-Saturday uses prefixed API keys to prevent environment mistakes:
+The prefix encodes both the principal and the environment, so a misrouted key fails closed instead of touching the wrong data.
 
 | Prefix | Environment | Purpose |
 |--------|-------------|---------|
-| `sk_test_` | Sandbox | Partner key — development and testing. Returns realistic data, no rate limit pressure. |
-| `sk_live_` | Production | Partner key — real athlete data. Standard rate limits apply. |
-| `cp_test_` | Sandbox | Coach key — a coach's roster surface (`/v1/coach/*`) in test. |
-| `cp_live_` | Production | Coach key — a coach's roster surface in production. Requires the Business tier or higher. |
+| `sk_test_` | Sandbox | Partner key for development and testing |
+| `sk_live_` | Production | Partner key against real athlete data |
+| `cp_test_` | Sandbox | Coach key for a coach's roster surface (`/v1/coach/*`) |
+| `cp_live_` | Production | Coach key in production. Requires the Business tier or higher |
 
-Coach keys (`cp_*`) are minted in the [coach portal](https://coach.saturday.fit) under **[Settings → API Keys](https://coach.saturday.fit/admin/api-keys)**, not via `api@saturday.fit`. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster + own config.
+Coach keys (`cp_*`) are minted in the [coach portal](https://coach.saturday.fit) under **[API Keys](https://coach.saturday.fit/admin/api-keys)**, not via `api@saturday.fit`. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster and own config. A coach whose subscription lapses below Pro Coach loses `cp_` key access on the next request.
+
+Coach keys use their own scope vocabulary, chosen at mint time in the portal: `roster:read`, `roster:write`, `billing:read`, `billing:write`, `org:read`, `org:write`, `webhooks:manage`. That is a different model from the partner-key scopes below, and the two do not mix.
 
 ```bash
-# Sandbox
-curl -H "Authorization: Bearer sk_test_abc123..." https://api.saturday.fit/v1/nutrition/calculate
-
-# Production
-curl -H "Authorization: Bearer sk_live_xyz789..." https://api.saturday.fit/v1/nutrition/calculate
+curl -H "Authorization: Bearer $SATURDAY_API_KEY" \
+  https://api.saturday.fit/v1/nutrition/calculate
 ```
 
 <Warning>
-  **Never expose live keys in client-side code.** API keys should only be used in server-to-server requests. If you suspect a key has been compromised, rotate it immediately.
+  Never expose live keys in client-side code. API keys belong in server-to-server requests only. If you suspect a key has been compromised, revoke it immediately.
 </Warning>
 
 ### Getting your keys
 
-1. Contact [api@saturday.fit](mailto:api@saturday.fit) with your platform name and use case
-2. You'll receive a sandbox key after vetting
-3. Complete integration testing to receive your production key
+Self-serve accounts are issued a key at checkout. It is revealed once on the success page and emailed. If it never arrived, `POST /v1/signup/resend` with your checkout session id rotates and re-sends it.
+
+Platform partners are issued keys as part of the agreement: contact [api@saturday.fit](mailto:api@saturday.fit) with your platform name and use case. See [Getting Access](/access) for which lane applies to you.
 
 ### Using your key
-
-Include the key in the `Authorization` header on every request:
 
 <CodeGroup>
 
 ```python Python
+import os
 import requests
 
-headers = {"Authorization": "Bearer sk_test_abc123def456"}
+headers = {"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"}
 response = requests.get("https://api.saturday.fit/v1/athletes", headers=headers)
 ```
 
 ```typescript TypeScript
 const response = await fetch("https://api.saturday.fit/v1/athletes", {
-  headers: { Authorization: "Bearer sk_test_abc123def456" },
+  headers: { Authorization: `Bearer ${process.env.SATURDAY_API_KEY}` },
 });
 ```
 
@@ -74,82 +72,86 @@ const response = await fetch("https://api.saturday.fit/v1/athletes", {
 
 ### Key management
 
-**Creating additional keys:**
+**Creating additional keys.** One key per service or deployment stage keeps a compromise contained and makes rotation a non-event.
 
 ```bash
 curl -X POST https://api.saturday.fit/v1/partner/api-keys \
-  -H "Authorization: Bearer sk_live_xyz789..." \
+  -H "Authorization: Bearer $SATURDAY_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{ "name": "production-nutrition-service", "environment": "live" }'
+  -d '{ "name": "production-nutrition-service", "environment": "live", "scopes": ["*"] }'
 ```
+
+`scopes` accepts `["*"]` for unrestricted, `["read"]` for `GET`/`HEAD`/`OPTIONS`, and `["write"]` for `POST`/`PUT`/`PATCH`/`DELETE`. A read-write key needs both listed: `write` does not imply `read`. A request outside a key's scopes gets a `403` with code `insufficient_scope`.
 
 <Note>
-  **Save the key immediately.** The full key value is only returned once at creation time. Store it securely — you won't be able to retrieve it later.
+  Save the key immediately. The full value is returned once at creation. The `id` in that response is what the rotate and revoke endpoints take, and it is not derivable from the key itself, so store it too.
 </Note>
 
-**Rotating keys:**
-
-Key rotation creates a new key and keeps the old one valid for 72 hours:
+**Rotating keys.** Rotation mints a replacement and revokes the old key in the same call, with no grace period. The old key stops working immediately.
 
 ```bash
-curl -X POST https://api.saturday.fit/v1/partner/api-keys/key_abc123/rotate \
-  -H "Authorization: Bearer sk_live_xyz789..."
+curl -X POST https://api.saturday.fit/v1/partner/api-keys/{key_id}/rotate \
+  -H "Authorization: Bearer $SATURDAY_API_KEY"
 ```
 
-**Revoking keys:**
+For a cutover with no downtime, do not rotate. Create a second key, deploy it everywhere, confirm traffic has moved, then revoke the first.
 
-Immediately invalidate a key (no grace period):
+**Revoking keys.** Revocation takes effect immediately.
 
 ```bash
-curl -X DELETE https://api.saturday.fit/v1/partner/api-keys/key_abc123 \
-  -H "Authorization: Bearer sk_live_xyz789..."
+curl -X DELETE https://api.saturday.fit/v1/partner/api-keys/{key_id} \
+  -H "Authorization: Bearer $SATURDAY_API_KEY"
 ```
 
 ## Environments
 
 | Environment | Base URL | Data |
 |-------------|----------|------|
-| Sandbox | `https://api.saturday.fit` | Synthetic test data |
 | Production | `https://api.saturday.fit` | Real athlete data |
+| Sandbox | Issued with your `sk_test_` key | Synthetic test data |
 
-Both environments use the same base URL — the API key prefix determines which environment you're operating in.
+The key prefix and the base URL travel together. A `sk_test_` key does not authenticate against `api.saturday.fit`.
 
 ### Sandbox behavior
 
-- All endpoints work identically to production
-- Athlete data is isolated — sandbox athletes are not real people
-- Rate limits are relaxed (higher limits for testing)
-- Nutrition calculations return realistic but synthetic results
+- Athlete data is isolated. Sandbox athletes are not real people
+- Nutrition calculations run the same engine as production, on sandbox profiles
+- `POST /v1/test/athletes/{athlete_id}/simulate-subscription` flips an athlete between tiers and fires the matching webhook. It exists only in sandbox
+- Teaser subscribe links carry `test=1` so the whole checkout loop resolves against sandbox
+- Rate limits are enforced by the same code path as production, from your account's configured limits. Sandbox is not exempt
 - No billing impact
 
-## Security best practices
+## Security practices
 
-1. **Store keys in environment variables**, not in source code
-2. **Use separate keys** for different services or deployment stages
-3. **Rotate keys regularly** — at minimum every 90 days
-4. **Monitor usage** for unexpected patterns
-5. **Revoke immediately** if a key is exposed in logs, repos, or client code
-6. **Never send keys over unencrypted channels** — all API traffic uses HTTPS
+1. Store keys in environment variables, not in source code
+2. Use separate keys for different services and deployment stages
+3. Rotate on a schedule you can keep, and immediately on any suspected exposure
+4. Watch `/v1/partner/usage` for patterns you cannot account for
+5. Revoke immediately if a key appears in logs, repos, or client code
 
 ## Error responses
 
-Authentication failures return a `401` status:
+Authentication and authorization failures share the standard [error envelope](/error-handling):
 
 ```json
 {
   "error": {
     "type": "authentication_error",
     "code": "invalid_api_key",
-    "message": "The API key provided is invalid or has been revoked.",
-    "documentation_url": "https://api.saturday.fit/docs/authentication",
+    "message": "Invalid API key.",
+    "documentation_url": "https://docs.saturday.fit/errors#invalid_api_key",
     "request_id": "req_abc123def456"
   }
 }
 ```
 
-| Code | Meaning |
-|------|---------|
-| `invalid_api_key` | Key doesn't exist or has been revoked |
-| `expired_api_key` | Key was rotated and the grace period has passed |
-| `environment_mismatch` | Using a test key to access production data or vice versa |
-| `missing_authorization` | No `Authorization` header provided |
+| Code | Type | Status | Meaning |
+|------|------|--------|---------|
+| `missing_authorization` | `authentication_error` | 401 | No `Authorization` header |
+| `invalid_api_key` | `authentication_error` | 401 | Key doesn't exist, or the header isn't `Bearer <token>` |
+| `api_key_revoked` | `authentication_error` | 403 | Key revoked, or the account is suspended. For a self-serve account this usually means the subscription lapsed, and renewing reactivates the same key |
+| `insufficient_scope` | `authorization_error` | 403 | The key's scopes don't permit this method |
+| `coach_tier_required` | `authorization_error` | 403 | A `cp_` key whose coach is below Pro Coach |
+| `internal_error` | `api_error` | 503 | Key verification is temporarily unavailable. Retry rather than rotating a working key |
+
+A key used against the wrong environment resolves as `invalid_api_key`, because the key does not exist in that environment's records.

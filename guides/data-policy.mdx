@@ -7,7 +7,7 @@ icon: 'scale-balanced'
 
 # Data Policy
 
-This page covers how partners may and may not use data returned by Saturday's API. These rules protect athletes, protect Saturday's intellectual property, and ensure the API ecosystem remains trustworthy.
+This page covers how partners may and may not use data returned by Saturday's API. The rules exist to protect athletes and Saturday's intellectual property.
 
 ## Data license
 
@@ -23,7 +23,7 @@ Partners may use API response data for:
 
 ### Prohibited uses
 
-Partners may NOT use API response data for:
+Partners may not use API response data for:
 
 - **Training** machine learning or AI models
 - **Fine-tuning** language models or other generative AI systems
@@ -34,18 +34,17 @@ Partners may NOT use API response data for:
 - **Creating** derivative databases from product catalog data
 
 <Warning>
-  **The training prohibition is explicit and serious.** Saturday's prescriptions are the product of 15 years of coaching expertise, a PhD in Sport Physiology, and months of algorithm development. Using API responses to train a competing model is grounds for immediate termination.
+  Saturday's prescriptions are the product of 15 years of coaching expertise and a PhD in Sport Physiology. Using API responses to train a competing model is grounds for immediate termination.
 </Warning>
 
 ## Response headers
 
-Every API response includes data policy headers:
+| Header | Sent on | Value |
+|--------|---------|-------|
+| `X-Saturday-Data-License` | Every response, including errors and 404s | `Response data is licensed for display to end users only. Use for ML/AI training, model fine-tuning, data aggregation, reverse engineering, or redistribution is prohibited.` |
+| `X-Saturday-Data-Attribution` | Teaser-tier responses | `required` |
 
-| Header | Value | Meaning |
-|--------|-------|---------|
-| `X-Saturday-Data-License` | `display-only` | Data may only be displayed to end users |
-| `X-Saturday-Data-Attribution` | `required` or `optional` | Whether "Powered by Saturday" is required |
-| `X-Saturday-Data-Training` | `prohibited` | ML/AI training on response data is prohibited |
+The license header is set before authentication runs, so it appears on rate-limit rejections and auth failures too. Match on the header's presence rather than parsing its text, which may be reworded.
 
 ## Attribution requirements
 
@@ -57,7 +56,7 @@ When displaying teaser/free response data, partners must show "Powered by Saturd
 - **Link**: Attribution must link to `saturday.fit` or the subscription `subscribe_url`
 - **Mark**: use the "Powered by Saturday" logo where it fits; appropriately sized plain text is a valid fallback
 
-The `X-Saturday-Data-Attribution: required` header signals this programmatically.
+Teaser responses carry `X-Saturday-Data-Attribution: required`, and repeat the same terms in the response body's `attribution` object.
 
 ### Full tier (required, lighter)
 
@@ -71,7 +70,7 @@ Full placement, sizing, and per-surface rules: [Brand & Attribution](/guides/att
 
 ## Safety disclaimer
 
-Partners must include a visible disclaimer in their application stating that nutrition prescriptions are **guidance, not medical instructions**. Saturday provides sports nutrition recommendations based on physiological models — not medical advice.
+Partners must include a visible disclaimer in their application stating that nutrition prescriptions are **guidance, not medical instructions**. Saturday provides sports nutrition recommendations based on physiological models, which are not medical advice.
 
 ### Required disclaimer language
 
@@ -119,10 +118,10 @@ Saturday retains athlete data only for as long as the partner account is active,
 
 Saturday's curated product database (186+ endurance nutrition products) is competitive intellectual property. The following protections apply:
 
-- **All product queries require an `athlete_id`** — no anonymous product browsing
-- **Per-athlete rate limits** on product endpoints
-- **No bulk export** — product listing endpoints are paginated with a maximum page size
-- **All product access is logged** with partner_id, athlete_id, and query
+- **All product queries require an `athlete_id`.** There is no anonymous product browsing.
+- **Per-athlete rate limits** apply on product endpoints. Queries past the limit are served with a progressive delay rather than an error, so a legitimate burst still works and a crawl does not.
+- **No bulk export.** Product listing endpoints are cursor-paginated with a maximum page size of 10.
+- **All product access is logged** with partner_id, athlete_id, and the query.
 
 Systematic scraping, automated enumeration, or bulk extraction of the product database is grounds for immediate account suspension.
 

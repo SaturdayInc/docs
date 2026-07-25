@@ -1,42 +1,39 @@
 ---
 title: 'Activities'
-description: 'Activity lifecycle — creating, prescribing, and tracking'
+description: 'Creating activities, prescribing for them, and recording how they went'
 sidebarTitle: 'Activities'
 icon: 'bicycle'
 ---
 
 # Activities
 
-Activities represent individual training sessions or races. Each activity belongs to an athlete and can have a nutrition prescription, selected products, and post-activity feedback attached.
+An activity is one training ride, run, swim, or race. Each activity belongs to an athlete and can carry a nutrition prescription and post-activity feedback.
+
+Whatever your platform calls these (workouts, sessions, events), the Saturday object is an activity, and every field and route below uses that word.
 
 ## Activity lifecycle
 
-```
-Create activity -> Calculate prescription -> (Optional) Add products -> (Optional) Submit feedback
-```
-
-1. **Create** the activity with type, duration, and optional intensity/thermal stress
-2. **Calculate** a nutrition prescription for it
-3. **Add products** the athlete plans to use (optional — for preparation planning)
-4. **Submit feedback** after the activity (optional — improves future prescriptions)
+1. **Create** the activity with type and duration, plus intensity and thermal stress if you have them.
+2. **Calculate** a nutrition prescription for it.
+3. **Submit feedback** afterward, if you collect it.
 
 ## Creating an activity
 
 <CodeGroup>
 
 ```python Python
+import os
 import requests
 
 response = requests.post(
     "https://api.saturday.fit/v1/athletes/ath_abc123/activities",
-    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
         "type": "run",
-        "name": "Saturday long run",
         "duration_min": 120,
         "intensity_level": 5,
-        "scheduled_at": "2025-01-15T07:00:00Z",
         "thermal_stress_level": 4,
+        "external_id": "your-activity-88213",
     },
 )
 
@@ -50,16 +47,15 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer sk_test_abc123def456",
+      Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       type: "run",
-      name: "Saturday long run",
       duration_min: 120,
       intensity_level: 5,
-      scheduled_at: "2025-01-15T07:00:00Z",
       thermal_stress_level: 4,
+      external_id: "your-activity-88213",
     }),
   }
 );
@@ -79,24 +75,18 @@ console.log(`Activity ID: ${activity.id}`);
 | `intensity_level` | integer | No | 1-9 scale |
 | `thermal_stress_level` | integer | No | 1-9 scale |
 | `is_race_event` | boolean | No | Whether this is a race |
-| `name` | string | No | Human-readable label |
-| `scheduled_at` | string | No | ISO 8601 datetime |
+| `meal_before_min` | integer | No | Minutes between the athlete's last meal and the start |
+| `external_id` | string | No | Your platform's activity ID |
+
+Create accepts these fields and no others. There is no field for a display name or a scheduled start time; keep those on your side and join on `external_id`.
+
+`external_id` is worth sending. Saturday's hosted onboarding finish screen uses it to deep-link the athlete back into the matching activity in your app.
 
 ### Multi-sport activities
 
-For triathlons and brick workouts, specify sub-activities:
+Each activity carries one `type`, and Saturday prescribes for that type: an athlete fuels differently on the bike than on the run. For a triathlon or a brick, create one activity per leg.
 
-```json
-{
-  "type": "bike",
-  "name": "Olympic distance race",
-  "duration_min": 165,
-  "intensity_level": 8,
-  "is_race_event": true
-}
-```
-
-Saturday calculates prescriptions tailored to the activity type — you fuel differently on the bike than on a run.
+To work out which legs a multi-sport title implies, use `POST /v1/infer/brick-types`.
 
 ## Calculating a prescription
 
@@ -104,14 +94,14 @@ Saturday calculates prescriptions tailored to the activity type — you fuel dif
 POST /v1/athletes/{athlete_id}/activities/{activity_id}/calculate
 ```
 
-This uses the activity's parameters and the athlete's profile to generate a personalized prescription. Recalculating overwrites the previous prescription — use this when activity parameters change (e.g., updated weather forecast).
+This combines the activity's parameters with the athlete's profile. Recalculating overwrites the previous prescription, so call it again whenever the activity changes: a revised duration, a new weather forecast.
 
 The response is tier-aware, with the same semantics as `/v1/nutrition/calculate`:
 
-- **Full tier** (subscribed, covered, or in-trial athletes): `tier: "full"` with the exact `prescription` object (carb/sodium/fluid totals and per-hour rates), stored on the activity. Trial responses also carry `tier_source: "trial"`, `trial_ends_at`, and `trial_calls_remaining_today` — each calculation debits the trial's daily call allowance, exactly like nutrition calculate.
-- **Teaser tier**: `tier: "teaser"` with per-hour *ranges* (`carb_range_g_per_hr`, `sodium_range_mg_per_hr`, `fluid_range_ml_per_hr`), a `subscription_cta` with the athlete's subscribe link, and required attribution. Nothing is stored — `GET .../prescription` keeps returning the last full-tier result, if any.
+- **Full tier** (subscribed, covered, or in-trial athletes): `tier: "full"` with the `prescription` object (carb, sodium, and fluid totals and per-hour rates), stored on the activity. Trial responses also carry `tier_source: "trial"`, `trial_ends_at`, and `trial_calls_remaining_today`. Each calculation debits the trial's daily call allowance, exactly like nutrition calculate.
+- **Teaser tier**: `tier: "teaser"` with per-hour ranges (`carb_range_g_per_hr`, `sodium_range_mg_per_hr`, `fluid_range_ml_per_hr`), a `subscription_cta` carrying the athlete's subscribe link, and required attribution. Nothing is stored, so `GET .../prescription` keeps returning the last full-tier result if there was one.
 
-`safety` metadata is always included regardless of tier.
+`safety` metadata is included on every tier.
 
 ## Getting a stored prescription
 
@@ -130,21 +120,28 @@ Returns the most recently calculated prescription for this activity, wrapped wit
     "total_carb_g": 125,
     "total_sodium_mg": 970,
     "total_fluid_ml": 1240,
-    "calculated_at": "2025-01-15T06:55:00Z"
+    "calculated_at": 1737010500
   },
   "safety": {
-    "max_safe_fluid_ml_per_hr": 1801,
-    "max_safe_sodium_mg_per_hr": 5000,
-    "confidence_score": 0.85,
-    "not_instructions": true,
-    "warnings": []
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0,
+    "requires_human_review": false,
+    "warnings": null,
+    "not_instructions": true
   }
 }
 ```
 
+`calculated_at` is a Unix timestamp in seconds, not an ISO 8601 string. Timestamps across the athlete and activity objects (`created_at`, `updated_at`) use the same encoding.
+
 <Note>
-  The `{prescription, safety}` envelope is consistent across all Saturday endpoints that return prescription data. Always read `prescription.*` for values and `safety.*` for guardrail information. The `not_instructions: true` flag signals that these are recommendations for human consideration, not executable commands.
+  The `{prescription, safety}` envelope is the same on every Saturday endpoint that returns prescription data. Read `prescription.*` for values and `safety.*` for guardrails. The `not_instructions: true` flag marks these as recommendations for a person to consider, not commands to execute.
 </Note>
+
+<Warning>
+  The activity-scoped endpoints populate the two ceilings and `not_instructions`, but not the rest of the block: `confidence_score` comes back as `0` and `warnings` as `null` from both this read and `POST .../calculate`. Handle the null, and do not render that zero as a confidence of zero. When you need a confidence score or prescription warnings, call `POST /v1/nutrition/calculate` with the same parameters. See [Safety](/guides/safety#where-each-safety-field-is-populated).
+</Warning>
 
 ## Getting an activity with prescription
 
@@ -152,26 +149,29 @@ Returns the most recently calculated prescription for this activity, wrapped wit
 GET /v1/athletes/{athlete_id}/activities/{activity_id}
 ```
 
-The activity response includes the prescription inline, along with any attached products.
+The activity response carries the stored prescription inline.
 
 ## Listing activities
 
 ```bash
-GET /v1/athletes/{athlete_id}/activities?from=2025-01-01&to=2025-01-31&type=running
+GET /v1/athletes/{athlete_id}/activities?limit=50&cursor=1737043200
 ```
 
-Supports filtering by date range and type.
+Activities come back newest first, paginated by cursor. `limit` defaults to 50 and is clamped to 1-200; pass `pagination.next_cursor` back as `cursor` for the next page. There are no date-range or type filters; filter on your side, or track activities by `external_id`.
 
 ## Submitting feedback
 
-Post-activity feedback improves future prescriptions:
+Record how the fueling went:
 
 <CodeGroup>
 
 ```python Python
+import os
+import requests
+
 response = requests.post(
     "https://api.saturday.fit/v1/athletes/ath_abc123/activities/act_xyz789/feedback",
-    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
         "rating": 4,
         "notes": "Felt good until mile 18, then energy dropped",
@@ -185,7 +185,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer sk_test_abc123def456",
+      Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -205,13 +205,11 @@ const response = await fetch(
 | `rating` | integer | Yes | Overall prescription quality, 1 (poor) to 5 (excellent) |
 | `notes` | string | No | Free-text feedback on how the fueling went |
 
-<Tip>
-  Feedback is the single most valuable signal for improving future prescriptions. The more activities with feedback, the more personalized Saturday becomes. Encourage athletes to submit feedback — even simple ratings help.
-</Tip>
+Feedback is stored on the activity and returned with it on read, so your UI can show an athlete what they said last time and a coach can review a block of training. It does not currently feed back into the calculation: prescriptions come from the athlete's profile and the activity's parameters, and a rated activity does not change the next one. Update the profile fields to change future prescriptions.
 
 ## Activity type inference
 
-If your platform has activity metadata but not a clean type, Saturday can infer it:
+If your platform has activity metadata but not a clean type, Saturday can infer one:
 
 ```bash
 POST /v1/infer/activity-type
@@ -226,12 +224,16 @@ POST /v1/infer/activity-type
 ```
 
 Response:
+
 ```json
 {
-  "inferred_type": "run",
-  "confidence": 0.95,
-  "intensity_hint": "easy"
+  "type": "run",
+  "confidence": 0.95
 }
 ```
 
-For multi-sport titles like "Bike/run brick", use `POST /v1/infer/brick-types`.
+`type` is one of the seven activity keys or `"unknown"`. Inference never fails the request: when the model is unavailable or the evidence is too thin, you get `"unknown"` with `confidence: 0`, so branch on the type rather than on an error.
+
+Sending more than a title sharpens the result. The endpoint also reads `pre_activity_comment`, `workout_type` (your provider's own coarse type), `velocity` in m/s, `has_power`, and `cadence`, and those structured signals resolve most cases before the model is consulted.
+
+For multi-sport titles like "Bike/run brick", use `POST /v1/infer/brick-types`. It returns `sub_types` (for example `["bike", "run"]`) with a single `confidence`, and you create one activity per leg.

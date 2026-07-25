@@ -6,20 +6,18 @@ sidebarTitle: 'Error Handling'
 
 # Error Handling
 
-Saturday uses a consistent error format across all endpoints, modeled on Stripe's error structure. Errors are predictable, machine-readable, and include enough context to diagnose the issue without consulting logs.
+Saturday uses one error format across all endpoints, modeled on Stripe's error structure.
 
 ## Error format
-
-Every error response follows this structure:
 
 ```json
 {
   "error": {
     "type": "invalid_request",
-    "code": "missing_required_field",
-    "message": "The 'athlete_weight_kg' field is required for hydration calculations.",
-    "param": "athlete_weight_kg",
-    "documentation_url": "https://api.saturday.fit/docs/errors#missing_required_field",
+    "code": "missing_field",
+    "message": "activity_type is required",
+    "param": "activity_type",
+    "documentation_url": "https://docs.saturday.fit/errors#missing_field",
     "request_id": "req_abc123def456"
   }
 }
@@ -28,42 +26,45 @@ Every error response follows this structure:
 | Field | Always present | Description |
 |-------|---------------|-------------|
 | `type` | Yes | Category of error |
-| `code` | Yes | Specific error code (machine-readable) |
+| `code` | Yes | Specific error code, machine-readable |
 | `message` | Yes | Human-readable explanation |
 | `param` | No | The request parameter that caused the error |
-| `documentation_url` | Yes | Direct link to docs for this error |
-| `request_id` | Yes | Unique identifier for this request — include in support tickets |
+| `documentation_url` | Yes | Docs link for this code |
+| `request_id` | Yes | Identifier for this request. Include it in support tickets |
 
 ## Error types
 
-| Type | HTTP Status | Description |
-|------|-------------|-------------|
-| `authentication_error` | 401 | Invalid, expired, or missing API key |
-| `authorization_error` | 403 | Valid key but insufficient permissions |
-| `invalid_request` | 400 | Request is malformed or missing required fields |
-| `not_found_error` | 404 | The requested resource doesn't exist |
-| `conflict` | 409 | Request conflicts with current state |
-| `rate_limit_error` | 429 | Too many requests |
-| `safety_limit` | 422 | Calculation would violate safety guardrails |
-| `api_error` | 500 | Something went wrong on Saturday's end |
+Branch on `type` for handling class, and on `code` for the specific case. A type can span more than one status.
+
+| Type | Statuses | Description |
+|------|----------|-------------|
+| `invalid_request` | 400, 409, 410 | Malformed body, missing or out-of-range field, or a request that conflicts with current state |
+| `authentication_error` | 401, 403 | Missing or invalid key (401), revoked key or suspended account (403) |
+| `authorization_error` | 403 | Valid credentials, insufficient permission, scope, tier, or feature access |
+| `resource_not_found` | 404 | The resource doesn't exist, or belongs to another partner |
+| `rate_limit_error` | 429 | Rate limit, daily call ceiling, or request-pattern friction |
+| `api_error` | 500, 502, 503 | Saturday-side failure (500), upstream service (502), transient dependency (503) |
 
 <Note>
-  **Branch on `type`, not `code`.** For a 404 the `type` is `not_found_error` while the more specific `code` is `resource_not_found`; for a 429 the `type` is `rate_limit_error` while the `code` is `rate_limit_exceeded`. If you switch on `error.type`, use the values in the table above.
+  The `type` for a 404 is `resource_not_found`, and the `code` narrows it: `athlete_not_found`, `activity_not_found`, `key_not_found`, `webhook_not_found`. A 429 carries `type: "rate_limit_error"` with `code: "rate_limit_exceeded"` or `code: "rate_limited"`. Switching on `type` means using the values in the table above.
 </Note>
+
+Safety ceilings do not surface as an error status. A prescription that runs into a guardrail returns `200` with the clamped values plus `safety.warnings` and `safety.requires_human_review` set. See [Safety](/guides/safety).
 
 ## Retry logic
 
-| Error type | Retry? | Strategy |
+| Type | Retry? | Strategy |
 |------------|--------|----------|
 | `authentication_error` | No | Fix credentials |
-| `authorization_error` | No | Fix permissions |
+| `authorization_error` | No | Fix permissions, scopes, or tier |
 | `invalid_request` | No | Fix the request |
-| `not_found_error` | No | Fix the resource ID |
-| `rate_limit_error` | Yes | Wait for `Retry-After` header |
-| `safety_limit` | No | Review and adjust parameters |
-| `api_error` | Yes | Exponential backoff |
+| `resource_not_found` | No | Fix the resource ID |
+| `rate_limit_error` | Yes | Honor `Retry-After` when present, otherwise back off. See [Rate Limiting](/rate-limiting) |
+| `api_error` | Yes | Exponential backoff. A 503 from key verification is transient: retry, don't rotate the key |
 
-### Exponential backoff implementation
+### Exponential backoff
+
+`Retry-After` is absent on some 429s, notably the daily call ceiling, so read it with a fallback rather than indexing it directly.
 
 <CodeGroup>
 
@@ -122,4 +123,8 @@ async function requestWithRetry(
 
 ### Request IDs
 
-Every response includes a `request_id` in both the response body and the `X-Request-Id` header. Always include this when reporting issues — it lets us trace the exact request through our systems.
+Every response carries an `X-Request-Id` header, and every error body repeats it as `request_id`. Quote it when reporting an issue and we can trace that exact request.
+
+### Error catalog
+
+`GET /v1/errors` (no auth) lists the error codes for the features currently exposed to you.

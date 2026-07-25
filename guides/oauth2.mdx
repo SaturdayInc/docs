@@ -7,23 +7,23 @@ icon: 'lock'
 
 # OAuth2
 
-OAuth2 lets athletes connect their existing Saturday accounts to your platform. Instead of creating new partner-scoped athletes, you can request access to an athlete's real Saturday profile — with their explicit consent.
+OAuth2 lets athletes connect their existing Saturday accounts to your platform. Instead of creating new partner-scoped athletes, you request access to an athlete's own Saturday profile, with their explicit consent.
 
 ## When to use OAuth2
 
 | Scenario | Auth method |
 |----------|-------------|
-| You manage athlete profiles in your platform | **API Key** — create athletes via the API |
-| Athletes already have Saturday accounts and want to connect | **OAuth2** — athlete grants you access |
-| You want access to an athlete's full Saturday history | **OAuth2** — requires athlete consent |
+| You manage athlete profiles in your platform | **API Key**, create athletes via the API |
+| Athletes already have Saturday accounts and want to connect | **OAuth2**, athlete grants you access |
+| You want access to an athlete's full Saturday history | **OAuth2**, requires athlete consent |
 
 Most partners start with API keys. Add OAuth2 when athletes tell you they already have Saturday accounts.
 
-## The flow
+<Warning>
+  **The athlete must hold an active Saturday subscription.** The authorize endpoint checks entitlement before the consent screen renders, and an athlete without an active subscription or coach tier is shown a subscribe page instead of your consent prompt. No account is created and no authorization code is issued. Entitlement is re-checked on every refresh, so a lapsed subscription ends your access within about an hour, when the current access token expires. Resubscribing inside the refresh token's 90-day window reconnects on the next refresh with no re-consent.
+</Warning>
 
-```
-Your app → Saturday authorize → Athlete logs in → Consent → Code → Token exchange → API access
-```
+## The flow
 
 <Steps>
   <Step title="Redirect to authorize">
@@ -64,7 +64,7 @@ code_verifier = secrets.token_urlsafe(32)
 digest = hashlib.sha256(code_verifier.encode("utf-8")).digest()
 code_challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode("utf-8")
 
-# Store code_verifier in your session — you need it for token exchange
+# Store code_verifier in your session: you need it for token exchange
 print(f"Verifier: {code_verifier}")
 print(f"Challenge: {code_challenge}")
 ```
@@ -81,7 +81,7 @@ const codeChallenge = crypto
   .update(codeVerifier)
   .digest("base64url");
 
-// Store codeVerifier in your session — you need it for token exchange
+// Store codeVerifier in your session: you need it for token exchange
 console.log(`Verifier: ${codeVerifier}`);
 console.log(`Challenge: ${codeChallenge}`);
 ```
@@ -108,10 +108,11 @@ https://api.saturday.fit/v1/oauth/authorize?
 | `client_id` | Yes | Your partner ID, or your [Client ID Metadata Document URL](#client-registration) |
 | `redirect_uri` | Yes | Must match a registered redirect URI |
 | `response_type` | Yes | Always `code` |
-| `scope` | Yes | Space-separated list of requested scopes |
-| `state` | Yes | Random string for CSRF protection |
+| `scope` | No | Space-separated list of requested scopes. Omitting it grants `athlete:read` only |
+| `state` | Recommended | Random string for CSRF protection. Saturday does not require it, but echoes whatever you send back on the callback, so send one |
 | `code_challenge` | Yes | PKCE challenge |
 | `code_challenge_method` | Yes | Always `S256` |
+| `resource` | Recommended | Canonical URI of the resource the token will be used against, see [Resource indicators](#resource-indicators-rfc-8707) |
 
 ## Step 3: Handle the callback
 
@@ -121,7 +122,7 @@ After the athlete consents, Saturday redirects to your `redirect_uri` with a cod
 https://your-app.com/callback?code=AUTH_CODE_HERE&state=random_csrf_token
 ```
 
-**Always verify the `state` parameter matches what you sent.** This prevents CSRF attacks.
+Verify that the `state` parameter matches what you sent before you exchange the code. Saturday echoes `state` back but does not validate it for you, so this check is yours to make; it is what prevents a CSRF attack from injecting an attacker's authorization code into your user's session.
 
 If the athlete denies access:
 ```
@@ -185,7 +186,7 @@ curl -H "Authorization: Bearer ACCESS_TOKEN_JWT" \
   -d '{"activity_type": "bike", "duration_min": 120, "intensity_level": 3}'
 ```
 
-The API automatically scopes requests to the athlete who granted consent. You don't need to pass an `athlete_id` — it's in the JWT.
+The API scopes requests to the athlete who granted consent. You do not pass an `athlete_id`; it is in the JWT, alongside the partner ID and the granted scopes.
 
 ## Step 6: Refresh expired tokens
 
@@ -204,7 +205,7 @@ response = requests.post(
 )
 
 new_tokens = response.json()
-# Old refresh token is now invalid — save the new one
+# Rotation: save the new refresh token, the old one stops working shortly
 access_token = new_tokens["access_token"]
 refresh_token = new_tokens["refresh_token"]
 ```
@@ -221,13 +222,13 @@ const response = await fetch("https://api.saturday.fit/v1/oauth/token", {
 });
 
 const newTokens = await response.json();
-// Old refresh token is now invalid — save the new one
+// Rotation: save the new refresh token, the old one stops working shortly
 ```
 
 </CodeGroup>
 
 <Warning>
-  **Refresh tokens are single-use.** Each refresh rotates both the access and refresh token. The old refresh token is immediately invalidated. Always store the new refresh token.
+  **Refresh tokens rotate.** Each refresh issues a new access and refresh token pair, and you must store the new refresh token. The token you just spent stays usable for a 10-minute grace window, so a retried or concurrent refresh re-issues a fresh pair instead of logging the athlete out. Past that window it is rejected and the athlete has to authorize again. Rotation is still single-use outside the grace window, which is what makes a stolen-and-replayed refresh token detectable.
 </Warning>
 
 ## Available scopes
@@ -240,10 +241,17 @@ const newTokens = await response.json();
 | `activity:write` | Create, update, delete activities |
 | `nutrition:read` | Calculate nutrition prescriptions |
 | `ai:chat` | AI Coach conversations |
+| `offline_access` | Be issued a refresh token, and use it |
+
+`offline_access` grants no data access of its own. It is the OIDC and MCP signal that you want to stay connected without sending the athlete back through consent every hour. Request it alongside your data scopes if you need refresh, and note that it is not included in the default `athlete:read` fallback.
+
+`ai:chat` is available to pre-registered clients only. It is deliberately excluded from the scopes advertised in discovery metadata, so a client registering through a Client ID Metadata Document cannot request it.
 
 ### Coach scopes
 
-A coach (Business tier or higher) can additionally request coach scopes. These unlock the [Coach API](/guides/coach-api) and the coach tools in the [Claude connector](/guides/coach-connector). A coach's OAuth token also carries the athlete-self facet — the same token reads the coach's own athlete data on `/v1/athletes/*` and their roster on `/v1/coach/*`; the route decides which applies.
+A coach on **Pro Coach tier or higher** (Pro Coach, Head Coach, Business, or Enterprise) can additionally request coach scopes. These unlock the [Coach API](/guides/coach-api) and the coach tools in the [Claude connector](/guides/coach-connector). A coach's OAuth token also carries the athlete-self facet: the same token reads the coach's own athlete data on `/v1/athletes/*` and their roster on `/v1/coach/*`, and the route decides which applies.
+
+Tier is re-checked on every request. If a coach's tier lapses, the coach scopes stop resolving and the token quietly degrades to athlete-self access rather than erroring, so handle a suddenly empty roster as a billing state, not an outage.
 
 | Scope | Access granted |
 |-------|---------------|
@@ -262,7 +270,7 @@ Saturday supports two registration mechanisms:
 
 | Mechanism | When to use | How |
 |-----------|------------|-----|
-| **Client ID Metadata Documents (CIMD)** | MCP hosts and any client that controls an HTTPS origin — **no registration step at all** | Use the URL of your hosted metadata document as your `client_id` |
+| **Client ID Metadata Documents (CIMD)** | MCP hosts and any client that controls an HTTPS origin, with no registration step at all | Use the URL of your hosted metadata document as your `client_id` |
 | **Pre-registered clients** | Server-to-server partners with a standing relationship | Contact [api-support@saturday.fit](mailto:api-support@saturday.fit) for a `client_id` |
 
 ### Client ID Metadata Documents
@@ -288,11 +296,11 @@ Saturday fetches, validates, and caches the document when it first sees your `cl
 - CIMD clients are **public clients**: `token_endpoint_auth_method` must be `none` (or absent), and PKCE is mandatory. Confidential CIMD clients (`private_key_jwt`) are not supported.
 - Documents are cached per their `Cache-Control` headers (clamped between 5 minutes and 24 hours), so metadata changes propagate within that window.
 
-Saturday advertises support via `"client_id_metadata_document_supported": true` in its Authorization Server Metadata — spec-compliant MCP clients (including Claude) select CIMD automatically.
+Saturday advertises support via `"client_id_metadata_document_supported": true` in its Authorization Server Metadata, so spec-compliant MCP clients, including Claude, select CIMD automatically.
 
 ## Discovery (remote MCP connectors)
 
-For the [Claude connector](/guides/coach-connector), clients auto-discover the authorization server — no manual configuration. Saturday serves the standard metadata documents (derived per-environment from the request host):
+For the [Claude connector](/guides/coach-connector), clients auto-discover the authorization server, with no manual configuration. Saturday serves the standard metadata documents, derived per-environment from the request host:
 
 | Document | Path | Spec |
 |----------|------|------|
@@ -303,13 +311,13 @@ An unauthenticated request to `/mcp` returns `401` with a `WWW-Authenticate: Bea
 
 ## Resource indicators (RFC 8707)
 
-Saturday implements [RFC 8707 Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html) — token audience binding, as required by the MCP authorization spec. A client names the resource it intends to use the token with via the `resource` parameter on the authorize **and** token requests, using the **canonical MCP server URI**:
+Saturday implements [RFC 8707 Resource Indicators](https://www.rfc-editor.org/rfc/rfc8707.html), the token audience binding required by the MCP authorization spec. A client names the resource it intends to use the token with via the `resource` parameter on the authorize **and** token requests, using the **canonical MCP server URI**:
 
 ```
 resource=https://api.saturday.fit/mcp
 ```
 
-When a `resource` is supplied, Saturday binds it into the access token's `aud` claim, and the MCP endpoint rejects any token whose audience was issued for a different resource. A token minted for Saturday can only be used against Saturday — it cannot be replayed elsewhere.
+When a `resource` is supplied, Saturday binds it into the access token's `aud` claim, and the MCP endpoint rejects any token whose audience was issued for a different resource. A token minted for Saturday can only be used against Saturday; it cannot be replayed against another server. Tokens minted before audience binding shipped, and partner keys that never traverse this flow, carry no audience and are accepted as before.
 
 | Field | Required | Description |
 |-------|----------|-------------|
@@ -319,26 +327,41 @@ A `resource` that is malformed (not an absolute URI, or carries a fragment) or n
 
 ## Error scenarios
 
-| Scenario | Response |
-|----------|----------|
-| Invalid `client_id` | 400 + "Unknown client_id" |
-| Mismatched `redirect_uri` | 400 + "redirect_uri does not match" |
-| Missing PKCE | 400 + "PKCE is required" |
-| Expired auth code (>10 min) | 400 + "Authorization code has expired" |
-| Reused auth code | 400 + all tokens revoked |
-| Wrong `code_verifier` | 400 + "PKCE verification failed" |
-| Invalid / foreign `resource` | 400 + `invalid_target` |
-| Expired access token | 401 + "access token has expired" |
-| Token used against the wrong resource | 401 + "not issued for this resource" |
-| Revoked refresh token | 400 + "refresh token has been revoked" |
+Errors follow the RFC 6749 shape, `{"error": "...", "error_description": "..."}`. Branch on `error`; the description is for your logs and may change.
+
+| Scenario | Status | `error` |
+|----------|--------|---------|
+| Unknown `client_id`, or a metadata document that would not resolve | 400 | `invalid_request` |
+| Mismatched `redirect_uri` | 400 | `invalid_request` |
+| Missing `code_challenge`, or a method other than `S256` | 400 | `invalid_request` |
+| `response_type` other than `code` | 400 | `unsupported_response_type` |
+| Unrecognized scope, or a scope this client is not authorized for | 400 | `invalid_scope` |
+| Expired auth code (older than 10 minutes) | 400 | `invalid_grant` |
+| Reused auth code. Every token issued from it is revoked | 400 | `invalid_grant` |
+| Wrong `code_verifier` | 400 | `invalid_grant` |
+| Missing `code_verifier` when PKCE was used | 400 | `invalid_request` |
+| Wrong `client_secret` on a confidential client | 401 | `invalid_client` |
+| Grant type other than `authorization_code` or `refresh_token` | 400 | `unsupported_grant_type` |
+| Refresh token revoked, expired, or reused past the rotation grace window | 400 | `invalid_grant` |
+| Refresh attempted after the athlete's subscription lapsed | 400 | `invalid_grant` |
+| Malformed `resource`, or one this server does not serve | 400 | `invalid_target` |
+| `resource` on token exchange that does not match the authorized one | 400 | `invalid_target` |
+
+At the authorize endpoint an unknown `client_id` is `invalid_request`; at the token endpoint it is `invalid_client`.
+
+Access token failures are different in shape. A request carrying an expired token, a token for another resource, or a malformed token all return `401` in the standard API error envelope with type `authentication_error` and the single message `Invalid or expired access token.` The cause is deliberately not distinguished in the response, so treat any `401` on an API call as "refresh, then retry once, then re-authorize" rather than trying to parse which failure it was.
+
+The subscription-lapse case is worth handling distinctly: its description tells the athlete to resubscribe, and the refresh token is deliberately not consumed, so the same token works again once they do.
 
 ## Revoking tokens
 
-Athletes can revoke access from their Saturday account settings. Partners can programmatically revoke:
+Athletes can revoke access from their Saturday account settings. Partners can revoke programmatically:
 
 ```bash
 POST /v1/oauth/token/revoke
 Content-Type: application/x-www-form-urlencoded
 
-token=REFRESH_TOKEN&client_id=your_partner_id
+token=REFRESH_TOKEN
 ```
+
+Per RFC 7009 this returns `200` whether or not the token existed, so a repeated revoke is not an error.

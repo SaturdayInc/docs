@@ -1,16 +1,16 @@
 ---
 title: 'Safety'
-description: "Saturday's safety model — why it exists and how it works"
+description: "Saturday's safety model: why it exists and how it works"
 sidebarTitle: 'Safety'
 icon: 'shield-halved'
 ---
 
 # Safety
 
-Saturday is a nutrition API for endurance athletes. Bad nutrition advice can cause real harm — and in extreme cases, death. This page explains Saturday's safety model, why it exists, and what it means for your integration.
+Saturday is a nutrition API for endurance athletes, and nutrition advice can cause harm, in rare cases fatal harm. This page covers Saturday's safety model, what the API gives you, and what you are expected to do with it.
 
 <Warning>
-  **This is not a compliance formality.** Exercise-associated hyponatremia (EAH) has killed athletes at the Boston Marathon, London Marathon, Marine Corps Marathon, and multiple Ironman races. It happens when athletes overdrink and dilute their blood sodium to dangerous levels. Saturday's safety guardrails exist to prevent this.
+  Exercise-associated hyponatremia has killed athletes at the Boston Marathon, London Marathon, Marine Corps Marathon, and multiple Ironman races. It happens when athletes overdrink and dilute their blood sodium. Saturday's guardrails exist because of this failure mode, not to satisfy a compliance checklist.
 </Warning>
 
 ## What can go wrong
@@ -18,16 +18,18 @@ Saturday is a nutrition API for endurance athletes. Bad nutrition advice can cau
 | Condition | Cause | Consequence |
 |-----------|-------|-------------|
 | **Hyponatremia** | Overdrinking, insufficient sodium | Confusion, seizures, coma, death |
-| **Heat stroke** | Under-hydrating in heat | Organ failure, death |
-| **GI distress** | Too many carbs too fast | Vomiting, cramping, DNF |
-| **Bonking** | Insufficient carbohydrate | Collapse, dangerous judgment impairment |
+| **Heat illness** | Under-hydrating in heat | Organ failure, death |
+| **GI distress** | Carbohydrate beyond trained gut tolerance | Vomiting, cramping, DNF |
+| **Under-fueling** | Insufficient carbohydrate | Collapse, impaired judgment |
 | **Rhabdomyolysis** | Extreme exertion without fuel | Kidney failure |
 
-Saturday's engine has physiological guardrails for all of these. Every prescription respects hard limits that the algorithm enforces regardless of inputs.
+The two failure modes that dominate endurance are under-fueling and hyponatremia from drinking large volumes of plain water without sodium. Both are failures to take in enough of something. High carbohydrate and high sodium intakes are normal, and a long hot ride can correctly call for over 200 g of carbohydrate and over 3000 mg of sodium in total. If your UI adds caution on top of Saturday's numbers, it is likely to push athletes the wrong way.
+
+Saturday's engine applies limits on every calculation. They are score-based rather than a single fixed number: the athlete's profile and the activity's conditions set a range, and absolute ceilings bound it.
 
 ## The safety block
 
-Every nutrition calculation response — including teasers and free responses — includes a `safety` object:
+Every nutrition calculation response, teaser and full alike, includes a `safety` object:
 
 ```json
 {
@@ -37,8 +39,7 @@ Every nutrition calculation response — including teasers and free responses �
     "confidence_score": 0.72,
     "requires_human_review": false,
     "warnings": [
-      "High thermal stress increases dehydration risk. Plan extra fluid access points.",
-      "Activities over 4 hours require careful sodium management. Monitor for signs of hyponatremia."
+      "Fluid intake exceeds recommended maximum. Consider reducing duration or consulting a sports dietitian."
     ],
     "not_instructions": true
   }
@@ -46,125 +47,105 @@ Every nutrition calculation response — including teasers and free responses �
 ```
 
 <Note>
-  **Safety data is NEVER gated behind subscription status.** A teaser response may show carb ranges instead of exact numbers, but it will always show the full safety block with all warnings, confidence scores, and safe maximums. This is non-negotiable.
+  Safety data is never gated behind subscription status. A teaser response shows ranges instead of exact numbers, and carries the same safety block.
 </Note>
 
-## Engine hard limits
+### The two threshold fields
 
-Saturday enforces absolute physiological boundaries that cannot be overridden by any input combination:
+`max_safe_fluid_ml_per_hr` (1500) and `max_safe_sodium_mg_per_hr` (3000) are fixed advisory thresholds, the same on every response. They are the line above which Saturday flags a prescription, not the engine's absolute ceiling, and not a value derived from this athlete. Display them as guidance, and do not compute anything from them as though they were personalized.
 
-| Guardrail | Exposed as | Why |
-|-----------|-----------|-----|
-| Fluid physiological limit | `max_safe_fluid_ml_per_hr` | Overdrinking causes hyponatremia |
-| Sodium ceiling | `max_safe_sodium_mg_per_hr` | Excess sodium causes GI distress and nausea |
-| Minimum sodium | (enforced internally) | Prevents hyponatremia in extended efforts |
-| Carb gut tolerance | (enforced internally) | Exceeding gut capacity causes vomiting |
-| Duration scaling | (enforced internally) | Steady-state assumptions break after 4+ hours |
-| Eating disorder guardrails | (enforced internally) | Protects vulnerable athletes |
+### Warnings
 
-These guardrails are evaluated on every calculation. The `max_safe_fluid_ml_per_hr` and `max_safe_sodium_mg_per_hr` fields expose the hard ceilings so partners can display them. All other guardrails are enforced internally — prescriptions always respect them.
+`warnings` is populated by comparing the prescription against those two thresholds. Two warnings exist:
 
-## Confidence score and human review
+| Condition | Warning |
+|-----------|---------|
+| Fluid above 1500 mL/hr | "Fluid intake exceeds recommended maximum. Consider reducing duration or consulting a sports dietitian." |
+| Sodium above 3000 mg/hr | "Sodium intake is very high. Consult a sports dietitian for personalized guidance." |
 
-The `confidence_score` (0.0-1.0) indicates how well-supported the prescription is. When `requires_human_review` is `true`, conditions are unusual enough that a human should verify the prescription before following it.
+Most prescriptions cross neither threshold and come back with an empty `warnings` array. An empty array is the normal case, not a sign that safety checking was skipped: the engine's limits are applied to every calculation whether or not a warning results.
 
-| Confidence range | Meaning | Your display recommendation |
-|-----------------|---------|----------------------------|
-| 0.8-1.0 | Strong personalization, well-understood conditions | No special display needed |
-| 0.5-0.8 | Good estimates, some assumptions made | Show any warnings in your UI |
-| 0.0-0.5 | Significant uncertainty or risk factors | Prominent warning, consider a confirmation step |
+### Where each safety field is populated
 
-## Dangerous vs. safe prescription example
+The safety block is present on every prescription response, but not every endpoint fills all of it.
 
-**Dangerous** (what a naive algorithm might produce for a 4-hour marathon in 30C heat):
+| Field | `/v1/nutrition/calculate` and its batch | Activity calculate and prescription read |
+|-------|---|---|
+| `max_safe_fluid_ml_per_hr` | 1500 | 1500 |
+| `max_safe_sodium_mg_per_hr` | 3000 | 3000 |
+| `not_instructions` | `true` | `true` |
+| `requires_human_review` | `false` | `false` |
+| `confidence_score` | Derived from band width | Always `0` |
+| `warnings` | Threshold warnings, else `[]` | Always `null` |
 
-```
-Fluid: 1200 mL/hr
-Sodium: 200 mg/hr
-Carbs: 120 g/hr
-```
+<Warning>
+  If your integration drives fueling from `POST /v1/athletes/{id}/activities/{id}/calculate`, you are not receiving prescription warnings. Call `POST /v1/nutrition/calculate` with the same parameters when you need them, and handle `warnings: null` rather than assuming an array.
+</Warning>
 
-This is dangerous because:
-- 1200 mL/hr exceeds gastric emptying rate — athlete will drink it but not absorb it, diluting blood sodium
-- 200 mg/hr sodium is far too low for hot conditions — hyponatremia risk is extreme
-- 120 g/hr carbs without trained gut tolerance — GI distress guaranteed
+## Engine limits
 
-**Safe** (what Saturday produces for the same conditions):
+Saturday bounds every calculation. The limits are computed per athlete and per activity, then clamped by absolutes that no input combination can exceed.
 
-```
-fluid_ml_per_hr: 700 (capped by physiological limit)
-sodium_mg_per_hr: 800 (elevated for salty sweater in heat)
-carb_g_per_hr: 72 (limited by demonstrated tolerance)
+| Guardrail | Absolute cap | How it narrows |
+|-----------|--------------|----------------|
+| Fluid | 1801 mL/hr | Thermal stress and intensity tighten the usable range well below the cap |
+| Sodium | Body weight in pounds times 11, up to 5000 mg/hr | Carb experience, intensity, and thermal stress narrow the range |
+| Sodium floor | Rises with thermal stress | Hot conditions cannot produce a low-sodium prescription |
+| Carbohydrate | 150 g/hr | Dropped to 100 g/hr when the athlete is not prioritizing performance, then by `carb_upper_limit_override`, then by stated carb experience. An athlete who has never fueled above 30 g/hr is not handed a 120 g/hr target |
+| Duration scaling | | Intake ranges are a function of duration, so a 6-hour target is not a 1-hour rate multiplied out |
 
-safety.max_safe_fluid_ml_per_hr: 1500
-safety.max_safe_sodium_mg_per_hr: 3000
-safety.confidence_score: 0.45
-safety.requires_human_review: true
-safety.warnings: ["High thermal stress. Plan extra fluid access points and shade."]
-safety.not_instructions: true
-```
+These apply on every calculation and are not partner-overridable. Note that the sodium cap is the one limit that scales with the athlete: a 70 kg athlete reaches it at roughly 1700 mg/hr, far below the 5000 mg/hr absolute.
 
-The difference between these two prescriptions is potentially life-or-death. Saturday's guardrails ensure the second version is what athletes receive.
+<Warning>
+  Teaser ranges are display buckets rounded outward from the computed value, and the rounding is not clamped to the caps above. A teaser upper bound can therefore read slightly higher than the engine would ever prescribe, for example `1500-2000` mL/hr against a 1801 mL/hr cap. Treat the upper number in a teaser range as the top of a bucket, not as a target, and never render it as a recommended intake.
+</Warning>
+
+## Confidence score
+
+`confidence_score` (0.0-1.0) reports how much of the athlete's fueling profile was answered, derived from the width of the prescription band. A complete profile scores 1.0. It is a completeness signal, not a clinical risk score, and `precision.missing_fields` tells you which answers would raise it. See [Athlete Onboarding](/guides/onboarding).
+
+| Confidence range | Meaning | Your display |
+|-----------------|---------|--------------|
+| 0.8-1.0 | Complete or near-complete profile | Show the numbers |
+| 0.5-0.8 | Several fields still on defaults | Show the numbers, and prompt to finish the profile |
+| 0.0-0.5 | Mostly defaults | Prefer the band over a single number, and prompt to finish the profile |
+
+<Note>
+  `requires_human_review` is present on every response and is currently always `false`. Read it if you want to be forward-compatible, but do not build a flow whose only trigger is that field going `true`.
+</Note>
 
 ## The `not_instructions` field
 
-For AI agents consuming Saturday's API (AI-to-AI communication), responses include:
+Every prescription response carries `not_instructions: true`.
 
-```json
-{
-  "not_instructions": true
-}
-```
-
-This field tells AI consumers that Saturday's prescription data is **informational nutrition guidance, not executable instructions**. An AI agent should present this data to users for their consideration — not autonomously act on it (e.g., by automatically ordering supplements or modifying an athlete's plan without consent).
+The field is aimed at AI consumers. It marks Saturday's prescription data as nutrition guidance for a person to consider, not a command to execute. An agent reading this API should present the numbers to its user rather than act on them by itself: no ordering supplements, no rewriting an athlete's plan, no triggering a purchase, without that person's explicit go-ahead.
 
 ## Display requirements for partners
 
 ### Required
 
-- **Always show safety warnings** when warnings are present or `requires_human_review` is `true`
-- **Never hide safety data** behind expandable sections or "advanced" toggles
-- **Never strip safety metadata** from responses before displaying to users
-- **Include the disclaimer** that prescriptions are guidance, not medical advice
+- Show safety warnings whenever `warnings` is non-empty.
+- Do not hide safety data behind expandable sections or "advanced" toggles.
+- Do not strip safety metadata from responses before displaying them.
+- Include the disclaimer that prescriptions are guidance, not medical advice.
 
 ### Recommended
 
-- Show warnings **before or alongside** the prescription numbers, not hidden in details
-- Use visual hierarchy (color, icons, positioning) to make warnings visible
-- When `requires_human_review` is `true`, consider requiring user acknowledgment before proceeding
+- Put warnings before or beside the prescription numbers, not in a details pane.
+- Give warnings visual weight through color, icon, and position.
+- Surface `precision.message` when the profile is incomplete, so an athlete understands why they are seeing a range.
 
 ### Prohibited
 
-- Don't filter warnings based on your own risk assessment
-- Don't apply your own safety logic on top of Saturday's — this creates conflicting advice
-- Don't present prescriptions without any safety context
-- Don't use Saturday's numbers as automated triggers (e.g., auto-ordering hydration packs)
-
-## Contraindications
-
-In rare cases, Saturday may flag a contraindication — a reason the calculation should be treated with extreme caution:
-
-```json
-{
-  "contraindications": [
-    {
-      "code": "extreme_heat_advisory",
-      "message": "Calculated conditions exceed safe exercise thresholds. Consult a physician before proceeding.",
-      "severity": "critical"
-    }
-  ]
-}
-```
-
-Contraindications are rare and serious. If present, display them prominently and consider blocking the activity plan until the athlete explicitly acknowledges the risk.
+- Do not filter warnings according to your own risk assessment.
+- Do not layer your own safety logic on top of Saturday's. Two sets of limits produce conflicting advice, and yours will not know what the engine already capped.
+- Do not present prescriptions with no safety context at all.
+- Do not wire Saturday's numbers to automated triggers such as auto-ordering hydration products.
 
 ## Eating disorder sensitivity
 
-When an athlete has the `eating_disorder_flag` set, Saturday:
+Saturday's AI coach carries eating-disorder handling: it keeps to performance framing and avoids calorie, weight, and restriction language.
 
-- Avoids calorie-focused language
-- Removes weight/restriction framing from rationale text
-- Applies conservative minimums (never under-fuels)
-- Adjusts AI coaching conversation tone
+The partner API has no athlete field for this. There is no `eating_disorder_flag` to set on an athlete, and the calculation engine takes no such input. If you hold that knowledge about an athlete, it stays on your side and shapes your own copy.
 
-This flag is a backend safety signal. **Never expose it in partner UIs.** Partners set it based on their own knowledge of the athlete — Saturday uses it to protect that athlete across all interactions.
+Note which direction the caution runs. Saturday's guardrails protect against under-fueling and against fluid without sodium. Adding restriction-flavored caution to a fueling target inverts that, so keep your framing on performance and on meeting the target.
