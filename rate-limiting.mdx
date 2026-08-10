@@ -69,6 +69,18 @@ if (response.status === 429) {
 
 </CodeGroup>
 
+## Daily call limit
+
+Alongside the token bucket, every account carries a daily call ceiling:
+
+| Account | Daily ceiling |
+|---------|---------------|
+| Self-serve | 200 calls/day |
+| Partner, no agreed ceiling | Platform default (currently 2,000 calls/day) |
+| Contracted integration | Per agreement, up to no ceiling at all |
+
+Reaching the ceiling returns `429 Too Many Requests` without a `Retry-After` header; the counter resets at midnight UTC. `GET /v1/partner` reports the ceiling that applies to your account (`rate_limits.requests_per_day`, `null` when none applies). To raise yours, contact api@saturday.fit.
+
 ## Best practices
 
 ### Spread requests evenly
