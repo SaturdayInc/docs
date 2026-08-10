@@ -21,6 +21,7 @@ Partner integrates (free) -> Athletes see teasers (free) -> Athletes subscribe f
 | **Hydration** | Range: `"fluid_range_ml_per_hr": "600-900"` | Exact: `"fluid_ml_per_hr": 620` |
 | **Sodium** | Range: `"sodium_range_mg_per_hr": "300-600"` | Exact: `"sodium_mg_per_hr": 485` |
 | **Products** | Category only ("gel") | Specific products + schedule |
+| **Product catalog** | Taxonomy + CTA | Search, browse, and full label data |
 | **Safety metadata** | Full | Full |
 | **Confidence score** | Shown | Shown |
 
@@ -66,6 +67,56 @@ if (data.tier === "teaser") {
 ```
 
 </CodeGroup>
+
+## The product catalog
+
+Saturday's curated product database follows the same rule as the numbers: it opens
+on the **athlete's** subscription, not on your partner account. Every product route
+(`/v1/products/search`, `/v1/products/{barcode}`, `/v1/products/curated`,
+`/v1/nutrition/products/fit`, `/v1/nutrition/products/compare`) takes an
+`athlete_id`, and the answer follows that athlete's standing:
+
+- **Subscribed, or inside their 30-day trial**: `tier: "full"`. Search and browse
+  return products; a barcode lookup returns full label data for a curated product,
+  or a `product_not_found` 404.
+- **Anyone else**: `tier: "teaser"`. The product arrays come back empty and the
+  response carries the category taxonomy plus the same `cta` object your teaser
+  prescriptions use. Still a 200, never a 403.
+
+```json
+{
+  "tier": "teaser",
+  "products": [],
+  "total": 0,
+  "categories": [
+    { "id": "gel", "name": "Gels", "description": "Energy gels and gel-like products" },
+    { "id": "drink_mix", "name": "Drink Mixes", "description": "Electrolyte and carb drink powders" }
+  ],
+  "cta": {
+    "message": "Subscribe to see the specific products that fit this athlete, not just the categories",
+    "subscribe_url": "https://saturday.fit/subscribe?ref=your_partner_id&pst=..."
+  }
+}
+```
+
+Branch on `tier` exactly as you do for prescriptions. A teaser is a product picker
+that shows categories with an upgrade prompt behind them, not an error state.
+
+`GET /v1/products/categories` is the one product route that never gates: the
+taxonomy *is* the free tier, so it answers the same for every athlete.
+
+<Note>
+  The catalog is stricter here than in the Saturday app, on purpose. In the app a
+  free athlete can browse products and the subscription gates the prescription. An
+  API has no such natural limit, so the catalog itself sits behind the athlete's
+  subscription. Verified label data for 186+ endurance products is the asset, and
+  it stays priced.
+</Note>
+
+The athlete's trial opens the catalog on its 30-day **window**, independently of
+the daily full-precision call cap. An athlete who has spent today's exact
+calculations can still see the products those calculations point at, and browsing
+products never debits the cap.
 
 ## 30-day full-precision trial
 
