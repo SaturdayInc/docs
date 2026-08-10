@@ -69,9 +69,9 @@ if (response.status === 429) {
 
 </CodeGroup>
 
-## Daily call limit
+## Daily call limits
 
-Alongside the token bucket, every account carries a daily call ceiling:
+Alongside the token bucket, every account carries daily call ceilings:
 
 | Account | Daily ceiling |
 |---------|---------------|
@@ -79,7 +79,9 @@ Alongside the token bucket, every account carries a daily call ceiling:
 | Partner, no agreed ceiling | Platform default (currently 2,000 calls/day) |
 | Contracted integration | Per agreement, up to no ceiling at all |
 
-Reaching the ceiling returns `429 Too Many Requests` without a `Retry-After` header; the counter resets at midnight UTC. `GET /v1/partner` reports the ceiling that applies to your account (`rate_limits.requests_per_day`, `null` when none applies). To raise yours, contact api@saturday.fit.
+Intelligence endpoints (nutrition, products, inference, knowledge, AI) also carry their own daily ceiling, separate from the total. Data endpoints (your athletes, activities, organizations, webhooks) are not counted against it, so hitting the intelligence ceiling never blocks syncing your own data.
+
+Reaching a ceiling returns `429 Too Many Requests` without a `Retry-After` header; the message names the limit, and counters reset at midnight UTC. `GET /v1/partner` reports the ceilings that apply to your account (`rate_limits.requests_per_day` and `rate_limits.ip_requests_per_day`, `null` when none applies). To raise yours, contact api@saturday.fit.
 
 ## Best practices
 
