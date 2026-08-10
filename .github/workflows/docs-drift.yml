@@ -1,0 +1,119 @@
+name: Docs Drift
+
+# Docs-vs-API drift gate, docs-homed copy.
+#
+# The published docs are what a partner builds against before they ever call us.
+# When the backend renames a field, retires an endpoint or changes an event
+# name, nothing noticed that the docs still described the old behaviour, and the
+# drift got found by a customer whose integration broke. This makes the
+# mechanical half of that impossible rather than something a reader might catch.
+#
+# This copy fires on a DOCS pull request and checks it against fuel-backend@main:
+# it catches a page that describes an endpoint, field or event the API does not
+# have. A mirror workflow of the same name lives in fuel-backend and fires on a
+# BACKEND pull request, checking it against docs@main, which catches the other
+# and more dangerous direction: an API change that leaves the docs stale. Neither
+# repo can path-trigger on the other's commits, so both copies are required; the
+# same reason calculator-crossval.yml is mirrored between fuel-backend and
+# saturday, and the sibling-clone mechanics below are lifted from it.
+#
+# The checker and the baseline live HERE, in the docs repo, in one copy. The
+# fuel-backend mirror clones this repo and runs this same script, so the two
+# sides cannot disagree about what drift means.
+#
+# WHAT A GREEN RUN DOES NOT PROVE: that the numbers are right. Every check here
+# is structural. A page stating a default of 60 g/hr against code that says 90
+# passes cleanly, and that is the class of error that prompted this gate. The
+# structural half is what is mechanically decidable today; see the script header
+# for what closing the rest would take.
+#
+# ORDERING HAZARD, stated because it will happen. A rename that spans both repos
+# cannot make both sides green at the same instant: the docs cannot name a field
+# that fuel-backend@main does not have yet, and the backend cannot remove one the
+# docs still cite. Removals sequence cleanly, docs first, because deleting a
+# mention never introduces drift. A rename does not. Both copies are advisory
+# until marked required in branch protection, so the human lands both and main
+# goes green; do not "solve" it by widening the baseline, which is what the
+# shrink-only job exists to prevent.
+#
+# Runs on Saturday's self-hosted runner on alex-desktop, off the GitHub Actions
+# quota. Standard library python, no Mintlify build, no node install: ~0.2s.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.mdx'
+      - 'api-drift-baseline.txt'
+      - 'scripts/check-docs-drift.py'
+      - '.github/workflows/docs-drift.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**.mdx'
+      - 'api-drift-baseline.txt'
+      - 'scripts/check-docs-drift.py'
+  workflow_dispatch:
+
+concurrency:
+  group: docs-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    runs-on: self-hosted
+    timeout-minutes: 10
+    steps:
+      - name: Checkout docs (this PR)
+        uses: actions/checkout@v5
+
+      # fuel-backend@main as a sibling. Self-hosted runner, so the box's own
+      # authenticated SSH clones the private repo and no cross-repo PAT secret
+      # is needed. Shallow, because only the working tree is read.
+      - name: Checkout fuel-backend@main (sibling)
+        run: |
+          set -euo pipefail
+          rm -rf ../fuel-backend
+          git clone --depth 1 --branch main \
+            git@github.com:SaturdayInc/fuel-backend.git ../fuel-backend
+          echo "fuel-backend at: $(git -C ../fuel-backend rev-parse --short HEAD)"
+
+      - name: Check the docs still describe the live API
+        run: python3 scripts/check-docs-drift.py --backend ../fuel-backend --list
+
+  # The baseline records drift that predates the gate so unrelated PRs are not
+  # blocked by it. That only holds while it can shrink and not grow: a baseline
+  # a PR may append to is an off switch, and the next real regression gets
+  # written into it instead of reported. Removing entries is the point and is
+  # always allowed.
+  baseline-shrink-only:
+    if: github.event_name == 'pull_request'
+    runs-on: self-hosted
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Reject additions to the drift baseline
+        run: |
+          set -euo pipefail
+          base='${{ github.event.pull_request.base.sha }}'
+          git fetch --no-tags --depth=1 origin "$base" 2>/dev/null || true
+          added=$(git diff "$base"...HEAD -- api-drift-baseline.txt \
+                  | grep -E '^\+[^+#]' | wc -l)
+          removed=$(git diff "$base"...HEAD -- api-drift-baseline.txt \
+                    | grep -E '^-[^-#]' | wc -l)
+          echo "baseline entries removed by this PR: $removed"
+          echo "baseline entries added by this PR:   $added"
+          if [ "$added" -gt 0 ]; then
+            echo
+            echo "This PR adds $added entr(y/ies) to api-drift-baseline.txt."
+            echo "The baseline is shrink-only. It holds the drift that already"
+            echo "existed when the gate landed; a new entry hides a new problem."
+            echo "Fix the drift the checker named, or if the checker is wrong"
+            echo "about it, say so in review and change the checker instead."
+            git diff "$base"...HEAD -- api-drift-baseline.txt | grep -E '^\+[^+#]' || true
+            exit 1
+          fi
+          echo "Baseline did not grow."
