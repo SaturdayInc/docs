@@ -41,12 +41,13 @@ Branch on `type` for handling class, and on `code` for the specific case. A type
 | `invalid_request` | 400, 409, 410 | Malformed body, missing or out-of-range field, or a request that conflicts with current state |
 | `authentication_error` | 401, 403 | Missing or invalid key (401), revoked key or suspended account (403) |
 | `authorization_error` | 403 | Valid credentials, insufficient permission, scope, tier, or feature access |
-| `resource_not_found` | 404 | The resource doesn't exist, or belongs to another partner |
+| `not_found_error` | 404 | The URL does not match an endpoint available to your key |
+| `resource_not_found` | 404 | The endpoint exists, but the referenced resource doesn't, or belongs to another partner |
 | `rate_limit_error` | 429 | Rate limit, daily call ceiling, or request-pattern friction |
 | `api_error` | 500, 502, 503 | Saturday-side failure (500), upstream service (502), transient dependency (503) |
 
 <Note>
-  The `type` for a 404 is `resource_not_found`, and the `code` narrows it: `athlete_not_found`, `activity_not_found`, `key_not_found`, `webhook_not_found`. A 429 carries `type: "rate_limit_error"` with `code: "rate_limit_exceeded"` or `code: "rate_limited"`. Switching on `type` means using the values in the table above.
+  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `key_not_found`, `webhook_not_found`, `conversation_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"` with `code: "rate_limit_exceeded"` or `code: "rate_limited"`. Switching on `type` means using the values in the table above.
 </Note>
 
 Safety ceilings do not surface as an error status. A prescription that runs into a guardrail returns `200` with the clamped values plus `safety.warnings` and `safety.requires_human_review` set. See [Safety](/guides/safety).
@@ -58,6 +59,7 @@ Safety ceilings do not surface as an error status. A prescription that runs into
 | `authentication_error` | No | Fix credentials |
 | `authorization_error` | No | Fix permissions, scopes, or tier |
 | `invalid_request` | No | Fix the request |
+| `not_found_error` | No | Check the URL and your key's feature access |
 | `resource_not_found` | No | Fix the resource ID |
 | `rate_limit_error` | Yes | Honor `Retry-After` when present, otherwise back off. See [Rate Limiting](/rate-limiting) |
 | `api_error` | Yes | Exponential backoff. A 503 from key verification is transient: retry, don't rotate the key |

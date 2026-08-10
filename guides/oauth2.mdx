@@ -195,6 +195,8 @@ Access tokens expire after 1 hour. Use the refresh token to get a new pair:
 <CodeGroup>
 
 ```python Python
+import requests
+
 response = requests.post(
     "https://api.saturday.fit/v1/oauth/token",
     data={

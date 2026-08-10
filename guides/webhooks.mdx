@@ -329,6 +329,6 @@ POST   /v1/webhooks/{webhook_id}/test      # send a webhook.test event now
 GET    /v1/webhooks/{webhook_id}/deliveries # recent delivery attempts
 ```
 
-`POST /v1/webhooks/{webhook_id}/test` delivers synchronously and returns the delivery record, including the status code your endpoint returned. Use it to confirm signature verification works before you depend on live events. The test event has type `webhook.test`, which is not a subscribable event type; your handler should ignore types it does not recognize rather than erroring on them.
+`POST /v1/webhooks/{webhook_id}/test` delivers synchronously and returns the delivery record, including the status code your endpoint returned. Use it to confirm signature verification works before you depend on live events. The test event has type `webhook.test`. Subscribing to it is valid but unnecessary: the test delivery reaches your endpoint regardless. Your handler should still ignore event types it does not recognize rather than erroring on them.
 
 `GET /v1/webhooks/{webhook_id}/deliveries` returns the 50 most recent attempts for that webhook, newest first, each with its status, attempt count, and the first kilobyte of your endpoint's response body, which is usually enough to see why a delivery failed.
