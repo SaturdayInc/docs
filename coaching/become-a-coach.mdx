@@ -1,6 +1,6 @@
 ---
 title: 'Become a coach'
-description: 'Two ways to start coaching on Saturday — both land you in the same place'
+description: 'Two ways to start coaching on Saturday, and the plan you land on'
 sidebarTitle: 'Become a coach'
 icon: 'user-plus'
 ---
@@ -9,52 +9,61 @@ import { AppAction } from "/snippets/app-action.jsx"
 
 # Become a coach
 
-There are two doors into coaching. Both end in exactly the same state: a coach account with **[portal access](https://coach.saturday.fit/dashboard)**, your own athlete subscription intact, an empty **[roster](https://coach.saturday.fit/dashboard)**, and a short activation checklist to get you going.
+There are two doors into coaching. Both end in the same state: a coach account with **[portal access](https://coach.saturday.fit/dashboard)**, your own athlete subscription intact, an empty **[roster](https://coach.saturday.fit/dashboard)**, and an activation checklist on the dashboard.
 
 ## The two entry paths
 
 <CardGroup cols={2}>
   <Card title="From the Saturday app" icon="mobile">
-    Already a Saturday athlete? In the app, tap <AppAction path="/open-app">Become a Coach</AppAction> (Settings → Become a Coach, or tap the prompt on the home screen). Your existing account becomes a coach account — nothing about your own training changes.
+    Already a Saturday athlete? Open the **Accounts** page and tap <AppAction path="/open-app">Become a Coach</AppAction>. Your existing account gains coaching; your own training is untouched. **Stop Coaching** lives on the same page.
   </Card>
   <Card title="From the coach portal" icon="browser">
-    No Saturday account yet? Sign up at **[coach.saturday.fit](https://coach.saturday.fit)**. We provision an athlete account for you automatically so your coach identity and athlete identity are one account from day one.
+    No Saturday account yet? Sign up at **[coach.saturday.fit](https://coach.saturday.fit)**. Saturday provisions an athlete account for you, so your coach identity and athlete identity are one account from day one.
   </Card>
 </CardGroup>
 
+<Note>
+  The in-app **Become a Coach** row is behind a staged rollout, so it may not be on your Accounts page yet. Signing up at **[coach.saturday.fit](https://coach.saturday.fit)** works either way and reaches the same account.
+</Note>
+
 ## Every coach is also an athlete
 
-This is true for every coach: **every coach has a Saturday athlete account and completes athlete onboarding.** Why — because you coach fueling best when you've felt it yourself, and because the <AppAction path="/open-app">persona toggle</AppAction> in the app lets you flip between coaching and your own training without logging out.
+Every coach has a Saturday athlete account and completes athlete onboarding. You coach fueling better having used it, and the <AppAction path="/open-app">persona toggle</AppAction> on the Accounts page switches between **Coaching** and **My Training** without logging out.
 
-- **Portal-first sign-up:** we auto-create your athlete account and subscription; you can finish athlete onboarding in-app whenever you like.
-- **Already have an app account:** we keep it. Same login, now with coaching powers.
-- **Signed up twice (app identity ≠ portal identity):** we detect the mismatch and guide you to link/merge the two into one account. This is what we recommend — you almost never want two.
-- **Genuinely want them separate?** That's supported for power users, but the merge path is the recommended one.
+- **Portal-first sign-up:** Saturday creates your athlete account and subscription. You can finish athlete onboarding in the app whenever you like.
+- **Already have an app account:** it is kept. Same login, now with coaching.
+- **Signed up twice (app identity does not match portal identity):** Saturday detects the mismatch and offers to link the two into one account, keeping the account with more training history. Linking is the recommended path.
+- **Want them separate?** **Keep them separate** is offered alongside linking. A few account shapes cannot be linked automatically; in those cases Saturday's team completes the link by hand and you keep coaching in the meantime.
 
 ## Your activation checklist
 
-Your empty dashboard shows a dismissible checklist so you're never staring at a blank screen:
+An empty dashboard opens with a **Get started** card and four steps, each with its own button:
 
-1. **Invite your first athlete** — from your **[roster](https://coach.saturday.fit/dashboard)**; see [Invite your first athlete](/coaching/first-athlete).
-2. **Set your billing** — choose your plan and decide who pays in **[billing](https://coach.saturday.fit/admin/billing)**. See [Who pays](/coaching/billing/who-pays).
-3. **Explore the coaching guide** — these docs. Start at [the dials](/coaching/nutrition/overview).
+1. **Invite your first athlete** from your **[roster](https://coach.saturday.fit/dashboard)**. See [Invite your first athlete](/coaching/first-athlete).
+2. **Set up billing**, which opens **[Coach Subscription](https://coach.saturday.fit/admin/subscription)** to pick a plan. See [Who pays](/coaching/billing/who-pays).
+3. **Finish your athlete setup** in the app, about 5 minutes. The button shows a QR code that hands your own athlete onboarding to your phone.
+4. **Read the coach docs**, which lands here.
 
-Dismiss it any time; it won't nag.
+The card tracks progress, collapses to a **Setup complete** strip when all four are done, and can be dismissed. Once dismissed, a **Setup guide** link reopens it.
 
 ## Choosing a plan
 
-You don't have to pay to start. Pick or change your plan in **[billing](https://coach.saturday.fit/admin/billing)**. The plans:
+You can start without paying. Plans live on **[Coach Subscription](https://coach.saturday.fit/admin/subscription)**, which the checklist's **Choose a plan** button, your Account Settings, and the command palette all open. (The **$ Earning** item in the nav is Stripe Connect payouts, not your plan.)
 
-| Plan | Price | Included athletes | Assistants |
-|------|-------|-------------------|------------|
-| **Free** | $0 | 1 | — |
-| **Pro Coach** | $12.99/mo | 2 | +1 |
-| **Head Coach** | $49.99/mo | 5 | +5 |
-| **Business** | $149/mo flat | fair-use | unlimited |
-| **Enterprise** | Custom | Custom | Custom |
+| Plan | Price | Athletes | Assistants |
+|------|-------|----------|------------|
+| **Coach** | Free | 1, who self-pays | None |
+| **Pro Coach** | $12.99/mo | 2 included | 1 |
+| **Head Coach** | $49.99/mo | 5 included | Up to 5 |
+| **Business** | $149/mo flat | Fair-use roster ceiling | Unlimited |
+| **Enterprise** | Custom | Custom | Unlimited |
+
+**Included** means covered by your plan fee, so the athlete pays nothing. The free **Coach** tier is the exception: it lets you coach one athlete, but that athlete pays for their own Saturday subscription. Covering an athlete yourself starts at Pro Coach. See [Who pays](/coaching/billing/who-pays).
+
+Beyond the assistants your plan includes, you can buy extra assistant seats at $10/seat/month and release them at any time. Business and Enterprise are already unlimited, so the seat add-on does not apply to them.
 
 <Tip>
-  **Saturday Lifetime owner?** Your coaching plan is **50% off, forever** — Pro Coach is $6.50/mo, Head Coach is $25.00/mo. The discount applies automatically; you'll see it on the plan cards.
+  **Saturday Lifetime owner?** Your coaching plan is 50% off for as long as you hold it. Pro Coach is $6.50/mo and Head Coach is $25.00/mo. The discount applies automatically and the plan cards show a **Lifetime 50% off** badge.
 </Tip>
 
-Plans are monthly (no annual coach plans). You can upgrade, downgrade, or cancel any time from your **[billing](https://coach.saturday.fit/admin/billing)** page — see [Take over & relinquish](/coaching/billing/take-over-relinquish) for what happens to your athletes when your plan changes.
+Coach plans are billed monthly. Upgrade, downgrade, or cancel from **[Coach Subscription](https://coach.saturday.fit/admin/subscription)**. An upgrade takes effect immediately; a downgrade or cancellation takes effect at the end of your paid period, and both can be undone before then. Cancelling moves your covered athletes to self-pay on that date. See [Take over & relinquish](/coaching/billing/take-over-relinquish) for what your athletes see when that happens.

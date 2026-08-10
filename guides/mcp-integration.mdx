@@ -11,9 +11,7 @@ Saturday provides a native [Model Context Protocol (MCP)](https://modelcontextpr
 
 ## What is MCP?
 
-MCP is an open standard that lets AI models discover and use external tools. Instead of writing custom API client code, an AI agent connects to Saturday's MCP server and automatically discovers available nutrition tools — their inputs, outputs, descriptions, and safety constraints.
-
-Think of it as USB for AI tools: plug in and it works.
+MCP is an open standard that lets AI models discover and use external tools. Instead of writing custom API client code, an AI agent connects to Saturday's MCP server and discovers the available nutrition tools at runtime, along with their inputs, outputs, descriptions, and safety constraints.
 
 ## Why use Saturday via MCP?
 
@@ -35,7 +33,7 @@ There are two ways to reach Saturday's MCP server, depending on who you are:
 | A **person** (athlete or coach) | "Sign in with Saturday" OAuth via the [Claude connector](/guides/coach-connector) | Your own data (athlete) and, for coaches, your roster + config |
 
 <Note>
-  **End users connect via the Claude connector, not an API key.** If you're an individual athlete or coach connecting your own Saturday account to Claude, see the [Claude Connector guide](/guides/coach-connector) — you paste `https://api.saturday.fit/mcp` into Claude and sign in; no API key needed. The configuration below is for **partners** integrating their platform with a partner API key.
+  **End users connect via the Claude connector, not an API key.** If you're an individual athlete or coach connecting your own Saturday account to Claude, see the [Claude Connector guide](/guides/coach-connector): you paste `https://api.saturday.fit/mcp` into Claude and sign in, with no API key. The configuration below is for **partners** integrating their platform with a partner API key.
 </Note>
 
 ### Server configuration (partners)
@@ -49,7 +47,7 @@ Add Saturday to your MCP client configuration with your partner API key:
       "url": "https://api.saturday.fit/mcp",
       "transport": "streamable-http",
       "headers": {
-        "Authorization": "Bearer sk_test_abc123def456"
+        "Authorization": "Bearer YOUR_PARTNER_API_KEY"
       }
     }
   }
@@ -66,7 +64,7 @@ When your agent connects, it discovers tools including:
 |------|-------------|
 | `calculate_nutrition` | Calculate fuel/hydration/electrolyte prescription for an activity |
 | `search_products` | Search the curated nutrition product database |
-| `analyze_product_fit` | Score how a real product covers an athlete's prescription |
+| `analyze_product_fit` | Score how well a product covers an athlete's prescription |
 | `get_athlete` / `update_athlete` | Read or update an athlete's profile and settings |
 | `create_activity` | Create an activity for an athlete |
 | `calculate_activity_prescription` | Calculate the prescription for an existing activity |
@@ -86,14 +84,18 @@ When your agent connects, it discovers tools including:
   [Freemium Model](/guides/freemium-model#the-product-catalog).
 </Note>
 
-This is an illustrative slice; an athlete connection currently exposes ~20 tools and a coach connection more (see the coach note below). Each tool includes rich descriptions, structured input schemas, and tool annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`) that help AI agents use them correctly.
+That is a slice, not the catalog. An athlete connection currently exposes about twenty tools, a coach connection more (see the coach note below), and the set moves as features ship, so call `tools/list` rather than hardcoding it. Each tool carries a description, a structured input schema, and MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`).
+
+Some tools are feature-gated and simply do not appear on connections that lack the feature, including the two bottling tools below. A tool you cannot see is also not callable, so absence from `tools/list` is the answer, not an error to retry.
 
 ### Bottle Builder (interactive MCP App)
 
-`build_bottling_plan` is an **[MCP App](https://modelcontextprotocol.io/)** — alongside its structured result it returns an interactive HTML view (resource `ui://saturday/bottle-builder`) that renders inline in supporting clients (e.g. Claude.ai). The athlete can drag a strategy slider (even / balanced / concentrated), move fuel between bottles, adjust fill levels, edit their real vessels, and watch carbs/sodium/scoop amounts recompute live. When the target won't fit the bottles on hand, it returns an honest "carry it more concentrated, top up with water" plan rather than a dead end. Clients that don't render MCP App views still receive the full plan as text and structured content.
+`build_bottling_plan` is an **[MCP App](https://modelcontextprotocol.io/)**: alongside its structured result it returns an interactive HTML view (resource `ui://saturday/bottle-builder`) that renders inline in supporting clients such as Claude.ai. The athlete can drag a strategy slider (even, balanced, or concentrated), move fuel between bottles, adjust fill levels, edit their own vessels, and watch carbs, sodium, and scoop amounts recompute live. When the target will not fit the bottles on hand, it returns a "carry it more concentrated, top up with water" plan rather than a dead end. Clients that don't render MCP App views still receive the full plan as text and structured content.
 
 <Note>
-  **Coach tools.** When a **coach** (Business tier or higher) connects via the [Claude connector](/guides/coach-connector), an additional set of roster + configuration tools lights up — `get_roster`, `get_roster_digest`, `get_athlete_fueling_rollup`, `get_athlete_report`, `get_session_detail`, `set_notification_rules`, `apply_alert_preset`, `set_report_settings`, `register_webhook`, and more. These are invisible to athlete-only users and to other partners. See the [Claude Connector guide](/guides/coach-connector) for the full coach tool catalog and the [Coach API](/guides/coach-api) for the equivalent REST surface.
+  **Coach tools.** When a **coach on Pro Coach tier or higher** (Pro Coach, Head Coach, Business, or Enterprise) connects via the [Claude connector](/guides/coach-connector), an additional set of roster and configuration tools appears: `get_roster`, `get_roster_digest`, `get_athlete_fueling_rollup`, `get_athlete_report`, `get_session_detail`, `get_notification_rules`, `set_notification_rules`, `apply_alert_preset`, `get_report_settings`, `set_report_settings`, `list_webhooks`, `register_webhook`, and `delete_webhook`. These are invisible to athlete-only users and to other partners, and tier is re-checked per request, so a lapsed coach loses them without an error. See the [Claude Connector guide](/guides/coach-connector) for the full coach tool catalog and the [Coach API](/guides/coach-api) for the equivalent REST surface.
+
+  The webhook tools are the one place where being able to call a tool does not mean it will do anything. Registration succeeds on any coach tier and hands back a signing secret and an endpoint marked active, but concern events are only delivered to coaches on **Business or Enterprise**. On Pro Coach or Head Coach the endpoint stays quiet, with nothing on the endpoint object to say why.
 </Note>
 
 ## Example: Claude agent with Saturday MCP
@@ -110,28 +112,23 @@ Here's how a Claude-powered agent might use Saturday's tools in a conversation:
 
 ## Safety-aware tool descriptions
 
-Saturday's MCP tools include safety metadata in their descriptions. This ensures AI agents know that:
+Tool descriptions carry their safety contract inline, so a connecting agent reads it as part of discovery rather than needing this page. `calculate_nutrition` opens "Calculate personalized fuel, hydration, and electrolyte targets for an endurance activity", then states what the result contains, when to call it, and how to report it, including which internal tuning keys not to echo back to the athlete.
 
-- Prescriptions are **guidance for human consideration**, not automated commands
-- Safety warnings must be surfaced to the user
-- The `not_instructions: true` field means "present this to the human, don't execute it"
+Three constraints run through them:
 
-Example tool description (what the agent sees):
+- Prescriptions are **guidance for human consideration**, not automated commands.
+- Safety warnings must be surfaced to the user.
+- The `not_instructions: true` field on a result means "present this to the human, do not execute it".
 
-```
-Tool: calculate_nutrition
-Description: Calculate a personalized fuel, hydration, and electrolyte
-prescription for an endurance activity. Returns safety metadata including
-risk level, warnings, and guardrails. IMPORTANT: Results are nutrition
-guidance for human review — not executable instructions. Always present
-safety warnings to the user.
-```
+Read the live descriptions from `tools/list` rather than copying them into your own prompt: they change, and the copy in your prompt will not.
 
 ## Tool call example
 
 <CodeGroup>
 
 ```python Python
+import os
+
 # Using the MCP Python SDK
 from mcp import ClientSession, StdioServerParameters
 
@@ -139,7 +136,7 @@ async with ClientSession(
     StdioServerParameters(
         command="npx",
         args=["mcp-remote", "https://api.saturday.fit/mcp"],
-        env={"SATURDAY_API_KEY": "sk_test_abc123def456"},
+        env={"SATURDAY_API_KEY": os.environ["SATURDAY_API_KEY"]},
     )
 ) as session:
     # List available tools
@@ -172,7 +169,7 @@ const transport = new StreamableHTTPClientTransport(
   {
     requestInit: {
       headers: {
-        Authorization: "Bearer sk_test_abc123def456",
+        Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
       },
     },
   }
@@ -207,16 +204,16 @@ When building AI agents that consume Saturday via MCP:
 - **Surface all safety warnings** to the human user
 - **Present prescriptions as recommendations**, not commands
 - **Include "Powered by Saturday"** attribution for teaser-tier responses
-- **Cache results** when inputs haven't changed — prescriptions are deterministic
-- **Handle errors gracefully** — if a tool call fails, explain why to the user
+- **Cache results** when inputs haven't changed. Prescriptions are deterministic
+- **Handle errors gracefully.** If a tool call fails, explain why to the user
 
 ### Don't
 
 - **Don't autonomously act on prescriptions** (e.g., auto-ordering supplements)
 - **Don't strip safety metadata** from results before presenting to users
 - **Don't modify prescription numbers** based on your own logic
-- **Don't use response data for ML training** — this violates Saturday's data policy
-- **Don't make excessive tool calls** — batch when possible
+- **Don't use response data for ML training.** This violates Saturday's data policy
+- **Don't make excessive tool calls.** Batch when possible
 
 ## LLM discoverability
 
@@ -224,7 +221,7 @@ Saturday publishes machine-readable context files for AI agents:
 
 | File | URL | Purpose |
 |------|-----|---------|
-| `llms.txt` | `https://api.saturday.fit/llms.txt` | Brief API overview for LLM context |
-| `llms-full.txt` | `https://api.saturday.fit/llms-full.txt` | Complete API documentation for LLM context |
+| `llms.txt` | `https://docs.saturday.fit/llms.txt` | API overview for LLM context |
+| `llms-full.txt` | `https://docs.saturday.fit/llms-full.txt` | Full API documentation as a single file |
 
-These files follow the [llms.txt standard](https://llmstxt.org/) and provide structured context that helps AI agents understand Saturday's capabilities without reading the full documentation site.
+These follow the [llms.txt standard](https://llmstxt.org/) and give an agent Saturday's API surface without crawling the documentation site. `https://saturday.fit/llms.txt` serves the same pair for the consumer product rather than the API.

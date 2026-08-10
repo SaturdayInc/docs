@@ -1,52 +1,84 @@
 ---
 title: 'Permissions'
-description: 'Roles and access control — preset roles for everyone, custom roles for Business & Enterprise'
+description: 'Roles, scopes, and access control across your team and organization'
 sidebarTitle: 'Permissions'
 icon: 'lock'
 ---
 
 # Permissions
 
-Permissions decide what each member of your **[team](https://coach.saturday.fit/dashboard/team)** can do. The system is tiered: every coach gets **preset roles** for quick setup, and **Business / Enterprise** add a full **custom-role builder**. It's all GUI-first — no config files, no API required.
+Permissions decide what each member of your [team](https://coach.saturday.fit/dashboard/team) can do. Roles, delegation, and custom roles are all managed on the [Access & Roles](https://coach.saturday.fit/admin/rbac) page, in three layers: preset roles for every coach, per-assistant delegation for every coach, and a custom-role builder on Head Coach and above.
 
-## Preset roles (every coach)
+## Roles and scopes
 
-Assign a preset role to any assistant in a couple of clicks from your **[team page](https://coach.saturday.fit/dashboard/team)**:
+A permission is never granted in the abstract. Every grant carries a **scope** that decides how much data it covers:
 
-- **Assistant** — coach assigned athletes (view data, read reports, message); adjust Setup if granted.
-- **Senior assistant** — broader access across the roster, as you choose.
-- **Read-only** — view assigned athletes without making changes.
+| Scope | Covers |
+|-------|--------|
+| Relationship | Only the athletes this coach has a direct coaching relationship with |
+| Org | Every athlete in the organization |
+| Saturday global | Reserved for Saturday staff |
 
-## The assistant-billing-delegation toggle (every coach)
+This is why a head coach and an assistant can both hold "view athlete profile" and see very different rosters: the head coach holds it at org scope, the assistant at relationship scope.
 
-By default, an assistant **cannot end an org-paid coverage arrangement** — that's a money action reserved for the head coach or org owner. A single toggle on your **[team page](https://coach.saturday.fit/dashboard/team)** lets you **grant** an assistant that ability when you trust them with it. This toggle is available to every coach, not just the big tiers.
+## Preset roles
 
-## Custom roles (Business & Enterprise)
+The built-in roles you can assign on [Access & Roles](https://coach.saturday.fit/admin/rbac):
 
-Business and Enterprise get the **custom-role builder** on your **[team page](https://coach.saturday.fit/dashboard/team)**: name a role and check exactly which permissions it has. Build a role that fits how your organization actually works, then assign it to as many team members as you like.
+| Role | Scope | What it is for |
+|------|-------|----------------|
+| Owner | Org | Full administration of one organization |
+| Program Admin | Org | Org management without athlete data |
+| Performance Director | Org | Org-wide read-only athlete data |
+| Billing Manager | Org | Billing and invoicing for one organization |
+| Head Coach | Org | Manage coaches and athletes in one organization |
+| Coach | Relationship | Manage their own athletes |
+| Assistant Coach | Relationship | Limited coaching, per the grants their head coach gives them |
+| Read-Only Coach | Relationship | View selected athletes without making changes |
+
+Only an existing org owner, or Saturday staff, can assign the Owner role. A Program Admin cannot promote anyone to Owner, including themselves.
+
+## How a permission check resolves
+
+For any given action, Saturday resolves in this order and stops at the first answer:
+
+1. A per-user **deny** on that permission. A deny always wins, whatever the role says.
+2. A per-user **grant**, at the scope it was granted.
+3. The union of the member's role grants, taking the widest scope any of them provides.
+4. A custom role definition, for roles that are not built in.
+5. Otherwise, denied.
+
+## Per-assistant delegation, on every tier
+
+Three delegation axes let a head coach hand a specific power to a specific assistant without building a custom role. All three are available on every tier, and they compose: turning one on never disturbs the others.
+
+- **Billing.** Lets an assistant cover and uncover their assigned athletes' memberships. A **second, separate** toggle governs ending an org-paid coverage arrangement. Turning on billing delegation alone never grants the org-paid one.
+- **Setup.** Lets an assistant adjust an athlete's Setup: carriage, fill and mix, gluc:fruc ratio, and eco-mode. Held by a head coach by default, never by an assistant unless granted.
+- **Governance.** Grants org powers one at a time: branding, SAML configuration, audit-log reading, API-key management, webhook management, org-hierarchy management, and management of the custom roles themselves.
+
+## Custom roles, on Head Coach and above
+
+Head Coach, Business, and Enterprise get the custom-role builder on [Access & Roles](https://coach.saturday.fit/admin/rbac): name a role, then check exactly which permissions it carries and at what scope. Assign it to as many team members as you like. The same tier unlocks per-user permission overrides and the effective-access viewer, which shows what a given member can do once roles, grants, and denies have all been applied.
 
 | Capability area | Example permissions |
 |-----------------|---------------------|
-| Roster | View assigned / view all, add to group |
-| Athlete | Adjust Setup, message, add notes |
-| Billing | Cover/uncover, end org coverage, issue refunds |
-| Team | Invite assistants, assign athletes, manage roles |
-| Org | Manage sub-orgs, view audit logs |
+| Athlete data | View profile and activities, edit profile, adjust Setup, read AI summaries |
+| Roster | Read at relationship or org scope, start a transfer |
+| Billing | Preview coverage, cover and uncover, end org coverage, refund a coaching charge |
+| Team | Read and write org members, assign roles |
+| Org | Branding, API keys, webhooks, SAML, hierarchy, audit-log read |
 
 ## What no role can ever grant
 
-One permission does not exist, on purpose: **viewing an athlete's raw AI conversations.** It isn't an assignable permission — even in the custom-role builder on your **[team page](https://coach.saturday.fit/dashboard/team)**, a role literally cannot turn it on. Athletes' raw AI chats stay private; their derived plans and reports are shared. See [The AI report](/coaching/roster/ai-report).
+One permission does not exist, deliberately: viewing an athlete's raw AI conversations. It is absent from the permission catalog, so there is nothing for the custom-role builder to check. Athletes' raw AI chats stay private; their derived plans and reports are shared with you. See [The AI report](/coaching/roster/ai-report).
 
-## Audit logs
+## Organizations, audit, and hierarchy
 
-Org owners (Business and above) can review an **[audit log](https://coach.saturday.fit/admin/audit)** of consequential actions across the org — who covered whom, who changed a Setup, who issued a refund. It's scoped to the org owner so you have accountability without exposing day-to-day coaching to everyone.
-
-## Organizations & sub-orgs
-
-Business and Enterprise support a full **[org hierarchy](https://coach.saturday.fit/admin/org)** — create sub-orgs, move coaches and athletes between them, and scope admins per sub-org. Permissions and coverage respect that hierarchy.
+- **Org hierarchy** is available on Head Coach and above: create sub-organizations, move coaches and athletes between them, and scope admins per sub-org. Permissions and coverage respect the hierarchy.
+- **The [audit log](https://coach.saturday.fit/admin/audit)** is a Business and Enterprise capability, scoped to the org owner. It records consequential actions across the org: who covered whom, who changed a Setup and what changed, who issued a refund, who edited alert rules.
 
 ## See also
 
-- [Add assistants](/coaching/team/add-assistants) — bring people onto the team first.
-- [Assign athletes](/coaching/team/assign-athletes) — scope the roster a role applies to.
-- [Take over & relinquish](/coaching/billing/take-over-relinquish) — the org-coverage actions a role can gate.
+- [Add assistants](/coaching/team/add-assistants) to bring people onto the team first.
+- [Assign athletes](/coaching/team/assign-athletes) for what assignment does and does not control.
+- [Take over & relinquish](/coaching/billing/take-over-relinquish) for the org-coverage actions a role can gate.

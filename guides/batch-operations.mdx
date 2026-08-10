@@ -9,6 +9,8 @@ icon: 'layer-group'
 
 Batch endpoints let you perform multiple operations in a single API call. Use these when you need to process a training week, onboard a team, or import historical activities.
 
+The examples read your key from a `SATURDAY_API_KEY` environment variable, as in [Quickstart](/quickstart). Sandbox keys are issued with their own base URL; using one against `api.saturday.fit` returns `401 invalid_api_key`.
+
 ## Batch calculate
 
 Calculate prescriptions for multiple scenarios at once. Ideal for building "training week" views or "what if" comparisons.
@@ -17,84 +19,61 @@ Calculate prescriptions for multiple scenarios at once. Ideal for building "trai
 POST /v1/nutrition/calculate/batch
 ```
 
+Each scenario is a full calculate request, so `athlete_id` goes on the scenario, not at the top level. Results come back in request order, and there is no per-scenario label: match results to inputs by position.
+
 <CodeGroup>
 
 ```python Python
+import os
 import requests
+
+ATHLETE = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+week = [
+    {"activity_type": "run", "duration_min": 45, "intensity_level": 3},
+    {"activity_type": "run", "duration_min": 60, "intensity_level": 7},
+    {"activity_type": "bike", "duration_min": 180, "intensity_level": 5,
+     "thermal_stress_level": 7},
+]
 
 response = requests.post(
     "https://api.saturday.fit/v1/nutrition/calculate/batch",
-    headers={"Authorization": "Bearer sk_test_abc123def456"},
-    json={
-        "athlete_id": "ath_abc123",
-        "scenarios": [
-            {
-                "label": "Monday easy run",
-                "activity_type": "run",
-                "duration_min": 45,
-                "intensity_level": 3,
-            },
-            {
-                "label": "Wednesday intervals",
-                "activity_type": "run",
-                "duration_min": 60,
-                "intensity_level": 7,
-            },
-            {
-                "label": "Saturday long ride",
-                "activity_type": "bike",
-                "duration_min": 180,
-                "intensity_level": 5,
-                "thermal_stress_level": 7,
-            },
-        ],
-    },
+    headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
+    json={"scenarios": [dict(s, athlete_id=ATHLETE) for s in week]},
 )
 
-results = response.json()
-for result in results["results"]:
-    print(f"{result['label']}: {result['carb_g_per_hr']}g carbs/hr")
+data = response.json()
+for i, result in enumerate(data["results"]):
+    print(f"scenario {i}: {result['carb_g_per_hr']}g carbs/hr")
+for err in data.get("errors", []):
+    print(f"scenario {err['index']} failed: {err['code']} {err['message']}")
 ```
 
 ```typescript TypeScript
+const ATHLETE = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d";
+const week = [
+  { activity_type: "run", duration_min: 45, intensity_level: 3 },
+  { activity_type: "run", duration_min: 60, intensity_level: 7 },
+  { activity_type: "bike", duration_min: 180, intensity_level: 5,
+    thermal_stress_level: 7 },
+];
+
 const response = await fetch(
   "https://api.saturday.fit/v1/nutrition/calculate/batch",
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer sk_test_abc123def456",
+      Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      athlete_id: "ath_abc123",
-      scenarios: [
-        {
-          label: "Monday easy run",
-          activity_type: "run",
-          duration_min: 45,
-          intensity_level: 3,
-        },
-        {
-          label: "Wednesday intervals",
-          activity_type: "run",
-          duration_min: 60,
-          intensity_level: 7,
-        },
-        {
-          label: "Saturday long ride",
-          activity_type: "bike",
-          duration_min: 180,
-          intensity_level: 5,
-          thermal_stress_level: 7,
-        },
-      ],
+      scenarios: week.map((s) => ({ ...s, athlete_id: ATHLETE })),
     }),
   }
 );
 
 const data = await response.json();
-data.results.forEach((r: any) =>
-  console.log(`${r.label}: ${r.carb_g_per_hr}g carbs/hr`)
+data.results.forEach((r: any, i: number) =>
+  console.log(`scenario ${i}: ${r.carb_g_per_hr}g carbs/hr`)
 );
 ```
 
@@ -102,37 +81,53 @@ data.results.forEach((r: any) =>
 
 ### Response format
 
+Counts and the request ID sit at the top level; there is no `metadata` object. Each entry in `results` is the same body the single calculate endpoint returns, so it carries `tier`, `safety`, and `attribution` and does not carry an index.
+
 ```json
 {
   "results": [
     {
-      "index": 0,
-      "label": "Monday easy run",
+      "tier": "full",
       "carb_g_per_hr": 30,
       "sodium_mg_per_hr": 300,
       "fluid_ml_per_hr": 400,
-      "safety": { "confidence_score": 0.65, "warnings": [], "not_instructions": true }
+      "safety": {
+        "max_safe_fluid_ml_per_hr": 1000,
+        "max_safe_sodium_mg_per_hr": 1500,
+        "confidence_score": 0.65,
+        "requires_human_review": false,
+        "warnings": [],
+        "not_instructions": true
+      }
     },
     {
-      "index": 1,
-      "label": "Wednesday intervals",
+      "tier": "full",
       "carb_g_per_hr": 55,
       "sodium_mg_per_hr": 400,
       "fluid_ml_per_hr": 500,
-      "safety": { "confidence_score": 0.65, "warnings": [], "not_instructions": true }
+      "safety": {
+        "max_safe_fluid_ml_per_hr": 1000,
+        "max_safe_sodium_mg_per_hr": 1500,
+        "confidence_score": 0.65,
+        "requires_human_review": false,
+        "warnings": [],
+        "not_instructions": true
+      }
     }
   ],
   "errors": [],
-  "metadata": {
-    "total_scenarios": 3,
-    "successful": 3,
-    "failed": 0,
-    "request_id": "req_abc123def456"
-  }
+  "total": 3,
+  "succeeded": 3,
+  "failed": 0,
+  "estimated_ms": 4200,
+  "elapsed_ms": 4381,
+  "request_id": "req_ca5a6125aad2"
 }
 ```
 
-If individual scenarios fail, they appear in `errors` with the index and error detail. Successful scenarios are still returned — batch operations don't fail atomically.
+Failed scenarios appear in `errors` as `{ "index", "code", "message" }`, and the successful ones are still returned: batch operations do not fail atomically.
+
+Because failures are dropped from `results` rather than nulled, `results` is shorter than `scenarios` when anything fails, and a result's position no longer matches its scenario index. When you need that mapping and failures are possible, read the failed indexes from `errors` first and reconstruct alignment from them.
 
 ### Limits
 
@@ -140,6 +135,12 @@ If individual scenarios fail, they appear in `errors` with the index and error d
 |------------|-------|
 | Max scenarios per batch | 50 |
 | Rate limiting | Counts as 1 API call per scenario |
+
+Exceeding 50 returns `400` with the code `batch_too_large`, and an empty `scenarios` array returns `400` with `empty_batch`.
+
+### Sizing the wait
+
+A batch takes as long as the sum of its scenarios. Two things let you show real progress instead of a spinner: the response carries an `X-Batch-Estimated-Ms` header, flushed before processing begins, and sending `"estimate_only": true` returns the same estimate immediately without running any calculations, consuming quota, or returning results.
 
 ## Bulk athlete create
 
@@ -149,12 +150,17 @@ Onboard multiple athletes in one call. Useful for team imports or platform migra
 POST /v1/athletes/batch
 ```
 
+This endpoint takes a partner API key only. An athlete-delegated OAuth token is rejected up front with `403` rather than partway through, so a scope mistake never leaves some athletes created and others not.
+
 <CodeGroup>
 
 ```python Python
+import requests
+import os
+
 response = requests.post(
     "https://api.saturday.fit/v1/athletes/batch",
-    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
         "athletes": [
             {
@@ -191,7 +197,7 @@ for athlete in results["created"]:
 const response = await fetch("https://api.saturday.fit/v1/athletes/batch", {
   method: "POST",
   headers: {
-    Authorization: "Bearer sk_test_abc123def456",
+    Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -225,7 +231,15 @@ results.created.forEach((a: any) => console.log(`Created: ${a.name} -> ${a.id}`)
 | Constraint | Value |
 |------------|-------|
 | Max athletes per batch | 100 |
-| Duplicate `external_id` | Error for that item, others continue |
+| Minimum per athlete | At least one of `name`, `email`, or `external_id` |
+
+Each athlete is also validated on `weight_kg` (must be positive), `year_of_birth` (1900 to the current year), and `sex` (`male`, `female`, or `intersex`). A violation fails that item only.
+
+The batch is also checked against your account's total athlete quota before processing. If you are at the cap the whole request returns `403` with the code `resource_limit`, rather than partially filling.
+
+<Warning>
+  **`external_id` is not deduplicated.** Saturday does not reject or merge an athlete whose `external_id` you have already used; every create mints a new athlete with a new UUID. Retrying a batch that partially succeeded will therefore create duplicates of the athletes that succeeded the first time. Track the returned IDs against your own `external_id` values and retry only the items that failed.
+</Warning>
 
 ## Activity import
 
@@ -235,28 +249,46 @@ Import multiple activities for an athlete at once. Useful for backfilling histor
 POST /v1/athletes/{athlete_id}/activities/import
 ```
 
+An imported activity accepts these fields and no others. Unknown keys are ignored silently, so check this list rather than assuming a field was stored:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `type` | Yes | One of `bike`, `run`, `swim`, `row`, `ski`, `lift`, `hike` |
+| `duration_min` | Yes | Positive integer |
+| `intensity_level` | No | 1 to 10 |
+| `thermal_stress_level` | No | 1 to 10 |
+| `is_race_event` | No | Boolean |
+| `external_id` | No | Your own activity ID, carried through and used by finish-screen deep links |
+| `calculate` | No | Calculate a prescription for this activity, see below |
+
+<Note>
+  There is no timestamp field on import. Imported activities are stamped with the time Saturday created them, so a backfill does not preserve the original activity dates. Keep your own date mapping via `external_id` if you need it.
+</Note>
+
 <CodeGroup>
 
 ```python Python
+import requests
+import os
+
 response = requests.post(
-    f"https://api.saturday.fit/v1/athletes/ath_abc123/activities/import",
-    headers={"Authorization": "Bearer sk_test_abc123def456"},
+    "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities/import",
+    headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
         "activities": [
             {
                 "type": "run",
-                "name": "New Year's Day 10K",
                 "duration_min": 48,
                 "intensity_level": 7,
-                "scheduled_at": "2025-01-01T09:00:00Z",
                 "thermal_stress_level": 2,
+                "is_race_event": True,
+                "external_id": "strava-10k-2025-01-01",
             },
             {
                 "type": "bike",
-                "name": "Weekend group ride",
                 "duration_min": 150,
                 "intensity_level": 5,
-                "scheduled_at": "2025-01-04T08:00:00Z",
+                "external_id": "strava-group-ride-2025-01-04",
             },
         ],
     },
@@ -265,29 +297,28 @@ response = requests.post(
 
 ```typescript TypeScript
 const response = await fetch(
-  `https://api.saturday.fit/v1/athletes/ath_abc123/activities/import`,
+  "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities/import",
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer sk_test_abc123def456",
+      Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
       activities: [
         {
           type: "run",
-          name: "New Year's Day 10K",
           duration_min: 48,
           intensity_level: 7,
-          scheduled_at: "2025-01-01T09:00:00Z",
           thermal_stress_level: 2,
+          is_race_event: true,
+          external_id: "strava-10k-2025-01-01",
         },
         {
           type: "bike",
-          name: "Weekend group ride",
           duration_min: 150,
           intensity_level: 5,
-          scheduled_at: "2025-01-04T08:00:00Z",
+          external_id: "strava-group-ride-2025-01-04",
         },
       ],
     }),
@@ -296,6 +327,8 @@ const response = await fetch(
 ```
 
 </CodeGroup>
+
+Up to **200 activities** per import. Exceeding that returns `400` with `batch_too_large`. The import is also checked against the athlete's activity quota before processing, returning `403` with `resource_limit` if it would exceed the cap.
 
 ### Calculating prescriptions during import
 
@@ -311,37 +344,44 @@ Set `calculate: true` at the top level to calculate a prescription for every imp
 }
 ```
 
-Each calculation runs the same tier-aware path as the single calculate endpoint: full-tier and in-trial athletes get exact prescriptions (stored on the activity and mirrored on `imported[].prescription`); teaser-tier athletes get per-hour ranges with a `subscription_cta`. Trial athletes debit their daily call allowance per calculated activity — a large import can use up the day's allowance mid-batch, after which remaining items return teaser ranges.
+Each calculation runs the same tier-aware path as the single calculate endpoint: full-tier and in-trial athletes get exact prescriptions, stored on the activity and mirrored on `imported[].prescription`, while teaser-tier athletes get per-hour ranges with a `subscription_cta`. Trial athletes debit their daily call allowance per calculated activity, so a large import can exhaust the day's allowance mid-batch, after which the remaining items return teaser ranges.
 
-Per-item outcomes ride a `prescriptions` array in the response (`index`, `activity_id`, and the tier-aware `result`). A failed calculation never fails the import — the activity is still created, and the failure appears on that item's `code`/`message`.
+Per-item outcomes ride a `prescriptions` array in the response, each with `index`, `activity_id`, and the tier-aware `result`. A failed calculation never fails the import: the activity is still created, and the failure appears on that item's `code` and `message`.
 
-Imports also count against rate limits per item, like batch calculate.
+Imports count against rate limits per item, like batch calculate.
 
 ## Error handling in batch operations
 
-Batch operations use partial success semantics. If 3 out of 5 items succeed and 2 fail:
+Batch operations use partial success semantics. If 3 of 5 items succeed and 2 fail, the 3 successes are committed, the 2 failures are returned in `errors`, and the HTTP status is `200` rather than `400` because some items succeeded.
 
-- The 3 successful items are committed
-- The 2 failed items are returned in the `errors` array with index, error type, and message
-- The HTTP status is `200` (not `400`) because some items succeeded
+Every batch response uses the same envelope. The success array is named for the operation (`results`, `created`, or `imported`), and alongside it sit `errors`, `total`, `succeeded`, `failed`, and `request_id`. Each error is a flat object with `index`, `code`, and `message`:
 
 ```json
 {
   "created": [
-    { "index": 0, "id": "ath_abc123", "name": "Alice Runner" },
-    { "index": 2, "id": "ath_def456", "name": "Carol Triathlete" }
+    {
+      "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+      "partner_id": "your-partner-id",
+      "name": "Alice Runner",
+      "external_id": "user-001",
+      "weight_kg": 58,
+      "created_at": 1765467600
+    }
   ],
   "errors": [
     {
       "index": 1,
-      "error": {
-        "type": "conflict",
-        "code": "duplicate_external_id",
-        "message": "An athlete with external_id 'user-002' already exists"
-      }
+      "code": "invalid_value",
+      "message": "weight_kg must be positive"
     }
-  ]
+  ],
+  "total": 3,
+  "succeeded": 2,
+  "failed": 1,
+  "request_id": "req_ca5a6125aad2"
 }
 ```
 
-Check both `created` (or `results`) and `errors` arrays to handle the response correctly.
+Read both arrays. `index` on an error refers to the item's position in your request, which is the only reliable way to tell which input failed.
+
+Unlike the resource IDs above, `request_id` is not a UUID: it is `req_` followed by 12 hex characters. Log it. It is what support needs to trace a specific call.

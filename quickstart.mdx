@@ -1,36 +1,38 @@
 ---
 title: 'Quickstart'
-description: '5 minutes to your first API call'
+description: 'Your first prescription, start to finish'
 sidebarTitle: 'Quickstart'
 ---
 
 # Quickstart
 
-This guide gets you from zero to a working nutrition calculation in under 5 minutes.
-
 ## 1. Get your API key
 
-**Self-serve (most builders):** sign up at [saturday.fit/api](https://saturday.fit/api) — $5.39/month, no contract. Your key is revealed once after checkout and emailed to you. An AI agent can do this for you too: `POST /v1/signup` (no auth) returns a hosted checkout link. Not sure self-serve is your lane? See [Getting Access](/access).
+**Self-serve:** sign up at [saturday.fit/api](https://saturday.fit/api) for $5.39/month, no contract. Your key is revealed once after checkout and emailed to you. An AI agent can do this for you: `POST /v1/signup` (no auth) returns a hosted checkout link. Not sure self-serve is your lane? See [Getting Access](/access).
 
-**Platform partners:** keys come with your agreement — contact [api@saturday.fit](mailto:api@saturday.fit). Partner sandbox keys start with `sk_test_` and work against test data with no rate limit concerns.
+**Platform partners:** keys come with your agreement. Contact [api@saturday.fit](mailto:api@saturday.fit).
 
-```
-sk_live_abc123def456...
-```
+Keys carry an environment prefix. Production keys start with `sk_live_`, sandbox keys with `sk_test_`, and the two are not interchangeable: a sandbox key does not authenticate against production. See [Authentication](/authentication#environments) for what each environment does and which base URL it uses.
 
 <Note>
-  Treat your key like a password — it authenticates every request and spends your daily call allowance.
+  Treat your key like a password. It authenticates every request and spends your daily call allowance.
 </Note>
+
+The examples below read the key from a `SATURDAY_API_KEY` environment variable, so the same code runs against either environment:
+
+```bash
+export SATURDAY_API_KEY="sk_live_..."
+```
 
 ## 2. Make your first calculation
 
-The core of Saturday's API is the nutrition calculation endpoint. It takes activity parameters and returns a fuel prescription.
+The prescription endpoint takes activity parameters and returns fuel, hydration, and sodium targets. Only `activity_type` and `duration_min` are required; everything else sharpens the result.
 
 <CodeGroup>
 
 ```bash cURL
 curl -X POST https://api.saturday.fit/v1/nutrition/calculate \
-  -H "Authorization: Bearer sk_test_abc123def456" \
+  -H "Authorization: Bearer $SATURDAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "activity_type": "run",
@@ -42,12 +44,13 @@ curl -X POST https://api.saturday.fit/v1/nutrition/calculate \
 ```
 
 ```python Python
+import os
 import requests
 
 response = requests.post(
     "https://api.saturday.fit/v1/nutrition/calculate",
     headers={
-        "Authorization": "Bearer sk_test_abc123def456",
+        "Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}",
         "Content-Type": "application/json",
     },
     json={
@@ -69,7 +72,7 @@ const response = await fetch(
   {
     method: "POST",
     headers: {
-      Authorization: "Bearer sk_test_abc123def456",
+      Authorization: `Bearer ${process.env.SATURDAY_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -90,7 +93,7 @@ console.log(data);
 
 ### Install an SDK (optional)
 
-Saturday provides official SDKs for Python and TypeScript:
+Saturday publishes SDKs for Python and TypeScript:
 
 <CodeGroup>
 
@@ -107,9 +110,10 @@ npm install @saturdayinc/sdk
 <CodeGroup>
 
 ```python Python (SDK)
+import os
 from saturday import Saturday
 
-client = Saturday(api_key="sk_test_abc123def456")
+client = Saturday(api_key=os.environ["SATURDAY_API_KEY"])
 
 result = client.nutrition.calculate(
     activity_type="run",
@@ -125,7 +129,7 @@ print(result)
 ```typescript TypeScript (SDK)
 import Saturday from "@saturdayinc/sdk";
 
-const client = new Saturday({ apiKey: "sk_test_abc123def456" });
+const client = new Saturday({ apiKey: process.env.SATURDAY_API_KEY });
 
 const result = await client.nutrition.calculate({
   activity_type: "run",
@@ -140,19 +144,21 @@ console.log(result);
 
 </CodeGroup>
 
+Both SDKs default to `https://api.saturday.fit` and accept a base URL override (`base_url` in Python, `baseUrl` in TypeScript) for sandbox work.
+
 ## 3. Read the response
 
-A successful response returns a fuel prescription with safety metadata:
+A successful response returns a prescription with safety metadata:
 
 ```json
 {
   "tier": "full",
-  "carb_g_per_hr": 62.5,
-  "sodium_mg_per_hr": 485.0,
+  "carb_g_per_hr": 60.0,
+  "sodium_mg_per_hr": 600.0,
   "fluid_ml_per_hr": 620.0,
-  "total_carb_g": 125,
-  "total_sodium_mg": 970,
-  "total_fluid_ml": 1240,
+  "total_carb_g": 90,
+  "total_sodium_mg": 900,
+  "total_fluid_ml": 930,
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
@@ -170,65 +176,76 @@ A successful response returns a fuel prescription with safety metadata:
 }
 ```
 
-Key fields to understand:
-
 | Field | What it means |
 |-------|---------------|
-| `tier` | Response tier — `"full"` for subscribed athletes, `"teaser"` for free |
+| `tier` | `"full"` for exact numbers, `"teaser"` for ranges |
 | `carb_g_per_hr` | Carbohydrate target in grams per hour |
 | `sodium_mg_per_hr` | Sodium target in milligrams per hour |
 | `fluid_ml_per_hr` | Fluid target in milliliters per hour |
-| `total_*` | Total amounts for the entire activity duration |
-| `safety.confidence_score` | How confident Saturday is in this prescription (0.0-1.0) |
-| `safety.warnings` | Any safety warnings for this prescription |
-| `safety.not_instructions` | Signals that prescriptions are guidance, not commands |
+| `total_*` | Totals across the whole activity duration |
+| `safety.max_safe_*_per_hr` | Hard ceilings the prescription is held under |
+| `safety.confidence_score` | Confidence in this prescription, 0.0 to 1.0 |
+| `safety.requires_human_review` | Set when the case warrants a dietitian's eyes |
+| `safety.warnings` | Safety warnings for this prescription |
+| `safety.not_instructions` | Marks the prescription as guidance, not commands |
+
+A response may also carry a `precision` object describing which profile fields are still missing and how much they widen the answer. See [Onboarding](/guides/onboarding) for how to collect them.
 
 <Warning>
-  **Safety data is never gated.** Every response includes full safety metadata regardless of subscription status. Bad hydration can cause hyponatremia — a potentially fatal condition. Safety information is always free and complete.
+  Safety data is never gated. Every response carries full safety metadata regardless of subscription status, because overdrinking can cause hyponatremia, a potentially fatal condition.
 </Warning>
 
-## 4. Understand teaser vs. full responses
+## 4. Teaser and full responses
 
-The response above shows **full precision** numbers because it's from a sandbox key. In production, responses depend on the athlete's subscription status:
+`tier` reflects the athlete's subscription and trial status, not your key's environment. A request with no athlete attached returns full precision.
 
 | Athlete status | What they get | Example |
 |----------------|---------------|---------|
-| **Subscribed** | Exact numbers | `"carb_g_per_hr": 62.5` |
-| **Free / teaser** | Ranges | `"carb_range_g_per_hr": "60-80"` |
+| **Subscribed or in trial** | Exact numbers | `"carb_g_per_hr": 60.0` |
+| **Free** | Ranges | `"carb_range_g_per_hr": "60-90"` |
 
-Teaser responses include a `subscription_cta` field:
+Teaser responses carry a `subscription_cta` field, and their `attribution.required` is `true`:
 
 ```json
 {
   "tier": "teaser",
-  "carb_range_g_per_hr": "60-80",
-  "sodium_range_mg_per_hr": "300-600",
-  "fluid_range_ml_per_hr": "600-900",
+  "carb_range_g_per_hr": "60-90",
+  "sodium_range_mg_per_hr": "500-1000",
+  "fluid_range_ml_per_hr": "500-1000",
+  "attribution": {
+    "text": "Powered by Saturday",
+    "logo_url": "https://saturday.fit/logo.png",
+    "link": "https://saturday.fit",
+    "required": true
+  },
   "subscription_cta": {
-    "message": "Subscribe to Saturday for exact fueling targets",
+    "message": "Get your exact carb, sodium, and fluid targets, not ranges",
     "subscribe_url": "https://saturday.fit/subscribe?ref=YOUR_PARTNER_ID",
-    "features": ["Exact carb/sodium/fluid targets", "Product recommendations"]
+    "features": [
+      "Exact gram/mg/mL targets per hour",
+      "Personalized product picks inside the app",
+      "Personalized fueling plan",
+      "15+ tuning factors"
+    ]
   }
 }
 ```
 
-See [Freemium Model](/guides/freemium-model) for the full details.
+See [Freemium Model](/guides/freemium-model) for how the tiers are decided and how the subscribe loop pays you.
 
 ## 5. Next steps
 
-You've just calculated a nutrition prescription with minimal inputs. From here:
-
 <Steps>
   <Step title="Create an athlete profile">
-    [Athletes](/guides/athletes) — Store athlete settings (weight, sweat level, preferences) for more accurate calculations.
+    [Athletes](/guides/athletes) stores athlete settings (weight, sweat level, preferences) so calculations stop relying on defaults.
   </Step>
   <Step title="Understand safety">
-    [Safety](/guides/safety) — Learn about Saturday's safety model and why it matters.
+    [Safety](/guides/safety) covers the safety model and the ceilings above.
   </Step>
   <Step title="Track activities">
-    [Activities](/guides/activities) — Create activities, attach prescriptions, and collect feedback.
+    [Activities](/guides/activities) creates activities, attaches prescriptions, and collects post-session feedback.
   </Step>
   <Step title="Go to production">
-    [Authentication](/authentication) — Swap your `sk_test_` key for a `sk_live_` key when you're ready.
+    [Authentication](/authentication) covers swapping a `sk_test_` key and its sandbox base URL for a `sk_live_` key against `api.saturday.fit`.
   </Step>
 </Steps>

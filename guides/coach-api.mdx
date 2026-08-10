@@ -7,12 +7,16 @@ icon: 'users'
 
 # Coach API
 
-The Coach API exposes a coach's Saturday surface — the per-athlete fueling rollup, AI reports, the roster's needs-attention markers, and the **entire notifications/alerting control center** — over a coach-scoped REST API (and an [MCP connector](/guides/coach-connector)).
+The Coach API exposes a coach's Saturday surface over a coach-scoped REST API, and over an [MCP connector](/guides/coach-connector): the per-athlete fueling rollup, AI reports, the roster's needs-attention markers, and the notification and alerting settings.
 
-It is built for the power-user coach who wants to automate fueling monitoring: read who needs attention, pull a report, and configure every alert rule and digest across a whole roster — programmatically.
+It is built for a coach who wants to automate fueling monitoring: read who needs attention, pull a report, and configure alert rules and digests across a whole roster programmatically.
 
 <Note>
-  The Coach API requires the **Business tier or higher**. A coach whose tier no longer includes API access degrades cleanly to their own athlete data only — coach endpoints return `404` until an eligible tier is restored. There is no error and no separate "downgrade" call.
+  **Tier requirements.** Coach endpoints require the Pro Coach tier or above (Pro Coach, Head Coach, Business, Enterprise). Two further gates sit above that line: minting a coach API key in the portal requires Business or Enterprise plus an org-admin role, and webhook *delivery* requires Business or Enterprise. A Pro Coach or Head Coach therefore reaches the whole surface through the OAuth connector, and reaches it through an API key only if someone on a Business plan minted one.
+</Note>
+
+<Note>
+  **When a tier lapses.** On an OAuth token, the coach tools stop resolving and coach endpoints return `404`, while the coach keeps their own athlete data. There is no error and no separate "downgrade" call. On a coach API key there is no athlete-self facet to fall back to, so the request is refused outright with `403 coach_tier_required`.
 </Note>
 
 ## Authentication
@@ -24,34 +28,36 @@ Two ways to authenticate as a coach. Both resolve to the same coach identity and
 | **Coach API key** | `cp_live_…` / `cp_test_…` (Bearer) | Scripts, automations, server-to-server |
 | **OAuth2 (coach scopes)** | OAuth2 access token (Bearer) | The Claude.ai connector / user-delegated apps |
 
-Coach API keys are minted in the [coach portal](https://coach.saturday.fit) under **[Settings → API Keys](https://coach.saturday.fit/admin/api-keys)**. Pass the key as a Bearer token:
+Coach API keys are minted in the [coach portal](https://coach.saturday.fit) under **[Admin → API Keys](https://coach.saturday.fit/admin/api-keys)**. Pass the key as a Bearer token:
 
 ```bash
 curl -H "Authorization: Bearer cp_live_..." https://api.saturday.fit/v1/coach/roster
 ```
 
-OAuth2 coaches use the [connector OAuth flow](/guides/oauth2) with coach scopes (`coach:roster`, `coach:reports`, `coach:alerts`, `coach:webhooks`). The same OAuth token also acts as an athlete-self token on `/v1/athletes/*` — a coach is also an athlete.
+OAuth2 coaches use the [connector OAuth flow](/guides/oauth2) with coach scopes (`coach:roster`, `coach:reports`, `coach:alerts`, `coach:webhooks`). Because a coach is also an athlete, the same OAuth token acts as an athlete-self token on `/v1/athletes/*`.
 
-## Scopes & capabilities
+## Scopes and capabilities
 
-The coach's token/key carries scopes that map to capabilities. A route is reachable only when the token confers the matching capability — otherwise it returns the uniform `404`.
+The coach's token or key carries scopes that map to capabilities. A route is reachable only when the token confers the matching capability; otherwise it returns the uniform `404`.
 
 | Capability | OAuth scope | API-key scope | Grants |
 |------------|-------------|---------------|--------|
-| Read roster + rollups + sessions | `coach:roster` | `roster:read` | `GET /v1/coach/roster`, `…/fueling-rollup`, `…/sessions/…` |
-| Read reports + digest | `coach:reports` | `roster:read` | `…/report`, `/v1/coach/roster/digest` |
-| Write alert + report config | `coach:alerts` | `roster:write` | `/v1/coach/config/*` |
+| Read roster + rollups + sessions | `coach:roster` | `roster:read`, `roster:write`, `org:read`, `org:write` | `GET /v1/coach/roster`, `…/fueling-rollup`, `…/sessions/…` |
+| Read reports + digest | `coach:reports` | `org:read`, `org:write` | `…/report`, `/v1/coach/roster/digest` |
+| Write alert + report config | `coach:alerts` | `roster:write`, `org:write` | `/v1/coach/config/*` |
 | Manage webhooks | `coach:webhooks` | `webhooks:manage` | `/v1/coach/webhooks/*` |
 
+The two vocabularies are unioned, never translated, so a key keeps exactly the reach its scopes confer. `roster:read` alone does not open the report routes; pick `org:read` or higher when a key needs reports. Keys minted before scoped keys existed carry a single `*` scope and hold all four capabilities.
+
 <Warning>
-  **Roster confinement.** Every `{athlete_uid}` you pass is checked against your roster. An athlete who isn't on your roster (or doesn't exist) returns `404 resource_not_found` — the two cases are deliberately indistinguishable, so the API never reveals whether an athlete exists.
+  **Roster confinement.** Every `{athlete_uid}` you pass is checked against your roster. An athlete who isn't on your roster, and an athlete who doesn't exist, both return `404 resource_not_found`. The two cases are indistinguishable, so the API never reveals whether an athlete exists.
 </Warning>
 
 ## Reads
 
 ### List the roster
 
-`GET /v1/coach/roster` — every athlete you coach, each with a calm needs-attention summary over the look-back window.
+`GET /v1/coach/roster` returns every athlete you coach, each with a needs-attention summary over the look-back window.
 
 ```bash
 curl -H "Authorization: Bearer cp_live_..." \
@@ -78,11 +84,11 @@ curl -H "Authorization: Bearer cp_live_..." \
 }
 ```
 
-The markers use Saturday's **one shared concern definition** — so they match the coach portal table and the digest exactly. An athlete who fueled well shows `flagged: false` and is never alarmed.
+The markers come from Saturday's single shared concern definition, so they match the coach portal table and the digest exactly. An athlete who fueled well shows `flagged: false`.
 
 ### Roster digest (flagged-only)
 
-`GET /v1/coach/roster/digest` — the same data, but **only** athletes who crossed a concern bar this window, most-flagged first. Calm by design: the silent majority is omitted. Ideal for a large roster ("who needs my attention this week?").
+`GET /v1/coach/roster/digest` returns the same data for athletes who crossed a concern bar this window, most-flagged first. Athletes who did not cross a bar are omitted, which is what makes this the useful call on a large roster.
 
 ```json
 {
@@ -90,13 +96,23 @@ The markers use Saturday's **one shared concern definition** — so they match t
   "window": 7,
   "flagged_count": 3,
   "total_count": 48,
-  "flagged": [ /* RosterEntry[], most-flagged first */ ]
+  "flagged": [
+    {
+      "athlete_uid": "ath_123",
+      "flagged": true,
+      "flagged_count": 2,
+      "top_reasons": ["Sodium 57%", "1 symptom"],
+      "session_count": 6
+    }
+  ]
 }
 ```
 
+`flagged` carries the same entry shape as `GET /v1/coach/roster` above, ordered most-flagged first. `flagged_count` counts the entries in it; `total_count` counts the whole roster.
+
 ### Per-athlete fueling rollup
 
-`GET /v1/coach/athletes/{athlete_uid}/fueling-rollup` — one athlete's in-window sessions (the same table the portal renders) plus the concern summary and the resolved cutoffs that produced the markers.
+`GET /v1/coach/athletes/{athlete_uid}/fueling-rollup` returns one athlete's in-window sessions (the same table the portal renders) plus the concern summary and the resolved cutoffs that produced the markers.
 
 | Query param | Values | Default |
 |-------------|--------|---------|
@@ -108,8 +124,29 @@ The markers use Saturday's **one shared concern definition** — so they match t
   "athlete_uid": "ath_123",
   "window": 14,
   "focus": "rolling",
-  "sessions": [ /* per-session adherence: carb/sodium/fluid fractions, totals, symptoms, rating, sleep */ ],
-  "concern": { /* the AthleteConcern summary off the one definition */ },
+  "sessions": [
+    {
+      "activity_id": "act_789",
+      "date_millis": 1749480000000,
+      "type": "ride",
+      "duration_min": 210,
+      "is_race": false,
+      "carb_pct": 0.82,
+      "sodium_pct": 0.57,
+      "fluid_pct": 0.94,
+      "consumed_carb_g": 172,
+      "consumed_sodium_mg": 1140,
+      "consumed_fluid_ml": 2350,
+      "user_rating": 3,
+      "symptoms": { "cramp": 1 },
+      "sleep_hours": 6.5
+    }
+  ],
+  "concern": {
+    "flagged": true,
+    "flagged_count": 2,
+    "top_reasons": ["Sodium 57%", "1 symptom"]
+  },
   "settings_resolved": {
     "report_window_days": 14,
     "report_focus": "rolling",
@@ -122,11 +159,13 @@ The markers use Saturday's **one shared concern definition** — so they match t
 }
 ```
 
-Every missing value stays `null` (never a misleading `0`).
+The session object above is abbreviated. Each entry also carries the as-used and suggested prescription totals, prep fidelity, leftover reuse, report source and completeness, intensity, the profile snapshot, opaque `vessel_reports` and `weather` maps, and the derived `adherence_vs_suggested`, `dial_down_gap`, and `per_hour` triples.
+
+The adherence fractions are uncapped, so a value above `1.0` is genuine over-consumption rather than an error. Every missing value stays `null`, never `0`, and an absent `symptoms` key is not a zero.
 
 ### AI report
 
-`GET /v1/coach/athletes/{athlete_uid}/report` — the AI-generated fueling report: a calm, third-person **narrative** grounded only in the athlete's real numbers, plus the **structured concern summary** behind it (so an agent can quote the prose or compute on the data — [API-9](/guides/data-policy)).
+`GET /v1/coach/athletes/{athlete_uid}/report` returns the AI-generated fueling report: a third-person narrative grounded only in the athlete's own numbers, plus the structured concern summary behind it, so an agent can quote the prose or compute on the data.
 
 | Query param | Values | Notes |
 |-------------|--------|-------|
@@ -141,7 +180,11 @@ Every missing value stays `null` (never a misleading `0`).
   "window": 14,
   "focus": "rolling",
   "narrative": "Over the last two weeks, this athlete …",
-  "concern": { /* structured summary */ },
+  "concern": {
+    "flagged": true,
+    "flagged_count": 2,
+    "top_reasons": ["Sodium 57%", "1 symptom"]
+  },
   "generated_at": 1749500000000,
   "latest_session_ms": 1749480000000,
   "from_cache": true
@@ -152,21 +195,21 @@ Served from cache unless a newer session has landed or `refresh=true`.
 
 ### Session detail
 
-`GET /v1/coach/athletes/{athlete_uid}/sessions/{activity_id}` — drill into one session: the full per-session projection (planned-vs-actual fueling, symptoms, vessel reports, weather, sleep) plus the concern markers that session crossed.
+`GET /v1/coach/athletes/{athlete_uid}/sessions/{activity_id}` drills into one session: the full per-session projection (planned-vs-actual fueling, symptoms, vessel reports, weather, sleep) plus the concern markers that session crossed.
 
 ## Configuration
 
-The Coach API is primarily a **configuration surface**. Anything a coach can configure in the portal — channels, triggers, per-nutrient thresholds, the overall→group→athlete scope hierarchy, consolidation, cadence, quiet hours, AI-report defaults — is configurable here. The portal UI and the API are two views of one config model.
+Most of the Coach API is a configuration surface. Anything a coach can configure in the portal is configurable here: channels, triggers, per-nutrient thresholds, the overall/group/athlete scope hierarchy, consolidation, cadence, quiet hours, and AI-report defaults. The portal UI and the API are two views of one config model.
 
 <Info>
-  **Scope precedence.** Config applies at one of three scopes: `overall` (the whole roster), `group` (a coach group), or `athlete` (one athlete). When resolving what an athlete sees, the **most-specific scope wins** (athlete > group > overall). `scope_id` is required for `group`/`athlete` and omitted for `overall`.
+  **Scope precedence.** Config applies at one of three scopes: `overall` (the whole roster), `group` (a coach group), or `athlete` (one athlete). When resolving what an athlete sees, the most specific scope wins (athlete over group over overall). `scope_id` is required for `group` and `athlete`, and omitted for `overall`.
 </Info>
 
 ### Notification rules
 
-`GET /v1/coach/config/notification-rules?scope=overall` reads the rules set at exactly that scope (not the merged resolution).
+`GET /v1/coach/config/notification-rules?scope=overall` reads the rules set at exactly that scope, not the merged resolution.
 
-`PUT /v1/coach/config/notification-rules` **replaces** the rule set at a scope. This is the headline tool — it's an **idempotent upsert**: re-running with the same body is a no-op (there's no per-request idempotency key needed).
+`PUT /v1/coach/config/notification-rules` replaces the rule set at a scope. It is an idempotent upsert: re-running with the same body is a no-op, so no per-request idempotency key is needed.
 
 ```bash
 curl -X PUT https://api.saturday.fit/v1/coach/config/notification-rules \
@@ -192,15 +235,15 @@ curl -X PUT https://api.saturday.fit/v1/coach/config/notification-rules \
 
 **Channels:** `in_portal`, `email`, `push`, `webhook`. (SMS is not yet supported.)
 
-**Cadence:** `realtime` (urgent, real-time) or `digest` (bundled into one daily item per athlete).
+**Cadence:** `realtime` (sent as it happens) or `digest` (bundled into one daily item per athlete).
 
-**Thresholds** are fractions in `(0,1]`. `urgent_threshold` is the urgent band; `amber_threshold` is optional and decouples this trigger's marker line from the shared cutoff (omit to use the resolved concern cutoff).
+**Thresholds** are fractions in `(0,1]`. `urgent_threshold` is the urgent band. `amber_threshold` is optional and decouples this trigger's marker line from the shared cutoff; omit it to use the resolved concern cutoff.
 
-**Combinators** are bounded 2-trigger ANDs: both legs must be markers on the **same** session ("sodium short AND a cramp"). Exactly two triggers; no OR/NOT/nesting.
+**Combinators** are bounded two-trigger ANDs: both legs must be markers on the same session ("sodium short AND a cramp"). Exactly two triggers, with no OR, NOT, or nesting.
 
 ### Presets
 
-`POST /v1/coach/config/preset` applies a named starting point at a scope — a one-shot "set up my whole roster" you can then tweak.
+`POST /v1/coach/config/preset` applies a named starting point at a scope, which you can then tweak rule by rule.
 
 ```bash
 curl -X POST https://api.saturday.fit/v1/coach/config/preset \
@@ -235,14 +278,18 @@ curl -X PUT https://api.saturday.fit/v1/coach/config/report-settings \
 ```
 
 <Warning>
-  **Athlete data is read-only.** The Coach API never writes an athlete's fueling data, debriefs, or prescriptions. A coach can only configure their **own** alerts, reports, groups, and thresholds.
+  **Athlete data is read-only.** The Coach API never writes an athlete's fueling data, debriefs, or prescriptions. A coach can configure only their own alerts, reports, groups, and thresholds.
 </Warning>
 
 ## Webhooks
 
-A webhook is "just another delivery channel" on the alerts you already configure (`"channels": ["webhook"]`). Register an endpoint, then select `webhook` as a channel on any rule.
+A webhook is another delivery channel on the alerts you already configure (`"channels": ["webhook"]`). Register an endpoint, then select `webhook` as a channel on any rule.
 
-`POST /v1/coach/webhooks` registers an endpoint and returns the signing secret **once**.
+<Note>
+  Webhook delivery requires the Business or Enterprise tier. Registration succeeds at Pro Coach and Head Coach, but no events are delivered until the tier qualifies, and delivery stops within the same billing check if the tier later drops.
+</Note>
+
+`POST /v1/coach/webhooks` registers an endpoint and returns the signing secret once.
 
 ```bash
 curl -X POST https://api.saturday.fit/v1/coach/webhooks \
@@ -259,9 +306,13 @@ curl -X POST https://api.saturday.fit/v1/coach/webhooks \
   "events": ["concern.detected", "athlete.needs_attention"],
   "active": true,
   "created_at": 1749500000000,
-  "secret": "whsec_…"  // returned ONCE — store it
+  "secret": "whsec_…"
 }
 ```
+
+<Warning>
+  `secret` appears in this response and never again. `GET /v1/coach/webhooks` omits it, and there is no endpoint that re-reads it. Store it when you register, or delete the endpoint and register a new one to get a fresh secret.
+</Warning>
 
 | Method · path | Action |
 |---------------|--------|
@@ -271,15 +322,15 @@ curl -X POST https://api.saturday.fit/v1/coach/webhooks \
 | `POST /v1/coach/webhooks/{id}/disable` | disable (stop delivery, keep the endpoint) |
 | `POST /v1/coach/webhooks/{id}/enable` | re-enable |
 
-**Event types:** `concern.detected`, `athlete.needs_attention`. The URL must be public `https` (internal/loopback URLs are rejected). Deliveries are signed with HMAC-SHA256 (`X-Saturday-Signature` header) using the secret returned at registration, retried with backoff, and auto-disabled after repeated failures. See [Webhooks](/guides/webhooks) for verifying signatures.
+**Event types:** `concern.detected` and `athlete.needs_attention`, which an empty `events` list subscribes you to, plus `coach.message.sent`, which is opt-in and only fires for Enterprise coaches. The URL must be public `https`; internal, metadata, and loopback URLs are rejected at registration. Deliveries are signed with HMAC-SHA256 in the `X-Saturday-Signature` header using the secret returned at registration, retried with backoff, and auto-disabled after 15 consecutive failures. See [Webhooks](/guides/webhooks) for verifying signatures.
 
 ## Full identity
 
-Coach API responses use **full athlete identity** — names and data exactly as the coach sees them in the portal. The coach owns the coaching relationship, so there is no de-identification layer in the API (the export feature's identity levels are a portal/export concern). You are responsible for downstream PII handling. See the [data & privacy policy](/guides/data-policy).
+Coach API responses carry full athlete identity: names and data exactly as the coach sees them in the portal. The coach owns the coaching relationship, so the API has no de-identification layer (the export feature's identity levels are a portal and export concern). Handling that PII downstream is your responsibility. See the [data policy](/guides/data-policy).
 
 ## Rate limits
 
-Coach rate limits are generous (UX-first) — a 500-athlete roster pull or digest works without artificial paging penalties. Limits exist only for abuse protection. See [rate limiting](/rate-limiting).
+Coach principals get 50 requests per second sustained with a burst of 500, so a 500-athlete roster pull or digest completes in one turn without paging penalties. These limits are set for abuse protection rather than capacity management. See [rate limiting](/rate-limiting).
 
 ## SDKs
 
@@ -297,7 +348,7 @@ const report = await saturday.coach.report('ath_123', { window: 14 });
 
 await saturday.coach.applyPreset({ scope: 'overall', preset: 'balanced' });
 const wh = await saturday.coach.registerWebhook('https://my-system.example.com/saturday');
-// wh.secret is returned ONCE — store it
+// wh.secret is returned once; store it now
 ```
 
 ```python Python
@@ -310,7 +361,7 @@ report = client.coach.report("ath_123", window=14)
 
 client.coach.apply_preset(scope="overall", preset="balanced")
 wh = client.coach.register_webhook("https://my-system.example.com/saturday")
-# wh["secret"] is returned ONCE — store it
+# wh["secret"] is returned once; store it now
 ```
 
 </CodeGroup>

@@ -1,48 +1,67 @@
 ---
 title: 'Rate Limiting'
-description: 'Rate limit headers, tiers, and handling exceeded responses'
+description: 'Rate limit headers, ceilings, and handling 429s'
 sidebarTitle: 'Rate Limiting'
 ---
 
 # Rate Limiting
 
-Saturday uses token bucket rate limiting to ensure fair access and API stability. Rate limits are applied per API key.
+Saturday meters requests with a token bucket per account, not per key. Several keys on one account draw from the same bucket.
+
+Two ceilings apply:
+
+| Ceiling | What it bounds | Reset |
+|---------|----------------|-------|
+| Token bucket | Sustained rate, with a burst allowance on top | Continuous refill |
+| Daily call limit | Total calls per day, on accounts that carry one | Midnight UTC |
+
+Self-serve accounts run at 2 requests/second with a burst of 5, and 200 calls/day. Platform partner limits are set per agreement and carry no daily ceiling by default. A self-serve account can read its own current numbers from `GET https://api.saturday.fit/v1/` without authenticating.
 
 ## Rate limit headers
 
-Every API response includes headers showing your current rate limit status:
+Every authenticated response carries the current bucket state:
 
 ```http
 HTTP/1.1 200 OK
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 42
-X-RateLimit-Reset: 1705312800
+X-RateLimit-Limit: 120
+X-RateLimit-Remaining: 4
+X-RateLimit-Reset: 0
 Content-Type: application/json
 ```
 
 | Header | Description |
 |--------|-------------|
-| `X-RateLimit-Limit` | Maximum requests allowed per minute |
-| `X-RateLimit-Remaining` | Requests remaining in the current window |
-| `X-RateLimit-Reset` | Unix timestamp when the window resets |
+| `X-RateLimit-Limit` | Sustained rate expressed as requests per minute |
+| `X-RateLimit-Remaining` | Tokens left in the burst bucket right now |
+| `X-RateLimit-Reset` | Seconds until the next token is available. `0` while tokens remain |
+
+`X-RateLimit-Reset` is a delta in seconds, not a Unix timestamp. Adding it to the current time gives the moment the next request will be admitted.
 
 ## When you're rate limited
 
-When you exceed the limit, Saturday returns a `429 Too Many Requests` response:
+Exceeding a ceiling returns `429 Too Many Requests`:
 
 ```json
 {
   "error": {
-    "type": "rate_limit_exceeded",
+    "type": "rate_limit_error",
     "code": "rate_limit_exceeded",
-    "message": "Rate limit exceeded. Retry after 30 seconds.",
-    "documentation_url": "https://api.saturday.fit/docs/rate-limiting",
+    "message": "Rate limit exceeded. Retry after 1 seconds.",
+    "documentation_url": "https://docs.saturday.fit/errors#rate_limit_exceeded",
     "request_id": "req_abc123def456"
   }
 }
 ```
 
-Always respect the `Retry-After` header:
+Three cases produce a `rate_limit_error`, and they want different handling:
+
+| Code | Cause | `Retry-After` | What to do |
+|------|-------|---------------|------------|
+| `rate_limit_exceeded` | Token bucket empty | Present | Wait it out, then continue |
+| `rate_limit_exceeded` | Daily call ceiling reached | Absent | Stop until midnight UTC. The message states the limit |
+| `rate_limited` | Request pattern flagged as a calculator-extraction sweep | Absent | Vary your inputs, or contact support if the traffic is legitimate |
+
+Read `Retry-After` with a fallback rather than indexing it, since two of the three cases omit it:
 
 <CodeGroup>
 
@@ -52,7 +71,7 @@ import time
 response = make_api_request()
 
 if response.status_code == 429:
-    retry_after = int(response.headers["Retry-After"])
+    retry_after = int(response.headers.get("Retry-After", 60))
     time.sleep(retry_after)
     response = make_api_request()
 ```
@@ -68,6 +87,8 @@ if (response.status === 429) {
 ```
 
 </CodeGroup>
+
+Athlete-delegated callers (OAuth2 and the Claude connector) also pass through a per-athlete bucket inside the account's bucket, so one heavy user cannot starve the rest. Those 429s carry a longer `Retry-After`. See [OAuth2](/guides/oauth2).
 
 ## Daily call limits
 
@@ -87,39 +108,37 @@ Request-pattern friction (`rate_limited`) also bounds daily variety on a few sur
 
 Reaching a ceiling returns `429 Too Many Requests` without a `Retry-After` header; the message names the limit, and counters reset at midnight UTC. `GET /v1/partner` reports the ceilings that apply to your account (`rate_limits.requests_per_day` and `rate_limits.ip_requests_per_day`, `null` when none applies). To raise yours, contact api@saturday.fit.
 
-## Best practices
+## Staying under the ceilings
 
-### Spread requests evenly
+### Spread requests out
 
-Instead of bursting 60 requests in 5 seconds then waiting 55 seconds, spread them across the full minute. Token bucket rate limiting allows short bursts but sustained bursting will hit the limit.
+The burst allowance covers a short spike, then refills at the sustained rate. Pacing requests across the window keeps the bucket from emptying; draining the burst up front means every subsequent request waits.
 
-### Cache when possible
+### Cache prescriptions
 
-Nutrition prescriptions for the same inputs don't change unless the athlete's profile is updated. Cache prescription results and only recalculate when:
+A prescription for the same inputs doesn't change on its own. Cache the result and recalculate when:
 
 - The athlete's profile settings change
-- Activity parameters change (new weather forecast, updated duration)
-- You need a fresh calculation for race day
+- Activity parameters change, such as an updated duration or a new weather forecast
+- You want a fresh calculation for race day
 
-### Use batch endpoints
-
-Instead of making 10 individual calculation requests, use the batch endpoint:
+### Use the batch endpoint
 
 ```bash
 POST /v1/nutrition/calculate/batch
 ```
 
-Batch requests count as one API call per item for rate limiting but avoid connection overhead.
+Each item in a batch debits a token, so a batch of 10 costs what 10 calls cost. What it saves is round trips, not quota. See [Batch Operations](/guides/batch-operations).
 
-### Monitor your usage
-
-Check your current usage via the API:
+### Watch your usage
 
 ```bash
 curl https://api.saturday.fit/v1/partner/usage \
-  -H "Authorization: Bearer sk_live_xyz789..."
+  -H "Authorization: Bearer $SATURDAY_API_KEY"
 ```
+
+`GET /v1/partner/usage/daily` breaks the same counters down by day.
 
 ## Requesting higher limits
 
-If your integration needs higher limits, contact [api@saturday.fit](mailto:api@saturday.fit) with your partner ID and expected volume. Limit upgrades are free — we want your integration to succeed.
+Outgrowing the ceilings is the point at which we want to hear from you. Send your account or partner ID and expected volume to [support@saturday.fit](mailto:support@saturday.fit). Raising a limit costs nothing.

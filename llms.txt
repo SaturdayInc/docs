@@ -1,40 +1,57 @@
 # Saturday API
 
-> Nutrition intelligence for endurance athletes — as an API.
+> Nutrition intelligence for endurance athletes, as an API.
 
-Saturday provides AI-powered nutrition intelligence for endurance athletes. The API calculates personalized fuel, hydration, and electrolyte recommendations based on athlete profiles, activity parameters, and environmental conditions.
+Saturday calculates personalized fuel, hydration, and electrolyte recommendations for endurance athletes from athlete profiles, activity parameters, and environmental conditions.
 
 ## Authentication
 
-All requests require a Bearer token in the Authorization header. API keys use the `sk_test_` (sandbox) or `sk_live_` (production) prefix.
+All requests require a Bearer token in the Authorization header. Partner API keys use the `sk_test_` (sandbox) or `sk_live_` (production) prefix.
 
 ```
-Authorization: Bearer sk_test_abc123def456
+Authorization: Bearer $SATURDAY_API_KEY
 ```
+
+Coaches have their own surface with its own credentials: a `cp_live_` / `cp_test_` coach API key, or an OAuth2 token carrying coach scopes.
 
 ## Core Endpoints
 
-- POST /v1/nutrition/calculate — Calculate fuel/hydration/electrolyte prescription
-- POST /v1/nutrition/calculate/batch — Batch calculate for multiple scenarios
-- POST /v1/nutrition/products/compare — Compare products against a prescription
-- POST /v1/athletes — Create an athlete profile
-- GET /v1/athletes — List partner's athletes
-- POST /v1/athletes/{id}/activities — Create an activity
-- POST /v1/athletes/{id}/activities/{activityId}/calculate — Calculate prescription
-- POST /v1/ai/conversations — Start AI coaching conversation (SSE streaming)
-- POST /v1/webhooks — Register webhook for real-time events
+- POST /v1/nutrition/calculate: calculate a fuel/hydration/electrolyte prescription
+- POST /v1/nutrition/calculate/batch: batch calculate for multiple scenarios
+- POST /v1/nutrition/products/compare: compare products against a prescription
+- POST /v1/athletes: create an athlete profile
+- GET /v1/athletes: list the partner's athletes
+- POST /v1/athletes/{athlete_id}/activities: create an activity
+- POST /v1/athletes/{athlete_id}/activities/{activity_id}/calculate: calculate that activity's prescription
+- POST /v1/ai/conversations: start an AI coaching conversation (SSE streaming)
+- POST /v1/webhooks: register a webhook for real-time events
+
+## Coach Endpoints
+
+Requires the Pro Coach tier or above. Every athlete id is confined to the coach's roster.
+
+- GET /v1/coach/roster: the roster with per-athlete needs-attention markers
+- GET /v1/coach/roster/digest: flagged athletes only, most-flagged first
+- GET /v1/coach/athletes/{athlete_uid}/fueling-rollup: in-window sessions plus the concern summary
+- GET /v1/coach/athletes/{athlete_uid}/report: the AI fueling report, narrative plus structured data
+- PUT /v1/coach/config/notification-rules: replace the alert rules at a scope
+- POST /v1/coach/webhooks: register a coach webhook endpoint
 
 ## Safety
 
-Every response includes safety metadata (confidence_score, warnings, max_safe_fluid_ml_per_hr, max_safe_sodium_mg_per_hr, not_instructions). Safety data is NEVER gated behind subscription status. Bad hydration recommendations can cause exercise-associated hyponatremia — a condition that kills athletes.
+Every response includes safety metadata (confidence_score, warnings, max_safe_fluid_ml_per_hr, max_safe_sodium_mg_per_hr, not_instructions). Safety data is never gated behind subscription status. Bad hydration recommendations can cause exercise-associated hyponatremia, which kills athletes.
 
 ## Freemium Model
 
-The API is free for partners. Subscribed athletes get exact numbers; free athletes get ranges (teasers). Safety data is always complete regardless of subscription status.
+Subscribed athletes get exact numbers; free athletes get ranges (teasers). Safety data is complete either way.
+
+## Data Use
+
+Every response carries an `X-Saturday-Data-License` header. Response data is licensed for display to end users only. Training or fine-tuning models on it, aggregating it, reverse engineering the calculations, and redistributing it are all prohibited. See https://docs.saturday.fit/guides/data-policy.
 
 ## Documentation
 
-- Full docs: https://api.saturday.fit
-- OpenAPI spec: https://api.saturday.fit/openapi.yaml
+- Full docs: https://docs.saturday.fit
+- Full LLM context: https://docs.saturday.fit/llms-full.txt
 - MCP server: https://api.saturday.fit/mcp
-- Full LLM context: https://api.saturday.fit/llms-full.txt
+- API root discovery: https://api.saturday.fit/v1/

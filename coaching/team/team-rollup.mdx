@@ -1,39 +1,45 @@
 ---
 title: 'The team roll-up'
-description: 'See how your whole operation is doing — per athlete, per coach, and in aggregate'
+description: 'See how your whole operation is doing, per athlete, per coach, and in aggregate'
 sidebarTitle: 'Team roll-up'
 icon: 'chart-line'
 ---
 
 # The team roll-up
 
-The **[team roll-up](https://coach.saturday.fit/dashboard/team)** is your bird's-eye view across the whole operation — engagement, coach load, aggregate trends, and which athletes might be drifting. It's a Head Coach-tier capability: where Pro Coach gives you per-athlete coaching, Head Coach and above add the management layer on top.
+The [team roll-up](https://coach.saturday.fit/dashboard/team) is the view across your whole operation: engagement, coach load, aggregate trends, and which athletes might be drifting. It is available on Head Coach and above. Pro Coach gives you per-athlete coaching; Head Coach adds the management layer over a team.
 
-<Note>
-  **Available on Head Coach and above.** On Pro Coach you coach athletes; on Head Coach you also run a team.
-</Note>
+Every view runs over a 7, 14, or 30 day window that you pick.
 
 ## The four views
 
 | View | What it answers |
 |------|-----------------|
-| **Per-athlete engagement** | Who's active, who's gone quiet — last-active, activity count, adherence, and trend per athlete |
-| **Per-coach load & performance** | How your assistants are doing — roster size, attention given, athlete outcomes |
-| **Team aggregate trends** | How the whole roster is trending in aggregate |
-| **At-risk / downgrade candidates** | Athletes who are underutilizing Saturday and may not be worth covering |
-
-All four live on your **[team roll-up](https://coach.saturday.fit/dashboard/team)**.
+| **Per-athlete engagement** | Who is active and who has gone quiet: last active, activity count, average adherence, adherence trend, and flag count per athlete |
+| **Per-coach load** | How your assistants are carrying the roster: athletes held, how many are active, average adherence, and flag count |
+| **Team aggregate trends** | Total and active athletes, average adherence, flagged rate, and which way adherence is moving |
+| **At-risk candidates** | Athletes who are underusing Saturday, with a score and the reasons behind it |
 
 ## At-risk candidates
 
-The roll-up flags athletes who look like they're drifting, using a **composite signal** — usage, adherence, and recency together (not any single number). **You set the threshold** for what counts as at-risk, so it matches how you coach. From there you can reach out, open an athlete from your **[roster](https://coach.saturday.fit/dashboard)** to adjust their [Setup](/coaching/nutrition/setup-dials), or — for a [coach-paid athlete](/coaching/billing/coach-paid-athletes) — decide in **[billing](https://coach.saturday.fit/admin/billing)** whether to keep covering them.
+The roll-up scores athletes on a composite of three signals: usage, adherence, and recency. No single number decides it.
 
-## A coach-only surface
+You control the scoring. Three presets set the weights and the cutoff for you:
 
-Like the [AI report](/coaching/roster/ai-report) and roster flags, your **[team roll-up](https://coach.saturday.fit/dashboard/team)** is **coach-facing only**. Athletes never see these metrics — no trend graphs, scores, or gap numbers reach the athlete. Saturday's athlete experience is a plain, supportive mirror; the coaching analytics are a separate management surface that stays on your side of the line.
+- **Conservative** flags fewer athletes and leans on recency, so it mostly surfaces people who have gone quiet.
+- **Balanced** weights the three signals roughly evenly. This is the default.
+- **Aggressive** flags more athletes and leans on usage and adherence drops.
+
+Adjust any weight or the threshold directly and the preset switches to custom. The candidate count updates as you move the slider, so you can see what a threshold change would surface before you commit to it. You can also dismiss a candidate to snooze them.
+
+From a candidate you can reach out, open the athlete to adjust their [Setup](/coaching/nutrition/setup-dials), or, for a [coach-paid athlete](/coaching/billing/coach-paid-athletes), use the athlete's row menu on your [roster](https://coach.saturday.fit/dashboard) to stop covering them or change their payer.
+
+## Coach-facing only
+
+Like the [AI report](/coaching/roster/ai-report) and roster flags, the roll-up is a coach-facing surface. Athletes never see these numbers.
 
 ## See also
 
-- [Assign athletes](/coaching/team/assign-athletes) — the assignments the per-coach view rolls up.
-- [The AI report](/coaching/roster/ai-report) — per-athlete depth behind the aggregate.
-- [Flags & groups](/coaching/roster/flags-and-groups) — the concern definition the roll-up builds on.
+- [Assign athletes](/coaching/team/assign-athletes) for the ownership the per-coach view rolls up.
+- [The AI report](/coaching/roster/ai-report) for per-athlete depth behind the aggregate.
+- [Flags & groups](/coaching/roster/flags-and-groups) for the concern definition the roll-up builds on.

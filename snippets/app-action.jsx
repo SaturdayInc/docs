@@ -1,25 +1,25 @@
-// app-action.jsx — Saturday docs reusable snippet.
-// Makes a doc instruction clickable so a coach lands in the actual Saturday app.
-// Mobile: a normal-looking bold link that the OS hands to the app (universal link).
-// Desktop: an identically-styled inline button that pops a "scan to open on phone" QR modal.
+// app-action.jsx: Saturday docs reusable snippet.
+// Makes a doc instruction clickable so a coach lands in the Saturday app.
+// Mobile: a bold link that the OS hands to the app (universal link).
+// Desktop: an identically-styled inline button that opens a "scan to open on phone" QR modal.
 //
 // Mintlify sandbox constraints honored here:
-//   - React hooks (useState/useEffect) are PRE-INJECTED — no React import.
-//   - No external npm packages — the QR is a remote image endpoint, not a qr library.
+//   - React hooks (useState/useEffect) are pre-injected, so there is no React import.
+//   - No external npm packages, so the QR is a remote image endpoint rather than a qr library.
 //   - Named export only, no default export, no cross-snippet imports.
-//   - navigator.* is browser-only — touched solely inside useEffect (undefined during SSR).
+//   - navigator.* is browser-only, so it is touched solely inside useEffect (undefined during SSR).
 
 // AppAction: clickable instruction that opens the Saturday app for the destination `path`.
-// NOTE: Mintlify evaluates the EXPORTED component in isolation — a module-scope sibling
-// (a top-level `const LINK_STYLE`) is NOT in scope at render time and throws
-// "ReferenceError: LINK_STYLE is not defined", rendering the component empty. So every
-// value the component needs lives INSIDE the function body; only the pre-injected hooks
-// (useState/useEffect) come from outside.
+// Mintlify evaluates the exported component in isolation, so a module-scope sibling (a
+// top-level `const LINK_STYLE`) is not in scope at render time and throws
+// "ReferenceError: LINK_STYLE is not defined", rendering the component empty. Every value
+// the component needs therefore lives inside the function body; only the pre-injected
+// hooks (useState/useEffect) come from outside.
 export const AppAction = ({ path = "/open-app", children }) => {
-  // Shared inline style so the mobile link and the desktop button read IDENTICALLY
+  // Shared inline style so the mobile link and the desktop button read identically
   // inside a sentence: bold, brand teal, subtle underline that strengthens on hover.
   const LINK_STYLE = {
-    fontWeight: 600,            // semibold — reads as a strong doc link
+    fontWeight: 600,            // semibold: reads as a strong doc link
     color: "#1aabb8",           // Saturday brand teal
     cursor: "pointer",
     textDecoration: "underline",
@@ -34,12 +34,12 @@ export const AppAction = ({ path = "/open-app", children }) => {
   // Universal/deep link the OS resolves to the installed app (or the web fallback).
   const deepUrl = "https://saturday.fit" + path;
 
-  // isMobile starts false so the FIRST (server) render is always the desktop branch —
-  // this keeps SSR from ever touching navigator and avoids a hydration mismatch crash.
+  // isMobile starts false so the first (server) render is always the desktop branch,
+  // keeping SSR from touching navigator and avoiding a hydration mismatch crash.
   const [isMobile, setIsMobile] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
-  // Device sniff runs ONLY in the browser, after mount — navigator is safe here.
+  // Device sniff runs only in the browser, after mount, where navigator is safe.
   useEffect(() => {
     setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
   }, []);
@@ -52,7 +52,7 @@ export const AppAction = ({ path = "/open-app", children }) => {
     e.currentTarget.style.textDecorationColor = "rgba(26, 171, 184, 0.4)";
   };
 
-  // MOBILE — render a real anchor; tapping lets the OS open the Saturday app.
+  // Mobile: render an anchor, so tapping lets the OS open the Saturday app.
   if (isMobile) {
     return (
       <a
@@ -71,7 +71,7 @@ export const AppAction = ({ path = "/open-app", children }) => {
     "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" +
     encodeURIComponent(deepUrl);
 
-  // DESKTOP — an inline button styled exactly like the mobile link; opens the QR modal.
+  // Desktop: an inline button styled like the mobile link, opening the QR modal.
   return (
     <>
       <button
@@ -147,7 +147,7 @@ export const AppAction = ({ path = "/open-app", children }) => {
               {deepUrl}
             </a>
 
-            {/* Explicit Close button — second way to dismiss the modal. */}
+            {/* Close button: the second way to dismiss the modal. */}
             <button
               type="button"
               onClick={() => setShowQR(false)}

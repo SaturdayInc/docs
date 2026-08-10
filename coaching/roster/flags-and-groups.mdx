@@ -7,43 +7,54 @@ icon: 'flag'
 
 # Flags & groups
 
-Your **[roster](https://coach.saturday.fit/dashboard)** is the home base for coaching. It surfaces **who needs your attention** without making you read every athlete's data, and it lets you **group** athletes so you can act on many at once.
+Your [roster](https://coach.saturday.fit/dashboard) surfaces who needs your attention without making you read every athlete's data, and it lets you group athletes so you can act on many at once.
 
-## Flags — who needs attention
+## Flags
 
-Each athlete on your **[roster](https://coach.saturday.fit/dashboard)** carries a needs-attention summary over a look-back window (7, 14, or 30 days). An athlete who's been fueling well shows no flag and is never alarmed; an athlete who crossed a concern bar is flagged with the top reasons ("Sodium 57%", "1 symptom").
+Each athlete carries a needs-attention summary over a look-back window of 7, 14, or 30 days, defaulting to 14. An athlete who has been fueling well shows no flag. An athlete who crossed a concern cutoff is flagged with the top reasons, such as "Sodium 57%" or "1 symptom".
 
-- **Sortable Last-Activity column** so you instantly see who's gone quiet.
-- **Payer-status column** so you see who pays for each athlete at a glance — see [Who pays](/coaching/billing/who-pays).
-- **Filters** to narrow by flag, group, payer status, or assigned assistant.
-- **Inline actions** — cover/uncover, add to group, message — without leaving the roster.
+A missing value is never a flag. An unrated session, an activity with no fueling reported, or a nutrient with no data stays silent rather than counting against the athlete. Only a value that is present and past its cutoff ever flags.
 
-Flags come from Saturday's **one shared concern definition**, so what you see on the roster matches the digest, the AI report, and the alerts exactly. No two surfaces disagree.
+The roster also gives you:
+
+- A last-activity column, sorted on the underlying date rather than the displayed text, so you can see who has gone quiet.
+- A payer-status column showing who funds each athlete's membership. See [Who pays](/coaching/billing/who-pays).
+- Filters for flag, group, payer status, and assigned assistant.
+- Inline actions (cover and uncover, add to group, message) without leaving the roster.
+
+### The concern cutoffs
+
+Flags come from one shared concern definition, so the roster markers, the session table, the digest, and the worst-sessions focus in the AI report all read a session the same way. Four of the seven alert triggers are built on the same definition. The defaults:
+
+| Concern | Default cutoff |
+|---------|----------------|
+| Carbohydrate, sodium, or fluid | Below 70% of prescribed |
+| Hyponatremia pattern | Fluid at or above 90% with sodium at or below 50% |
+| Fueling symptom | Any fueling symptom at severity 2 or higher, on a 0 to 3 scale |
+| Low session rating | A rating of 2 or lower, on a 1 to 5 scale |
+
+You can tune these cutoffs. An alert rule can also carry its own threshold at a given scope, which applies to that alert without moving the roster marker. See [Configuring alerts](/coaching/roster/configuring-alerts).
 
 ## Groups
 
-Group athletes however you coach — by squad, by event, by training block ("70.3 Build"). Build and edit them from **[athlete management](https://coach.saturday.fit/dashboard?view=manage)**. Groups let you:
+Group athletes however you coach: by squad, by event, by training block such as "70.3 Build". Build and edit groups from the group manager on your [roster](https://coach.saturday.fit/dashboard). A group lets you act on many athletes in one move, message everyone at once, hand the whole group to an assistant coach, and scope alert rules to that group.
 
-- **Act in bulk** — add to a group, message a whole group, assign a group to an assistant.
-- **Scope your alerts** — set different alert rules for different groups (see [Configuring alerts](/coaching/roster/configuring-alerts)).
-- **Broadcast** — send a message to an entire group at once.
+Org admins on Head Coach and above get a second, governance-oriented view at [Control panel, Groups](https://coach.saturday.fit/admin/groups): the whole org group tree, assigning an org group to an assistant, promoting a personal group so the org can share it, and a read-only view of who sees what. Day-to-day grouping still happens on the roster.
 
 ### Working with groups
 
-All of the actions below live in **[athlete management](https://coach.saturday.fit/dashboard?view=manage)**.
-
 | Action | What it does |
 |--------|--------------|
-| Create a group | Name it; add athletes now or later |
-| Add to group (bulk) | Multi-select athletes → **Add to group** |
+| Create a group | Name it, then add athletes now or later |
+| Add to group (bulk) | Multi-select athletes, then **Add to group** |
 | Assign group to assistant | Delegate a whole group to an assistant coach |
 | Group broadcast | Message everyone in the group |
-| Delete group | Removes the grouping (not the athletes); undoable |
+| Delete group | Removes the grouping, not the athletes |
 
-Every consequential action — removing an athlete, deleting a group — confirms first and offers an undo.
+Deleting a group and removing an athlete both ask for confirmation and then offer an undo before the change is committed.
 
 ## See also
 
-- [The AI report](/coaching/roster/ai-report) — the narrative behind an athlete's flags.
-- [Configuring alerts](/coaching/roster/configuring-alerts) — turn flags into the right pings.
-- [Team & assistants](/coaching/team/assign-athletes) — delegate groups to your team.
+- [The AI report](/coaching/roster/ai-report) for the narrative behind an athlete's flags.
+- [Configuring alerts](/coaching/roster/configuring-alerts) to turn flags into the right pings.
+- [Assign athletes](/coaching/team/assign-athletes) to delegate groups to your team.

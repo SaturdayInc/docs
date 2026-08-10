@@ -1,55 +1,63 @@
 ---
 title: 'Configuring alerts'
-description: 'Tell Saturday exactly when to ping you — by concern, threshold, urgency, and channel'
+description: 'Tell Saturday when to ping you, by concern, threshold, urgency, and channel'
 sidebarTitle: 'Configuring alerts'
 icon: 'bell'
 ---
 
 # Configuring alerts
 
-Alerts are how Saturday tells you an athlete needs attention without you having to check the roster constantly. From your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**, you decide **what** to be alerted about, **how loud**, and **where** it lands. The goal: real-time for what's urgent, a digest for the rest.
+Alerts tell you an athlete needs attention without you having to check the roster. From your [alert settings](https://coach.saturday.fit/dashboard/alert-settings) you decide what to be alerted about, how loud, and where it lands.
+
+## What happens if you change nothing
+
+A coach who never touches a dial gets in-portal notifications only. No email, no push. Under-fueling, symptoms, low session ratings and dialing-down trends are on in the in-portal lane from day one; the hyponatremia pattern, the sleep trend, and the gone-quiet flag start off and are opt-in.
+
+<Note>
+  **Editing alert rules needs Pro Coach or higher, and so do the paid channels.** On the free Coach tier, and after a paid tier lapses, you can still read your configuration and receive in-portal notifications, but email and push are not delivered.
+</Note>
 
 ## Start with a preset
 
-The fastest setup is a preset applied across your whole roster, which you then tweak. Pick one in your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**:
+The fastest setup is a preset applied across your whole roster, which you then refine.
 
 | Preset | Behavior |
 |--------|----------|
-| **Hands off** | In-portal only, no pings |
-| **Balanced** | Core concerns by email, bundled into a daily digest |
-| **Hands on** | All triggers, real-time urgent push |
+| **Hands off** | In-portal only, no email or push. The default. |
+| **Balanced** | Core concerns on email in a daily digest. The hyponatremia pattern is turned on and routed in real time, since it is a safety signal. Push stays off. |
+| **Hands on** | All seven triggers on, email and push on, urgent items in real time, and a slightly earlier under-fueling trip point. |
 
 ## Then refine by scope
 
-Alerts resolve at three scopes, and the **most specific wins**:
+Rules resolve at three scopes, layered from broadest to narrowest:
 
-- **Overall** — your whole roster.
-- **Group** — one group (e.g. your elite squad gets real-time, everyone else gets a digest). Create groups first in **[athlete management](https://coach.saturday.fit/dashboard?view=manage)**.
-- **Athlete** — a single athlete.
+- **Overall**, your whole roster.
+- **Group**, one group. Create groups first in your [roster](https://coach.saturday.fit/dashboard).
+- **Athlete**, a single athlete, which wins last.
 
-So you might run "Balanced" overall, "Hands on" for your race-prep group, and a custom rule for one athlete you're watching closely — all from your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**.
+So you might run Balanced overall, Hands on for your race-prep group, and a custom rule for one athlete you are watching closely.
+
+When an athlete belongs to more than one group, Saturday does not pick a group arbitrarily. It reduces across every group the athlete matches and takes the most sensitive setting, then applies any athlete-level override on top.
 
 ## What you can configure
 
-- **Concern types (triggers):** under-fueling, symptoms, low session ratings, a hyponatremia pattern, a dialing-down trend, a sleep trend, or an athlete who's gone quiet.
-- **Thresholds:** the line that counts as a concern (e.g. sodium under 60%), and a separate urgent line for real-time pings.
-- **Urgent vs. digest:** real-time for the urgent stuff, a once-a-day bundle for the rest — one item per athlete.
-- **Channels:** in-portal, email, mobile push, and **[webhook](https://coach.saturday.fit/admin/webhooks)** (for power users / Enterprise pushing into their own systems). SMS is not offered for now.
-- **Quiet hours:** suppress non-urgent pings overnight.
-- **Combinations:** "ping me only when sodium is short **and** there's a symptom in the same session" — bounded two-trigger rules so you're not drowned in noise.
-
-Build all of this in your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**.
+- **Triggers.** Seven of them: under-fueling, symptoms, low session ratings, a hyponatremia pattern, a dialing-down trend, a sleep trend, and an athlete who has gone quiet.
+- **Thresholds.** The line that counts as a concern, which defaults to the [shared concern cutoff](/coaching/roster/flags-and-groups) of 70% of prescribed, and a separate urgent line for real-time pings, which defaults to 50% for under-fueling. Leave either unset and it inherits the shared cutoff.
+- **Urgent versus digest.** Real time for urgent items, a once-a-day bundle for the rest, one bundle per athlete per day.
+- **Channels.** In-portal, email, and mobile push. SMS is not offered.
+- **Quiet hours.** Suppress non-urgent pings overnight, in your own time zone.
+- **Combinations.** Two-trigger AND rules, for example "ping me only when sodium is short and there is a symptom in the same session". Both legs must be session-level triggers; the sleep trend and the gone-quiet flag describe a window rather than a single session, so they cannot be combined.
 
 <Note>
-  **It's a friendly rule-builder, not a config file.** You build alert rules in plain GUI controls. Power users can also drive the exact same config over the [Coach API](/guides/coach-api) or the [Claude connector](/guides/coach-connector) — they're two views of one model.
+  **Webhook delivery is not live yet.** You can select the webhook channel on a rule, and the portal marks it as pending rather than silently dropping it. Managing an organization's webhooks is a Business and Enterprise capability. For programmatic alerting today, use the [Coach API](/guides/coach-api) or the [Claude connector](/guides/coach-connector), which read and write the same rule model the GUI does.
 </Note>
 
 ## Payment-failure alerts
 
-Turn these on in your **[alert settings](https://coach.saturday.fit/dashboard/alert-settings)**: you can be alerted when **any** roster athlete — coach-paid or self-paying — has a payment failure, so an athlete never quietly loses access on your watch. When the athlete is the payer, they're alerted too (at a noise level you set), and they're deep-linked to update their card. Who pays for each athlete is managed in **[billing](https://coach.saturday.fit/admin/billing)**; see [Take over & relinquish](/coaching/billing/take-over-relinquish) for the grace-window behavior behind this.
+You can be alerted when any roster athlete, coach-paid or self-paying, has a payment failure, so an athlete never quietly loses access on your watch. This rule is configured alongside the fueling triggers and carries no percentage threshold. When the athlete is the payer they are alerted too, at a noise level you set, and deep-linked to update their card. Who pays for each athlete is set from the athlete's row menu on your [roster](https://coach.saturday.fit/dashboard), under Cover, Stop covering, and Change payer; see [Take over & relinquish](/coaching/billing/take-over-relinquish) for the grace-window behavior behind this.
 
 ## See also
 
-- [Flags & groups](/coaching/roster/flags-and-groups) — the concern definition the alerts use.
-- [The AI report](/coaching/roster/ai-report) — the narrative an alert points you to.
-- [Coach API](/guides/coach-api) — configure alerts programmatically.
+- [Flags & groups](/coaching/roster/flags-and-groups) for the concern definition the alerts build on.
+- [The AI report](/coaching/roster/ai-report) for the narrative an alert points you to.
+- [Coach API](/guides/coach-api) to configure alerts programmatically.

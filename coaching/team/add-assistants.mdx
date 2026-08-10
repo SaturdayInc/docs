@@ -7,50 +7,52 @@ icon: 'user-group'
 
 # Add assistants
 
-On **Head Coach** and above, you can bring **assistant coaches** onto your team to share the roster load from your **[team page](https://coach.saturday.fit/dashboard/team)**. Each assistant gets their own login and a scoped view of the athletes you assign them.
+From Pro Coach up, you can bring assistant coaches onto your team to share the roster load. Each assistant gets their own login, their own book of athletes, and whatever powers you delegate to them. You manage the team itself from your [team page](https://coach.saturday.fit/dashboard/team).
 
-## Who can add assistants
+## Assistants included with each plan
 
-| Plan | Included assistants |
+| Plan | Assistants included |
 |------|---------------------|
-| Pro Coach | +1 |
-| Head Coach | +5 |
-| Business | Unlimited (fair-use) |
-| Enterprise | Custom |
+| Coach (free) | None |
+| Pro Coach | 1 |
+| Head Coach | 5 |
+| Business | Unlimited |
+| Enterprise | Unlimited |
 
-Assistant seats are capped by your plan (unlike athlete seats, which flex). If you need more, **[upgrade your plan](https://coach.saturday.fit/admin/billing)**.
+Reaching the included count is not a wall. On Pro Coach and Head Coach you can buy additional assistant seats at $10 per seat per month, and they stack on top of the included allotment, so a Pro Coach with three purchased seats can hold four assistants without changing plan. The portal offers the seat inline when you hit the cap. Business and Enterprise have no assistant cap, so the seat add-on does not apply to them.
+
+<Note>
+  **A separate limit governs Business organizations.** A Business org's total coach seats are capped by a fair-use ceiling of 20 coaches, or one coach per five coach-paid athletes, whichever is higher. That ceiling counts coaches across the org, not assistants under one head coach.
+</Note>
 
 ## Invite an assistant
 
-From your **[team page](https://coach.saturday.fit/dashboard/team)** (or **Settings → Team**), click **Invite assistant** and enter their email. They get an invite to join your team. When they accept and activate, they appear on your team and can be assigned athletes.
+From your [team page](https://coach.saturday.fit/dashboard/team), or **Settings → Team**, choose **Invite assistant** and enter their email. When they accept and activate, they appear on your team and can be assigned athletes.
 
-<Note>
-  **An assistant sees only what you give them.** A freshly added assistant starts with the visibility you grant — assign them athletes or whole groups to fill their view. See [Assign athletes](/coaching/team/assign-athletes).
-</Note>
+Once an assistant activates, they can read your whole roster, and assigning athletes to them records which ones they own. See [Assign athletes](/coaching/team/assign-athletes) for what assignment does and does not control.
 
 ## What an assistant can do
 
-By default, an assistant can coach the athletes assigned to them — view fueling data, read AI reports, adjust Setups (if granted), and message athletes. What they **can't** do by default:
+By default an assistant can coach the athletes assigned to them: view fueling data, read AI reports, and message the athlete. What an assistant cannot do by default:
 
-- End an **org-paid** coverage arrangement (unless you explicitly grant it) — those money actions live in **[billing](https://coach.saturday.fit/admin/billing)**.
+- Adjust an athlete's Setup. That is its own grant, separate from general athlete access, so an assistant can read and act on an athlete without being able to re-dial their fueling.
+- End an org-paid coverage arrangement. That is a money action reserved for the head coach or org owner, and it has its own toggle.
 - Manage billing or the team itself.
-- See athletes they haven't been assigned.
-
-You control all of this with roles — see [Permissions](/coaching/team/permissions).
 
 ## Manage your team
 
 | Action | What it does |
 |--------|--------------|
 | Resend invite | Re-send a pending assistant invite |
-| Remove assistant | Take an assistant off the team (undoable) |
-| Assign athletes / groups | Give an assistant a roster to coach |
-| Set role | Choose a preset role or a custom one |
+| Remove assistant | Take an assistant off the team |
+| Assign athletes or groups | Give an assistant a roster to coach |
 
-Removing an assistant is a consequential action — it confirms first and offers an undo. Do all of this from your **[team page](https://coach.saturday.fit/dashboard/team)**.
+Removing an assistant asks for confirmation and then offers an undo.
+
+Roles and per-assistant grants are set separately, on the [Access & Roles](https://coach.saturday.fit/admin/rbac) page. See [Permissions](/coaching/team/permissions).
 
 ## See also
 
-- [Assign athletes](/coaching/team/assign-athletes) — fill an assistant's roster.
-- [The team roll-up](/coaching/team/team-rollup) — see how your whole team is doing.
-- [Permissions](/coaching/team/permissions) — exactly what each role can do.
+- [Assign athletes](/coaching/team/assign-athletes) to fill an assistant's roster.
+- [The team roll-up](/coaching/team/team-rollup) to see how your whole team is doing.
+- [Permissions](/coaching/team/permissions) for exactly what each role can do.
