@@ -7,23 +7,26 @@ icon: 'gift'
 
 # Freemium Model
 
-Monetization happens at the athlete level: athletes subscribe to Saturday for full-precision nutrition data, and your integration is what puts the choice in front of them. Platform partners integrate at no cost; the self-serve lane has its own plan. See [Access](/access) for which lane you are in.
+Saturday's API is free for partners to integrate. The monetization happens at the athlete level — athletes subscribe to Saturday for full-precision nutrition data.
+
+```
+Partner integrates (free) -> Athletes see teasers (free) -> Athletes subscribe for precision -> Everyone wins
+```
 
 ## Teaser vs. full comparison
 
 | | Teaser (free) | Full (subscribed) |
 |---|---|---|
-| **Carbohydrate** | Range: `"carb_range_g_per_hr": "60-90"` | Exact: `"carb_g_per_hr": 62.5` |
-| **Fluid** | Range: `"fluid_range_ml_per_hr": "500-1000"` | Exact: `"fluid_ml_per_hr": 620` |
+| **Carbohydrates** | Range: `"carb_range_g_per_hr": "60-90"` | Exact: `"carb_g_per_hr": 62.5` |
+| **Hydration** | Range: `"fluid_range_ml_per_hr": "500-1000"` | Exact: `"fluid_ml_per_hr": 620` |
 | **Sodium** | Range: `"sodium_range_mg_per_hr": "200-500"` | Exact: `"sodium_mg_per_hr": 485` |
-| **Attribution** | Required | Optional |
-| **Subscribe CTA** | Present | Absent |
+| **Products** | Category only ("gel") | Specific products + schedule |
+| **Product catalog** | Taxonomy + CTA | Search, browse, and full label data |
 | **Safety metadata** | Full | Full |
-
-Teaser ranges are bucketed to a fixed grid: 30 g/hr for carbohydrate, 500 units/hr for sodium and fluid. The bucket, not the underlying number, is what the athlete sees.
+| **Confidence score** | Shown | Shown |
 
 <Note>
-  Safety is never gated. Teaser and full responses carry the same safety block.
+  **Safety is never gated.** Both teaser and full responses include complete safety metadata. Safety information is always free.
 </Note>
 
 ## Detecting response type
@@ -65,15 +68,59 @@ if (data.tier === "teaser") {
 
 </CodeGroup>
 
+## The product catalog
+
+Saturday's curated product database follows the same rule as the numbers: it opens
+on the **athlete's** subscription, not on your partner account. Every product route
+(`/v1/products/search`, `/v1/products/{barcode}`, `/v1/products/curated`,
+`/v1/nutrition/products/fit`, `/v1/nutrition/products/compare`) takes an
+`athlete_id`, and the answer follows that athlete's standing:
+
+- **Subscribed, or inside their 30-day trial**: `tier: "full"`. Search and browse
+  return products; a barcode lookup returns full label data for a curated product,
+  or a `product_not_found` 404.
+- **Anyone else**: `tier: "teaser"`. The product arrays come back empty and the
+  response carries the category taxonomy plus the same `cta` object your teaser
+  prescriptions use. Still a 200, never a 403.
+
+```json
+{
+  "tier": "teaser",
+  "products": [],
+  "total": 0,
+  "categories": [
+    { "id": "gel", "name": "Gels", "description": "Energy gels and gel-like products" },
+    { "id": "drink_mix", "name": "Drink Mixes", "description": "Electrolyte and carb drink powders" }
+  ],
+  "cta": {
+    "message": "Subscribe to see the specific products that fit this athlete, not just the categories",
+    "subscribe_url": "https://saturday.fit/subscribe?ref=your_partner_id&pst=..."
+  }
+}
+```
+
+Branch on `tier` exactly as you do for prescriptions. A teaser is a product picker
+that shows categories with an upgrade prompt behind them, not an error state.
+
+`GET /v1/products/categories` is the one product route that never gates: the
+taxonomy *is* the free tier, so it answers the same for every athlete.
+
+<Note>
+  The catalog is stricter here than in the Saturday app, on purpose. In the app a
+  free athlete can browse products and the subscription gates the prescription. An
+  API has no such natural limit, so the catalog itself sits behind the athlete's
+  subscription. Verified label data for 186+ endurance products is the asset, and
+  it stays priced.
+</Note>
+
+The athlete's trial opens the catalog on its 30-day **window**, independently of
+the daily full-precision call cap. An athlete who has spent today's exact
+calculations can still see the products those calculations point at, and browsing
+products never debits the cap.
+
 ## 30-day full-precision trial
 
-Each athlete gets a 30-day window of full-precision responses, capped at 15 calls on the UTC day the trial starts and 5 calls per UTC day after that.
-
-The clock starts on that athlete's first calculation carrying any real profile or activity data, not on athlete creation and not on a zero-data call. A coach pre-loading a roster spends nothing, and neither does a calculation made before you have collected anything. Collect the fueling profile first ([Athlete Onboarding](/guides/onboarding)) and the window delivers exact numbers from day one instead of wide bands.
-
-A trial that starts late in a UTC day gets a short first day; the cap boundary is the UTC date, not a rolling 24 hours.
-
-During the trial, full responses carry trial metadata so you can build countdown UX:
+Every athlete's first calculate request starts a **30-day trial of full-precision responses — 15 calls on the first UTC day (exploration allowance), then 5 calls per athlete per UTC day**. During the trial, full responses carry trial metadata so you can build countdown UX:
 
 ```json
 {
@@ -85,56 +132,55 @@ During the trial, full responses carry trial metadata so you can build countdown
 }
 ```
 
-`trial_ends_at` is a Unix timestamp in milliseconds.
-
-Past the daily cap, responses fall back to teaser ranges rather than erroring, and carry `trial_cap_reached: true`, `trial_calls_remaining_today: 0`, and a `trial_cap_note` written for the athlete that you can surface as-is. Batch scenarios debit the cap one by one, so a 10-scenario batch spends 10. After the 30 days, responses stay teaser tier until the athlete subscribes.
+Over the daily cap, responses degrade to teaser ranges (never an error) and include `trial_cap_reached: true` plus a human-readable `trial_cap_note` you can surface directly to the athlete — it does the apology and the why for you. Batch scenarios debit the cap individually. After 30 days, responses are teaser tier until the athlete subscribes.
 
 ## Subscription flow
 
 When an athlete wants full precision:
 
-1. Your app shows teaser data with the upgrade CTA.
-2. The athlete taps `subscribe_url` from the `subscription_cta`. On athlete-scoped requests that URL carries a signed token (`pst`) identifying which athlete is upgrading.
-3. They land on Saturday's partner-branded checkout page, pay via Stripe, and are sent back toward your app.
-4. Saturday writes the link and fires the `subscription.created` webhook. The athlete's next API call returns full precision.
+1. Your app shows teaser data with the upgrade CTA
+2. Athlete taps the upgrade link (`subscribe_url` from the `subscription_cta`) — for athlete-scoped requests it carries a signed token (`pst`) identifying *which* athlete is upgrading
+3. The athlete lands on Saturday's checkout page (partner-branded), pays via Stripe, and is sent back toward your app
+4. Saturday writes the link and fires the `subscription.created` webhook — the athlete's next API call returns full precision data
 
-Saturday manages the subscription, so you handle no payment. Two details decide whether the loop closes:
+You don't handle payment — Saturday manages the subscription. Two important details:
 
-- **The unlock requires athlete-scoped requests.** Only CTAs minted from a request that included an `athlete_id` carry the `pst`. An identity-less CTA is attribution only and cannot unlock anyone.
-- **Already-subscribed Saturday users are not double-charged.** If the athlete already has an active Saturday subscription, checkout links their account to your athlete instead of charging, and `subscription.created` fires with `source: "existing_subscription_linked"`.
+- **The unlock requires athlete-scoped requests.** Only CTAs minted from requests that included an `athlete_id` carry the `pst`; identity-less CTAs are attribution-only and can't auto-unlock anyone.
+- **Already-subscribed Saturday users are never double-charged.** If the athlete already has an active Saturday subscription, checkout links their account to your athlete instead of charging, and `subscription.created` fires with `source: "existing_subscription_linked"`.
 
 ### Checking entitlement
 
-`GET /v1/athletes/{id}` returns a computed `subscription_status` of `full`, `trial`, or `teaser`. Use it to poll after a checkout return, or for support lookups. Reading it never starts or debits the trial.
+`GET /v1/athletes/{id}` returns a computed `subscription_status` field — `full` | `trial` | `teaser` — for polling after checkout-return or support lookups.
 
 ### Return-to-app handoff
 
-Register a `return_url` (https or a deep link) on your partner account and the post-payment success page shows a "Back to your app" button, so athletes land back in your product with full precision already flowing.
+Give Saturday a `return_url` (https or deep link) at partner onboarding and the post-payment success page shows a "Back to your app" button — athletes land back in your product with full precision already flowing.
 
 ### Automatic linking by email
 
-Some paying Saturday athletes never touch your subscribe CTA. They subscribed inside the Saturday app through Apple or Google, or on saturday.fit, before they joined your platform. Saturday links these for you: when the `email` you set on an athlete matches a Saturday account's email, the records are linked and that athlete's API responses unlock.
+Some paying Saturday athletes never touch your subscribe CTA — they subscribed **inside the Saturday app** (Apple/Google in-app purchase) or on saturday.fit before joining your platform. Saturday links these automatically: when the `email` you set on an athlete exactly matches a Saturday account's email (case-insensitive; no fuzzy matching), the records are linked and the athlete's API responses unlock.
 
-- **Opt in by supplying emails.** Set `email` on your athletes via `POST` or `PATCH /v1/athletes`. Matching runs when you write an athlete email, when a Saturday subscription activates, and in a nightly sweep.
-- **Matching is exact.** Case and surrounding whitespace are ignored; nothing else is. There is no fuzzy matching.
-- **You get the same webhook.** When a match links an actively paying account, `subscription.created` fires with `source: "email_match"`. Handle it exactly like a checkout unlock.
-- **Ambiguity never auto-links.** Several athletes sharing an email, or a conflict with an existing link, goes to Saturday-side human review.
-- **No revenue share on matched links.** These subscriptions were not driven through your platform, and many predate it, so they do not appear on your revenue statement.
-- **Only the tier is released.** The match tells your platform the athlete's subscription tier, never payment details, purchase history, or Saturday profile data.
+- **Opt in by supplying emails.** Set `email` on your athletes (`POST`/`PATCH /v1/athletes`). Matching runs when you write an athlete email, when a Saturday subscription activates, and in a nightly sweep.
+- **You get the same webhook.** When a match links an actively paying account, `subscription.created` fires with `source: "email_match"` — handle it exactly like a checkout unlock.
+- **Ambiguity never auto-links.** Multiple athletes sharing an email, or a conflict with an existing link, goes to Saturday-side human review instead.
+- **No revenue share on matched links.** These subscriptions weren't driven through your platform (many predate it), so they don't appear on your revenue statement.
+- **Only a tier boolean is released.** The match tells your platform the athlete's subscription tier — never payment details, purchase history, or Saturday profile data.
 
-### Bundle offers
-
-If you have negotiated an offer with Saturday, such as member pricing for your annual subscribers, assert an athlete's eligibility by setting `partner_plan: "annual"` on them (`PATCH /v1/athletes/{id}`). Their CTA then carries the offer claim and checkout prices accordingly. You may advertise the offer anywhere; only asserted athletes can redeem it.
+If you have a partner-negotiated offer with Saturday (e.g. member pricing for your annual subscribers), assert eligibility by setting `partner_plan: "annual"` on the athlete (`PATCH /v1/athletes/{id}`). Eligible athletes' CTAs carry the offer claim and checkout prices accordingly. You may advertise the offer anywhere; only asserted athletes can redeem it.
 
 ### Organization (team) offers
 
-A coach or team on your platform can have a negotiated discount of their own. Record it on the organization (`PUT /v1/organizations/{org_id}/offer`) and assert each athlete's affiliation via `org_id`. See [Organizations, organization offers](/guides/organizations#organization-offers-negotiated-discounts).
+A coach or team on your platform can have a negotiated discount of their own. Record it on the organization (`PUT /v1/organizations/{org_id}/offer`) and assert each athlete's affiliation via `org_id` — see [Organizations → Organization offers](/guides/organizations#organization-offers-negotiated-discounts).
 
 ### How discounts stack
 
-When an athlete qualifies for more than one discount source, say a partner offer and an org offer, the percents combine multiplicatively and the total is capped at 30%. A 20% partner offer stacked with a 15% org offer gives `1 − (0.80 × 0.85)`, or 32%, which the cap brings back to 30%.
+When an athlete qualifies for more than one discount source (a partner offer **and** an org offer), the percents combine **multiplicatively** and the total is **hard-capped at 30%**:
 
-Checkout collapses the stack into one combined discount, and Saturday's subscribe landing page shows the stacked percent alongside which sources contributed. Athletes see the number they will pay, never a per-source figure checkout would not honor.
+```
+20% partner + 15% org → 1 − (0.80 × 0.85) = 32% → capped to 30%
+```
+
+Checkout collapses the stack into a single combined discount, and Saturday's subscribe landing page displays the stacked percent plus which sources contributed — athletes always see the exact number they'll pay, never a per-source figure that checkout won't honor.
 
 ## Testing the loop (test environment)
 
@@ -154,15 +200,26 @@ Your test base URL comes with your `sk_test_` key at onboarding.
 You can also run a real test checkout with Stripe's `4242 4242 4242 4242` card from the CTA link in any test-env teaser response.
 
 <Note>
-  iOS partners: opening Saturday's web checkout from inside your iOS app is an external purchase link for digital content. Check Apple's current external-link entitlement rules against your app's situation. The CTA URL works in any browser context.
+  **iOS partners:** opening Saturday's web checkout from inside your iOS app is an external purchase link for digital content — review Apple's current external-link entitlement rules for your app's situation. The CTA URL works in any browser context.
 </Note>
 
 ## Attribution
 
-Teaser responses set `attribution.required` to `true`; full responses set it to `false`. Teaser data must carry the linked "Powered by Saturday" mark near the numbers, because that mark is the path an athlete takes from a range to their exact numbers. Full data carries a lighter mark wherever Saturday data appears.
+Teaser data must carry the "Powered by Saturday" mark, linked, near the numbers. Full data carries a
+lighter mark wherever Saturday data appears. That linked mark is how the loop closes: athletes seeing
+teasers find their way to full precision through it.
 
-Placement rules, marks, sizing, and the per-surface matrix are on the [Brand & Attribution](/guides/attribution) page.
+Full placement rules, marks, sizing, and the per-surface matrix live on the
+[Brand & Attribution](/guides/attribution) page.
 
-## Why the model works this way
+## Partner value exchange
 
-Athletes see useful fueling whether or not they pay, so nothing about your integration is broken for a free user. Saturday reaches athletes it would otherwise never meet. You get nutrition intelligence in your product without building or maintaining a nutrition engine, and without carrying nutrition billing.
+- **Partners get**: Free nutrition intelligence for their platform
+- **Saturday gets**: Distribution to athletes who may subscribe
+- **Athletes get**: Personalized nutrition whether they subscribe or not
+
+The API is designed as a distribution play. More partners = more athletes seeing Saturday = more subscribers. The API doesn't need to make money directly — it needs to make Saturday the default nutrition layer.
+
+<Note>
+**Trial clock (2026-06):** the 30-day full-precision trial starts at the athlete's first *narrower-than-full-wide* calculation — i.e., once any real profile data exists. Zero-data calculations never start (or burn) the trial. Collect the fueling profile first ([Athlete Onboarding](/guides/onboarding)) and the trial window delivers genuinely exact numbers from day one.
+</Note>

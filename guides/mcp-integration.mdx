@@ -74,6 +74,16 @@ When your agent connects, it discovers tools including:
 | `infer_activity_type` | Infer activity type from metadata |
 | `search_knowledge` | Search Saturday's sports nutrition knowledge base |
 
+<Note>
+  **Product tools follow the athlete's subscription.** `search_products`,
+  `list_curated_products`, and `analyze_product_fit` take an optional `athlete_id`
+  and answer at that athlete's tier. A connection where the caller *is* the
+  athlete (the Claude connector) resolves it from their own account and never
+  needs to pass one; a platform integration on a partner key passes the athlete's
+  id, and gets the category tier until it does. See
+  [Freemium Model](/guides/freemium-model#the-product-catalog).
+</Note>
+
 That is a slice, not the catalog. An athlete connection currently exposes about twenty tools, a coach connection more (see the coach note below), and the set moves as features ship, so call `tools/list` rather than hardcoding it. Each tool carries a description, a structured input schema, and MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`).
 
 Some tools are feature-gated and simply do not appear on connections that lack the feature, including the two bottling tools below. A tool you cannot see is also not callable, so absence from `tools/list` is the answer, not an error to retry.
@@ -96,7 +106,7 @@ Here's how a Claude-powered agent might use Saturday's tools in a conversation:
 
 **Agent's tool calls:**
 1. `calculate_nutrition` with `{activity_type: "bike", duration_min: 180, intensity_level: 8, is_race: true, thermal_stress_level: 8}`
-2. `search_products` with `{category: "gel", caffeine: false}` (based on athlete preferences)
+2. `search_products` with `{query: "gel"}` (matched against product name, brand, type, and keywords)
 
 **Agent synthesizes:** Uses Saturday's prescription + product results + safety warnings to give a complete race-day fueling plan.
 

@@ -90,6 +90,24 @@ if (response.status === 429) {
 
 Athlete-delegated callers (OAuth2 and the Claude connector) also pass through a per-athlete bucket inside the account's bucket, so one heavy user cannot starve the rest. Those 429s carry a longer `Retry-After`. See [OAuth2](/guides/oauth2).
 
+## Daily call limits
+
+Alongside the token bucket, every account carries daily call ceilings:
+
+| Account | Daily ceiling |
+|---------|---------------|
+| Self-serve | 200 calls/day |
+| Partner, no agreed ceiling | Platform default (currently 2,000 calls/day) |
+| Contracted integration | Per agreement, up to no ceiling at all |
+
+Intelligence endpoints (nutrition, products, inference, knowledge, AI) also carry their own daily ceiling, separate from the total. Data endpoints (your athletes, activities, organizations, webhooks) are not counted against it, so hitting the intelligence ceiling never blocks syncing your own data.
+
+Without an agreed intelligence ceiling, your budget grows with your day: a base allowance plus a per-athlete allowance for every athlete you compute for that day. Integrations serving real athletes scale automatically; if your traffic pattern needs more than the budget provides, contact api@saturday.fit.
+
+Request-pattern friction (`rate_limited`) also bounds daily variety on a few surfaces: distinct product lookups, distinct search queries, and calculations that carry no athlete. Repeats always serve, so a real workload (your athletes' usual products, revisited) never feels these; enumeration does. These 429s carry no `Retry-After`; novel inputs resume at midnight UTC.
+
+Reaching a ceiling returns `429 Too Many Requests` without a `Retry-After` header; the message names the limit, and counters reset at midnight UTC. `GET /v1/partner` reports the ceilings that apply to your account (`rate_limits.requests_per_day` and `rate_limits.ip_requests_per_day`, `null` when none applies). To raise yours, contact api@saturday.fit.
+
 ## Staying under the ceilings
 
 ### Spread requests out
