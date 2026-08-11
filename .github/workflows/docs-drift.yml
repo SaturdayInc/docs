@@ -64,22 +64,28 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 10
     steps:
+      # Both repos as siblings INSIDE the workspace, the layout
+      # calculator-crossval.yml uses, so nothing is written outside it.
       - name: Checkout docs (this PR)
         uses: actions/checkout@v5
+        with:
+          path: docs
 
-      # fuel-backend@main as a sibling. Self-hosted runner, so the box's own
-      # authenticated SSH clones the private repo and no cross-repo PAT secret
-      # is needed. Shallow, because only the working tree is read.
+      # Self-hosted runner, so the box's own authenticated SSH clones the
+      # private repo and no cross-repo PAT secret is needed. Shallow, because
+      # only the working tree is read.
       - name: Checkout fuel-backend@main (sibling)
         run: |
           set -euo pipefail
-          rm -rf ../fuel-backend
+          rm -rf fuel-backend
           git clone --depth 1 --branch main \
-            git@github.com:SaturdayInc/fuel-backend.git ../fuel-backend
-          echo "fuel-backend at: $(git -C ../fuel-backend rev-parse --short HEAD)"
+            git@github.com:SaturdayInc/fuel-backend.git fuel-backend
+          echo "fuel-backend at: $(git -C fuel-backend rev-parse --short HEAD)"
 
       - name: Check the docs still describe the live API
-        run: python3 scripts/check-docs-drift.py --backend ../fuel-backend --list
+        run: |
+          python3 docs/scripts/check-docs-drift.py \
+            --docs docs --backend fuel-backend --list
 
   # The baseline records drift that predates the gate so unrelated PRs are not
   # blocked by it. That only holds while it can shrink and not grow: a baseline
