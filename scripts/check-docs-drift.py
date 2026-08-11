@@ -217,8 +217,14 @@ def load_baseline(path):
 
 
 def near(name, known, n=3):
-    """Closest known spellings, so a rename reads as old -> new rather than as
-    a bare 'unknown field'."""
+    """Closest known spellings, so a near-miss rename reads as old -> new
+    rather than as a bare 'unknown field'.
+
+    Best effort, and it says so: string similarity finds carb_pct -> carb_percent
+    and report_focus -> ai_report_focus, but a wholesale rename such as
+    confidence_score -> prescription_confidence is not similar enough for any
+    cutoff that does not also suggest unrelated fields. The finding itself never
+    depends on this; it is a hint on top of the file and line numbers."""
     return difflib.get_close_matches(name, sorted(known), n=n, cutoff=0.72)
 
 
