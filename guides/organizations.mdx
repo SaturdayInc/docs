@@ -274,4 +274,4 @@ PATCH /v1/organizations/{org_id}
 
 ## Finding an organization's athletes
 
-Athletes reference their organization through the `org_id` field on the athlete record (`POST` and `PATCH /v1/athletes`, see [Organization offers](#organization-offers-negotiated-discounts) above). There is no endpoint that lists an organization's athletes. To build a team roster view, keep your own athlete-to-org mapping as you assert `org_id`, or for licensed teams use the seat-subscription [license list](#assign-licenses-to-athletes): `GET .../licenses` returns exactly the athletes the org covers.
+Athletes reference their organization through the `org_id` field on the athlete record (`POST /v1/athletes` and `PATCH /v1/athletes/{athlete_id}`, see [Organization offers](#organization-offers-negotiated-discounts) above). There is no endpoint that lists an organization's athletes. To build a team roster view, keep your own athlete-to-org mapping as you assert `org_id`, or for licensed teams use the seat-subscription [license list](#assign-licenses-to-athletes): `GET .../licenses` returns exactly the athletes the org covers.

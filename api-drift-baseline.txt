@@ -1,0 +1,19 @@
+# Docs drift baseline, read by scripts/check-docs-drift.py.
+#
+# Every line suppresses one finding. SHRINK-ONLY: fix the underlying problem and
+# delete the line. A line that no longer matches a real finding FAILS the gate,
+# because a suppression that suppresses nothing is a lie about the state of the
+# docs and would silently absorb the next real regression. Adding a line fails
+# too, for the same reason: a list that can grow is not a baseline.
+#
+# Two kinds of entry live here and each says which it is:
+#   debt   real drift, too expensive to fix in the PR that found it
+#   limit  the checker cannot tell this apart from drift, and the docs are right
+#
+# Format: kind<TAB>identity<TAB>why
+
+# documented field that exists nowhere in the API
+field	cramp	limit: a symptom map KEY in "symptoms": { "cramp": 1 }, not a schema field. The checker reads every key in a json fence and cannot see that this map is open-ended
+field	headers	limit: a key in the MCP CLIENT config example, which is a third-party config file that happens to be json, not a Saturday API payload
+field	saturday	limit: the MCP server nickname a reader chooses inside their own mcpServers config, same fence as above
+field	transport	limit: MCP client transport setting, same fence as above

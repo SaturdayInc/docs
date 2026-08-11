@@ -6,3 +6,7 @@
 drafts/
 *.draft.mdx
 Trigger rebuild
+
+# CI tooling, not published content
+scripts/
+api-drift-baseline.txt
