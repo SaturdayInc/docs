@@ -25,9 +25,18 @@ name: Engine Constants
 # not reach the other public surfaces: sweb's llms-*.md files on saturday.fit,
 # the SDK repos, saturday-skills. Those need their own guards.
 #
-# Standard library python, no clone, no network, no node: well under a second.
-# Runs on Saturday's self-hosted runner, off the GitHub Actions quota, matching
-# docs-drift.yml.
+# Standard library python, no clone, no network, no node, no secrets: well under
+# a second.
+#
+# RUNNER CHOICE, because someone will want to change it. This repository is
+# public, and the organization's self-hosted runner group sets
+# allows_public_repositories: false. That is the correct setting and it should
+# stay: a public repository accepts pull requests from strangers, and a
+# self-hosted runner would execute their code on the machine it runs on. So a
+# job here that asks for self-hosted queues until it is cancelled, silently, and
+# reports pending forever rather than failing. GitHub-hosted minutes are free for
+# public repositories, which is why the other public repos in this organization
+# run on ubuntu-latest too.
 
 on:
   pull_request:
@@ -55,7 +64,7 @@ concurrency:
 
 jobs:
   engine-constants:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
@@ -71,7 +80,7 @@ jobs:
   # SHAPE, and a fixture built from the real values would print them in a public
   # file, which is the thing this whole gate exists to prevent.
   self-test:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
