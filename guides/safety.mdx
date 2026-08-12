@@ -86,21 +86,34 @@ The safety block is present on every prescription response, but not every endpoi
 
 Saturday bounds every calculation. The limits are computed per athlete and per activity, then clamped by absolutes that no input combination can exceed.
 
-| Guardrail | Absolute cap | How it narrows |
-|-----------|--------------|----------------|
-| Fluid | 1801 mL/hr | Thermal stress and intensity tighten the usable range well below the cap |
-| Sodium | Body weight in pounds times 11, up to 5000 mg/hr | Carb experience, intensity, and thermal stress narrow the range |
-| Sodium floor | Rises with thermal stress | Hot conditions cannot produce a low-sodium prescription |
-| Carbohydrate | 150 g/hr | Dropped to 100 g/hr when the athlete is not prioritizing performance, then by `carb_upper_limit_override`, then by stated carb experience. An athlete who has never fueled above 30 g/hr is not handed a 120 g/hr target |
-| Duration scaling | | Intake ranges are a function of duration, so a 6-hour target is not a 1-hour rate multiplied out |
+| Guardrail | How it is bounded |
+|-----------|-------------------|
+| Fluid | A fixed ceiling no prescription crosses. Thermal stress and intensity tighten the usable range well below it |
+| Sodium | A ceiling that scales with body weight, under a fixed absolute maximum. Carb experience, intensity, and thermal stress narrow the range |
+| Sodium floor | Rises with thermal stress. Hot conditions cannot produce a low-sodium prescription |
+| Carbohydrate | A ceiling narrowed by `carb_upper_limit_override`, by stated carb experience, and by whether the athlete is prioritizing performance. An athlete who has never fueled at high carbohydrate rates is not handed an aggressive target |
+| Duration scaling | Intake ranges are a function of duration, so a 6-hour target is not a 1-hour rate multiplied out |
 
-These apply on every calculation and are not partner-overridable. Note that the sodium cap is the one limit that scales with the athlete: a 70 kg athlete reaches it at roughly 1700 mg/hr, far below the 5000 mg/hr absolute.
+These apply on every calculation and are not partner-overridable. That is deliberate. A caller able to raise a ceiling could raise it past what is safe for that athlete, and the athlete would have no way to know it happened. The ceilings are not uniform either: several scale with the athlete, so a smaller athlete is held to a tighter limit than a larger one on the same session.
 
 <Note>
-  Teaser ranges are display buckets, and both ends are bounded. The upper bound never exceeds the caps above: a 1700 mL/hr fluid prescription renders `1300-1800`, not `1500-2000`. The lower bound never reads zero for a value the engine actually prescribed, so a 350 mg/hr sodium prescription renders `200-500` rather than `0-500`. A zero low bound means the prescribed value is genuinely near zero.
+  Teaser ranges are display buckets, and both ends are bounded. The upper bound is clamped to the engine's ceiling, so a bucket never implies an intake the engine would not prescribe. The lower bound never reads zero for a value the engine actually prescribed, so a 350 mg/hr sodium prescription renders `200-500` rather than `0-500`. A zero low bound means the prescribed value is genuinely near zero.
 
   The bounds still describe a bucket rather than a target. Render the range as a range, and do not treat either endpoint as a recommended intake.
 </Note>
+
+### When a prescription reads lower than expected
+
+A number that reads low usually has one of these causes:
+
+- **The athlete capped themselves.** `carb_upper_limit_override` is a ceiling the athlete sets on their own carbohydrate, and the engine does not exceed it.
+- **Stated carb experience is low.** An athlete who reports never having fueled at high carbohydrate rates is held below a target they have not trained for.
+- **`performance` is `false`.** An athlete who is not prioritizing performance gets a lower carbohydrate ceiling.
+- **Conditions are cool.** Low thermal stress pulls fluid and sodium down sharply. Overdrinking without sodium is the hyponatremia mechanism, so the engine is conservative in the cold by design.
+- **The session is long.** Hourly rates are a function of duration rather than a constant, so a long session's per-hour target is not the short-session rate carried forward.
+- **The profile is incomplete.** Check `precision.missing_fields`. A defaulted field widens the band and moves the number.
+
+Sending the same activity with a fuller profile is the fastest way to tell a guardrail from a gap in the data.
 
 ## Confidence score
 

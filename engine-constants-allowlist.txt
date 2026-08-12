@@ -1,0 +1,32 @@
+# Engine-constant allowlist, read by scripts/check-engine-constants.py.
+#
+# Every line records one number that is meant to be on a public page, and why.
+# The gate is a shape rule, so it cannot tell a response field from a clamp; a
+# human decides that here, in a file a reviewer reads.
+#
+# It MAY grow. Publishing a genuinely new response field is legitimate, and the
+# cost of doing it is writing the argument down where someone can disagree.
+# What does not belong is a value the engine clamps its own output to: no caller
+# sets it, no response carries it, and the page can say what the limit does and
+# what narrows it without saying what it equals.
+#
+# A line matching nothing FAILS. A suppression that suppresses nothing would sit
+# there and silently absorb the next real one.
+#
+# Format: rule<TAB>path<TAB>match<TAB>why
+
+rate-adjacent	guides/safety.mdx	1500 mL/hr	response field: max_safe_fluid_ml_per_hr arrives in the safety block of every response, teasers included, so a reader has it before they read this page
+rate-adjacent	guides/safety.mdx	3000 mg/hr	response field: max_safe_sodium_mg_per_hr, same block, same reasoning
+nutrient-ceiling	guides/safety.mdx	1500	response field: the fluid advisory threshold again, on the line that states the warning it triggers
+rate-adjacent	guides/safety.mdx	350 mg/hr	worked example of a teaser bucket, chosen well inside the range; shows the low bound is clamped rather than reading zero
+nutrient-ceiling	guides/safety.mdx	350	same example
+nutrient-ceiling	guides/safety.mdx	200	the low edge of the bucket that example renders
+nutrient-ceiling	guides/safety.mdx	500	the high edge of the bucket that example renders
+rate-adjacent	guides/athletes.mdx	150 g/hr	request bound: carb_upper_limit_override is set BY the caller and rejected with a 400 outside its range, so a partner who does not know the range cannot debug the rejection
+rate-adjacent	guides/nutrition-calculation.mdx	30 g/hr	teaser bucket width for carbohydrate, which any single teaser response reveals and a caller needs in order to render a range
+rate-adjacent	guides/nutrition-calculation.mdx	500 units/hr	teaser bucket width for sodium and fluid, same reasoning
+rate-adjacent	guides/attribution.mdx	80 g/hr	sample values inside an attribution display example; illustrative UI copy, not engine output
+rate-adjacent	guides/attribution.mdx	900 mL/hr	same example
+rate-adjacent	guides/attribution.mdx	600 mg/hr	same example
+body-weight-scaling	guides/athletes.mdx	20	request bound: weight_kg is set BY the caller and rejected with a 400 outside this range, so a partner who does not know the range cannot debug the rejection
+body-weight-scaling	guides/athletes.mdx	250	request bound: weight_kg is set BY the caller and rejected with a 400 outside this range, so a partner who does not know the range cannot debug the rejection
