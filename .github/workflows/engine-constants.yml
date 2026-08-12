@@ -1,0 +1,106 @@
+name: Engine Constants
+
+# Keep engine constants out of the published docs.
+#
+# This repository is public and it serves docs.saturday.fit, so anything merged
+# here is permanent: readable on the site, readable in every clone, and readable
+# in the revision history afterwards. That makes the safety page a one-way door.
+# The promises on it belong in public. Saturday bounds every calculation, the
+# bounds are not partner-overridable, several of them scale with the athlete.
+# The values it clamps to are a different thing, and a page that prints one has
+# published a constant rather than a behaviour.
+#
+# WHY A GATE RATHER THAN CARE. A value lands on a page as a side effect of a PR
+# about something else, written by someone doing the right thing about that
+# other thing, and every reviewer reads past it because it is not what the PR is
+# for. Care does not catch that. A check that runs on every PR does.
+#
+# The rules are shapes, not a list of values. A gate naming the constants would
+# publish them in a public repository, which defeats itself, and it would only
+# ever catch the ones somebody thought to write down. See the script header for
+# what each rule sees and, more usefully, what it cannot.
+#
+# WHAT THIS DOES NOT REACH. Git history. A value removed today stays readable in
+# the revision that carried it, and no CI check can change that. It also does
+# not reach the other public surfaces: sweb's llms-*.md files on saturday.fit,
+# the SDK repos, saturday-skills. Those need their own guards.
+#
+# Standard library python, no clone, no network, no node: well under a second.
+# Runs on Saturday's self-hosted runner, off the GitHub Actions quota, matching
+# docs-drift.yml.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.mdx'
+      - '**.md'
+      - '**.txt'
+      - 'engine-constants-allowlist.txt'
+      - 'scripts/check-engine-constants.py'
+      - '.github/workflows/engine-constants.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**.mdx'
+      - '**.md'
+      - '**.txt'
+      - 'engine-constants-allowlist.txt'
+      - 'scripts/check-engine-constants.py'
+  workflow_dispatch:
+
+concurrency:
+  group: engine-constants-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine-constants:
+    runs-on: self-hosted
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: No engine constants in published pages
+        run: python3 scripts/check-engine-constants.py --docs .
+
+  # Proves the gate still fails on what it was built to catch. A checker that
+  # silently stops matching reports the same clean run as a clean tree, which is
+  # the failure mode that makes a green CI worse than no CI.
+  #
+  # The fixture numbers are invented. It tests that each rule still fires on the
+  # SHAPE, and a fixture built from the real values would print them in a public
+  # file, which is the thing this whole gate exists to prevent.
+  self-test:
+    runs-on: self-hosted
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: The gate rejects a page carrying constants
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          cp -r ./* "$work"/
+          cat >> "$work/guides/safety.mdx" <<'FIXTURE'
+
+          | Fluid | 4242 mL/hr | rate-adjacent, and nutrient-ceiling via "Fluid" |
+          | Sodium | Body weight in pounds times 77, up to 8888 mg/hr | imperial-mass |
+          Sodium scales at 99.5 mg per hour per kilogram of body weight.
+          Fluid tops out at 4242 per hour.
+          FIXTURE
+          if python3 scripts/check-engine-constants.py --docs "$work" > "$work/out.txt" 2>&1; then
+            echo "The gate passed a page full of engine constants. It is broken."
+            cat "$work/out.txt"
+            exit 1
+          fi
+          echo "Gate correctly rejected the fixture:"
+          cat "$work/out.txt"
+
+          for rule in imperial-mass rate-adjacent nutrient-ceiling body-weight-scaling; do
+            grep -aq "  $rule  " "$work/out.txt" || {
+              echo "Rule '$rule' did not fire on the fixture. It has stopped matching."
+              exit 1
+            }
+          done
+          echo "All four rules fired."
+          rm -rf "$work"
