@@ -123,7 +123,7 @@ When you include an `athlete_id`, Saturday reads that athlete's stored profile: 
 
 ### Confidence score
 
-The `safety.confidence_score` (0.0-1.0) is derived from how wide the prescription band is: a complete fueling profile scores 1.0, and every unanswered field widens the band and lowers the score. `precision.missing_fields` tells you which answers would raise it.
+The `safety.confidence_score` (0.0-1.0) reports how much of the athlete's fueling profile was answered: a complete fueling profile scores 1.0, and every unanswered field lowers the score. `precision.missing_fields` tells you which answers would raise it.
 
 | Range | Meaning |
 |-------|---------|
