@@ -38,6 +38,18 @@ anticipated.
   B rate-adjacent   a number touching a nutrient rate unit: g/hr, mg/hr, mL/hr,
     g/L, mg/L, units/hr, g/hour.
 
+  B2 impact-resolution   a band_impact value that is not a multiple of the step
+    its band renders on: 10 g/hr, 100 mg/hr, 100 mL/hr. A sample prescription in
+    a response example is a number the API hands the caller, which this file
+    already calls documentation. band_impact is not that. It is the engine's own
+    output difference between one field's two probe extremes, divided by twice
+    the caller's duration and scaled by a constant, so a reader with two
+    responses at different durations inverts it back to a first difference of
+    the engine along an axis they chose. Printing it on the band's own step
+    keeps the example honest and keeps the finer number off a public page.
+    Rule B cannot see any of this: the value follows the key, and the key spells
+    its unit in underscores. Found live in the onboarding example.
+
   C nutrient ceiling  a line naming a nutrient AND a cap word AND carrying a
     number of two or more digits. Catches a ceiling stated without a unit, which
     rule B cannot see. The nutrient word is what keeps rate-limiting.mdx out of
@@ -86,6 +98,20 @@ RULES = {
     "rate-adjacent": re.compile(r"\d[\d,.]*\s?" + RATE_UNITS),
 }
 
+# A per-hour field name spells its unit in underscores and the value follows the
+# key, so RATE_UNITS sees neither. Only band_impact values are checked; a sample
+# prescription elsewhere in a response example is a number the API hands the
+# caller, which this file already calls documentation.
+BAND_IMPACT = re.compile(r"band_impact", re.IGNORECASE)
+IMPACT_VALUE = re.compile(
+    r"\"?(?P<key>[a-z]+_(?:g|mg|ml)_per_hr)\"?\s*[:=]\s*(?P<val>-?\d+(?:\.\d+)?)"
+)
+# The steps the bands themselves render on (bandRoundCarb, bandRoundSodium,
+# bandRoundFluid in fuel-backend/pkg/api/precision.go).
+IMPACT_GRID = {"g": 10.0, "mg": 100.0, "ml": 100.0}
+# A JSON band_impact object may wrap; keep looking this many lines past the key.
+IMPACT_WINDOW = 6
+
 NUTRIENT = re.compile(r"\b(?:carb|carbs|carbohydrate|sodium|fluid|hydration)\b", re.IGNORECASE)
 CAP_WORD = re.compile(
     r"\b(?:cap|caps|capped|ceiling|ceilings|absolute|maximum|upper limit|tops out|no more than)\b",
@@ -118,16 +144,28 @@ def scan(root):
     found = []
     for rel, full in published_files(root):
         with open(full, encoding="utf-8", errors="replace") as fh:
-            for line_no, line in enumerate(fh, 1):
-                for rule, pattern in RULES.items():
-                    for m in dict.fromkeys(x.group(0) for x in pattern.finditer(line)):
-                        found.append((rule, rel, line_no, m.strip()))
-                if NUTRIENT.search(line) and CAP_WORD.search(line):
-                    for m in dict.fromkeys(TWO_DIGITS.findall(line)):
-                        found.append(("nutrient-ceiling", rel, line_no, m))
-                if BODY_WEIGHT.search(line):
-                    for m in dict.fromkeys(TWO_DIGITS.findall(line)):
-                        found.append(("body-weight-scaling", rel, line_no, m))
+            lines = fh.readlines()
+        impact_left = 0
+        for line_no, line in enumerate(lines, 1):
+            for rule, pattern in RULES.items():
+                for m in dict.fromkeys(x.group(0) for x in pattern.finditer(line)):
+                    found.append((rule, rel, line_no, m.strip()))
+            if NUTRIENT.search(line) and CAP_WORD.search(line):
+                for m in dict.fromkeys(TWO_DIGITS.findall(line)):
+                    found.append(("nutrient-ceiling", rel, line_no, m))
+            if BODY_WEIGHT.search(line):
+                for m in dict.fromkeys(TWO_DIGITS.findall(line)):
+                    found.append(("body-weight-scaling", rel, line_no, m))
+            if BAND_IMPACT.search(line):
+                impact_left = IMPACT_WINDOW
+            if impact_left:
+                impact_left -= 1
+                for m in IMPACT_VALUE.finditer(line):
+                    unit = m.group("key").rsplit("_per_hr", 1)[0].rsplit("_", 1)[-1]
+                    grid = IMPACT_GRID.get(unit)
+                    val = float(m.group("val"))
+                    if grid and abs(val - round(val / grid) * grid) > 1e-9:
+                        found.append(("impact-resolution", rel, line_no, m.group(0).strip()))
     return sorted(found)
 
 

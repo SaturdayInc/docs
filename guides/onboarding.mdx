@@ -20,7 +20,7 @@ Calculation responses carry a `precision` object on every tier:
     "missing_fields": [
       { "field": "sweat_level", "required": true,
         "display_label": "how much you sweat",
-        "band_impact": { "carb_g_per_hr": 0.4, "sodium_mg_per_hr": 86.1, "fluid_ml_per_hr": 79.0 } }
+        "band_impact": { "carb_g_per_hr": 0, "sodium_mg_per_hr": 100, "fluid_ml_per_hr": 100 } }
     ],
     "message": "For exact numbers, a few key details are still needed: how much you sweat. Each one narrows the range.",
     "onboarding": {
@@ -32,10 +32,10 @@ Calculation responses carry a `precision` object on every tier:
 ```
 
 - **`profile_complete: true`** puts exact numbers in the response (`carb_g_per_hr` and friends).
-- **`profile_complete: false`** puts bands there instead (`carb_range_g_per_hr` and friends). Band width is measured by running the engine against each missing field at its plausible extremes, so `missing_fields` sorted most-impactful-first is your collection roadmap: the top entry is the question that buys the most precision.
+- **`profile_complete: false`** puts bands there instead (`carb_range_g_per_hr` and friends). `missing_fields` arrives sorted most-impactful-first, so it is your collection roadmap: the top entry is the question that buys the most precision.
 - The trial clock starts at the athlete's first calculation carrying any real data. Zero-data calls never start it. Collect the profile first and the 30-day window delivers exact numbers rather than wide bands. See [Freemium Model](/guides/freemium-model#30-day-full-precision-trial).
 
-Each missing field carries a `display_label`, the plain-English name of the question ("how much you sweat"), so you can build the prompt without exposing an internal key. `precision.message` is written for an athlete to read and is safe to surface directly. `band_impact` is in per-hour units, and the numbers say how much narrower the band gets when that one field is answered.
+Each missing field carries a `display_label`, the plain-English name of the question ("how much you sweat"), so you can build the prompt without exposing an internal key. `precision.message` is written for an athlete to read and is safe to surface directly. `band_impact` is in per-hour units, rounded to the same increments the bands use, and says roughly how much narrower the band gets once that field is answered. Take `missing_fields` in the order it arrives rather than re-sorting on these numbers, since rounding can leave two fields tied.
 
 ### What "complete" means, twice
 
@@ -46,7 +46,7 @@ Two different completeness checks share a name, and mixing them up is the usual 
 The athlete's own `profile_complete` field, the one `?profile_complete=false` filters on and `athlete.profile_completed` fires for, covers the stored profile only: `sex`, `year_of_birth`, `weight_kg`, `sweat_level`, `saltiness`, `satiety_level`, `fitness_level`, `carb_experience`, `usual_carb_consumption`, and an answered concerns question.
 
 <Note>
-Of the profile fields, `sex`, `year_of_birth`, `weight_kg`, `sweat_level`, `saltiness`, `carb_experience`, and `usual_carb_consumption` are the safety core, and `missing_fields` marks them `required: true`. `satiety_level`, `fitness_level`, and `concerns` come back as `required: false` because each one moves the numbers less, but exactness needs all of them.
+Of the profile fields, `sex`, `year_of_birth`, `weight_kg`, `sweat_level`, `saltiness`, `carb_experience`, and `usual_carb_consumption` are the safety core, and `missing_fields` marks them `required: true`. `satiety_level`, `fitness_level`, and `concerns` come back as `required: false`, and exactness needs all of them.
 </Note>
 
 ## Four ways to collect the profile
