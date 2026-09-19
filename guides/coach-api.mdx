@@ -391,7 +391,9 @@ Coach API responses identify each athlete by Saturday UID, the same identifier t
 
 ## Rate limits
 
-Coach requests, on either credential, are metered in the same partner bucket as the Claude connector. An OAuth coach token also passes through the per-athlete bucket that applies to every athlete-delegated caller, keyed on the coach's UID. A roster pull or digest is one request whatever the roster size. Every response carries the rate-limit headers and a `429` carries `Retry-After`; see [rate limiting](/rate-limiting).
+Coach requests to `/v1/coach/*`, on either credential, are metered in a bucket of the coach's own: 50 requests per second sustained with a burst of 500, sized so a roster-wide fan-out never trips it. That bucket replaces the Claude connector's shared partner bucket and the per-athlete buckets on the coach surface. Off the coach surface, an OAuth coach token is metered as the athlete it also is, in the per-athlete buckets that apply to every athlete-delegated caller. A roster pull or digest is one request whatever the roster size. Every response carries the rate-limit headers and a `429` carries `Retry-After`; see [rate limiting](/rate-limiting).
+
+A coach API key reaches `/v1/coach/*` only; on any other endpoint it is refused with `403 insufficient_scope`.
 
 ## SDKs
 
