@@ -38,16 +38,31 @@ OAuth2 coaches use the [connector OAuth flow](/guides/oauth2) with coach scopes 
 
 ## Scopes and capabilities
 
-The coach's token or key carries scopes that map to capabilities. A route is reachable only when the token confers the matching capability; otherwise it returns the uniform `404`.
+A coach token or key carries scopes, and each scope confers one or more of four capabilities. A route is reachable only when the credential confers the capability it requires; otherwise it returns the uniform `404`.
 
-| Capability | OAuth scope | API-key scope | Grants |
-|------------|-------------|---------------|--------|
-| Read roster + rollups + sessions | `coach:roster` | `roster:read`, `roster:write`, `org:read`, `org:write` | `GET /v1/coach/roster`, `…/fueling-rollup`, `…/sessions/…` |
-| Read reports + digest | `coach:reports` | `org:read`, `org:write` | `…/report`, `/v1/coach/roster/digest` |
-| Write alert + report config | `coach:alerts` | `roster:write`, `org:write` | `/v1/coach/config/*` |
-| Manage webhooks | `coach:webhooks` | `webhooks:manage` | `/v1/coach/webhooks/*` |
+| Capability | OAuth scope | Endpoints |
+|------------|-------------|-----------|
+| Read roster | `coach:roster` | `GET /v1/coach/roster`, `GET /v1/coach/athletes/{athlete_uid}/fueling-rollup`, `GET /v1/coach/athletes/{athlete_uid}/sessions/{activity_id}` |
+| Read reports | `coach:reports` | `GET /v1/coach/roster/digest`, `GET /v1/coach/athletes/{athlete_uid}/report` |
+| Configure alerts and reports | `coach:alerts` | `GET` and `PUT /v1/coach/config/notification-rules`, `POST /v1/coach/config/preset`, `GET` and `PUT /v1/coach/config/report-settings` |
+| Manage webhooks | `coach:webhooks` | `GET` and `POST /v1/coach/webhooks`, `DELETE /v1/coach/webhooks/{id}`, `POST /v1/coach/webhooks/{id}/disable`, `POST /v1/coach/webhooks/{id}/enable` |
 
-The two vocabularies are unioned, never translated, so a key keeps exactly the reach its scopes confer. `roster:read` alone does not open the report routes; pick `org:read` or higher when a key needs reports. Keys minted before scoped keys existed carry a single `*` scope and hold all four capabilities.
+Reading config takes the same capability as writing it: a credential without it gets `404` from `GET /v1/coach/config/notification-rules` as well as from `PUT`.
+
+An API key's scopes, chosen when the key is minted in the portal, map onto the same four capabilities:
+
+| API-key scope | Read roster | Read reports | Configure alerts and reports | Manage webhooks |
+|---------------|-------------|--------------|------------------------------|-----------------|
+| `roster:read` | Yes | | | |
+| `roster:write` | Yes | | Yes | |
+| `reports:read` | | Yes | | |
+| `org:read` | Yes | Yes | | |
+| `org:write` | Yes | Yes | Yes | |
+| `org:admin` | Yes | Yes | Yes | Yes |
+| `webhooks:manage` | | | | Yes |
+| `*` (keys minted before scoped keys existed) | Yes | Yes | Yes | Yes |
+
+Scopes union: a key with several scopes holds every capability any of them confers, and nothing more. `roster:write` also reads the roster, since configuring alerts against a roster means seeing it. `roster:read` alone does not open the report routes; add `reports:read`, or pick `org:read` or higher.
 
 <Warning>
   **Roster confinement.** Every `{athlete_uid}` you pass is checked against your roster. An athlete who isn't on your roster, and an athlete who doesn't exist, both return `404 resource_not_found`. The two cases are indistinguishable, so the API never reveals whether an athlete exists.

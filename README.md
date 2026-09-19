@@ -17,3 +17,7 @@ npx mint@latest validate
 ```
 
 The response-example check executes the published Python and TypeScript display snippets with local fixtures. It requires Python and Node.js and makes no HTTP requests. The drift check needs a current `fuel-backend` checkout; set `--backend` to its path when using worktrees.
+
+## Deploying
+
+DNS, Cloudflare, Mintlify rebuilds, and site configuration: [DEPLOY.md](DEPLOY.md).
