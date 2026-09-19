@@ -18,7 +18,7 @@ Keys carry an environment prefix. Production keys start with `sk_live_`, sandbox
   Treat your key like a password. It authenticates every request and spends your daily call allowance.
 </Note>
 
-The examples below read the key from a `SATURDAY_API_KEY` environment variable, so the same code runs against either environment:
+The examples below use the production base URL and read a production key from `SATURDAY_API_KEY`. For sandbox work, replace the base URL with the one issued with your `sk_test_` key:
 
 ```bash
 export SATURDAY_API_KEY="sk_live_..."
@@ -129,7 +129,9 @@ print(result)
 ```typescript TypeScript (SDK)
 import Saturday from "@saturdayinc/sdk";
 
-const client = new Saturday({ apiKey: process.env.SATURDAY_API_KEY });
+const apiKey = process.env.SATURDAY_API_KEY;
+if (!apiKey) throw new Error("Set SATURDAY_API_KEY before running this example");
+const client = new Saturday({ apiKey });
 
 const result = await client.nutrition.calculate({
   activity_type: "run",
@@ -146,9 +148,11 @@ console.log(result);
 
 Both SDKs default to `https://api.saturday.fit` and accept a base URL override (`base_url` in Python, `baseUrl` in TypeScript) for sandbox work.
 
+The calculation examples above use supported SDK methods. [Activity-prescription TypeScript types](https://github.com/SaturdayInc/saturday-node/issues/6) and [AI streaming methods](https://github.com/SaturdayInc/saturday-node/issues/12) still have known alignment gaps; use direct HTTP for those operations.
+
 ## 3. Read the response
 
-A successful response returns a prescription with safety metadata:
+A successful response returns a prescription with safety metadata. The request above has no `athlete_id`, so a partner-key request returns teaser ranges. The following illustrates an exact response for an entitled athlete with complete profile and activity inputs:
 
 ```json
 {
@@ -178,7 +182,7 @@ A successful response returns a prescription with safety metadata:
 
 | Field | What it means |
 |-------|---------------|
-| `tier` | `"full"` for exact numbers, `"teaser"` for ranges |
+| `tier` | `"full"` for an entitled athlete, `"teaser"` for free ranges; incomplete full-tier inputs also return ranges |
 | `carb_g_per_hr` | Carbohydrate target in grams per hour |
 | `sodium_mg_per_hr` | Sodium target in milligrams per hour |
 | `fluid_ml_per_hr` | Fluid target in milliliters per hour |
@@ -197,11 +201,12 @@ A response may also carry a `precision` object describing which profile fields a
 
 ## 4. Teaser and full responses
 
-`tier` reflects the athlete's subscription and trial status, not your key's environment. A request with no athlete attached returns full precision.
+`tier` reflects the athlete's subscription and trial status, not your key's environment. A partner-key request with no athlete attached returns teaser ranges. A full-tier response can also contain ranges when profile or activity inputs are incomplete; check the returned fields and `precision`, not just `tier`.
 
 | Athlete status | What they get | Example |
 |----------------|---------------|---------|
-| **Subscribed or in trial** | Exact numbers | `"carb_g_per_hr": 60.0` |
+| **Subscribed or in trial, complete inputs** | Exact numbers | `"carb_g_per_hr": 60.0` |
+| **Subscribed or in trial, incomplete inputs** | Ranges until the missing fields are answered | `"carb_range_g_per_hr": "60-80"` |
 | **Free** | Ranges | `"carb_range_g_per_hr": "60-90"` |
 
 Teaser responses carry a `subscription_cta` field, and their `attribution.required` is `true`:
