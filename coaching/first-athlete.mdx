@@ -7,13 +7,13 @@ icon: 'paper-plane'
 
 # Invite your first athlete
 
-Your **[roster](https://coach.saturday.fit/dashboard)** starts empty. You can fill it one athlete at a time, from a pasted block of emails, or from a CSV. Another coach can also transfer an athlete to you.
+Your **[roster](https://coach.saturday.fit/dashboard)** starts empty. You can fill it one athlete at a time, from a pasted block of emails, or from a CSV. You can also create an athlete's account for them from the Saturday app, and another coach can transfer an athlete to you.
 
 ## Invite one athlete
 
 From your **[roster](https://coach.saturday.fit/dashboard)**, click **Invite**, then the **One athlete** tab. Enter their email and, optionally, their name, which personalizes the invite. Saturday emails them a link and also gives you a shareable invite link you can send yourself.
 
-By default the invite says nothing about who pays: *"This athlete will be self-pay unless you cover them after they accept."* You can instead tick **I'll cover this athlete's Saturday subscription (coach-paid)** before sending. That commits you: when they accept, their billing switches to coach-paid, and the modal shows the estimated monthly cost first. If they already pay for Saturday, their existing plan is cancelled and the unused portion refunded. Lifetime members cost you nothing. The athlete sees the change before they accept.
+By default the invite says nothing about who pays: *"This athlete will be self-pay unless you cover them after they accept."* You can instead tick **I'll cover this athlete's Saturday subscription (coach-paid)** before sending. That commits you: when they accept, their billing switches to coach-paid, and the modal shows the estimated monthly cost first. If they pay for Saturday on an annual plan, it is cancelled and the unused portion refunded; a monthly plan runs to its period end and your coverage starts there, so no period is billed twice. Lifetime members cost you nothing. The athlete sees the change before they accept.
 
 When they accept, they choose to share their Saturday data with you and they appear on your **[roster](https://coach.saturday.fit/dashboard)**. If they have no Saturday account yet, the invite walks them through creating one.
 
@@ -25,27 +25,27 @@ When they accept, they choose to share their Saturday data with you and they app
 
 From your **[roster](https://coach.saturday.fit/dashboard)**, click **Invite**, then the **Many (paste or CSV)** tab.
 
-- **Paste:** drop in a block of emails separated by commas, spaces, or newlines, mixed however they came. Saturday sorts them as you type. Valid addresses are marked for sending, duplicates collapse, anything that isn't an email is flagged for a quick fix, and anyone already on your roster is skipped. A running line counts all four: valid, duplicates, invalid, and already on roster.
+- **Paste:** drop in a block of emails separated by commas, spaces, or newlines, mixed however they came. Saturday sorts them as you type. Valid addresses are marked for sending, duplicates collapse, anything that isn't an email is flagged for a quick fix, and anyone on your roster is skipped. A running line counts all four: valid, duplicates, invalid, and on roster.
 - **CSV:** drag in a `.csv` or click to choose one. Saturday detects the email column and an optional name column; if it is ambiguous, you pick the column. Very large files are rejected with a nudge to paste instead.
 
 Before sending you see the seat impact: your plan's included seats cover some of the batch, and the rest are self-pay unless you cover them. A **Cover all invited athletes (coach-paid)** toggle commits to covering the whole batch. Leave it off and no invite charges you; you decide coverage per athlete after each one accepts.
 
 ## Set an athlete up for them
 
-Coaching a less-techy athlete? You can build their fueling **[Setup](/coaching/nutrition/setup-dials)** (bottles, mix, ratio) before they ever open the app, then use **Invite to claim their account** from the athlete's row menu. Saturday emails them a link to take ownership. They keep everything already there, their activities, products, and fueling plan, and you stay their coach. Nothing changes for you until they accept.
+Coaching a less-techy athlete? In the Saturday app, switch to **Coaching**, open your roster, and add the athlete as one you manage. You run their onboarding, or a Quick Setup, and their account lands on your roster with a working fueling **[Setup](/coaching/nutrition/setup-dials)** before they ever open the app; no email is sent. When they are ready, use **Invite to claim their account** from the athlete's row menu in the portal. Saturday emails them a link to take ownership. They keep everything there, their activities, products, and fueling plan, and you stay their coach. Nothing changes for you until they accept.
 
 ## Manage invites and relationships
 
 | Action | Where | What it does |
 |--------|-------|--------------|
 | **Cancel invite** | The pending athlete's row on your **[roster](https://coach.saturday.fit/dashboard)** | Withdraws an invite before it's accepted |
-| **Re-invite** | The **Invite** modal, same email | Sends the invitation again. A cooldown blocks rapid repeats, and an invitation that has expired needs a fresh one |
-| **Transfer or share** | Row menu, for an athlete already on your roster | Moves the athlete to another coach, or adds a second coach who can see their training |
+| **Re-invite** | The **Invite** modal with the same email, or the recently-removed tray | Sends the invitation again. Resends wait 60 seconds between attempts, and an invitation expires after 30 days, after which a fresh one is needed |
+| **Transfer or share** | Row menu, for an athlete on your roster | Moves the athlete to another coach, or adds a second coach who can see their training |
 | **Remove from roster** | Row menu | Unlinks the athlete. They stay a Saturday user; you lose access to their fueling and can re-invite later |
 
 An athlete awaiting acceptance carries a **Pending** badge on the roster.
 
-**Transfer** hands the athlete to another coach: your coverage ends at period end plus a 14-day grace, and the new coach can cover them or the athlete can take over. **Share** adds a viewer-coach who can see the athlete's training while you stay primary and keep handling their membership. Both wait on the receiving coach accepting the handoff, and the handoff link expires after 7 days.
+**Transfer** hands the athlete to another coach. If you were covering them, that coverage ends into the 14-day grace, and the new coach covers them from their seats; if the new coach has no paid plan, the athlete is offered self-pay with the 20%-off annual deal rather than being dropped. If you were not paying for them, no coverage moves. **Share** adds a viewer-coach who can see the athlete's training while you stay primary and keep handling their membership. Both wait on the athlete approving the handoff, and the request expires after 7 days.
 
 ## After they accept
 
