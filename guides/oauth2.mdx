@@ -251,7 +251,7 @@ const newTokens = await response.json();
 | `ai:chat` | AI Coach conversations |
 | `offline_access` | Be issued a refresh token, and use it |
 
-`offline_access` grants no data access by itself. It is the OIDC and MCP signal that you want to stay connected without sending the athlete back through consent every hour. Request it alongside your data scopes if you need refresh, and note that it is not included in the default `athlete:read` fallback.
+`offline_access` grants no data access by itself. It is the OIDC and MCP signal that you want to stay connected without sending the athlete back through consent every hour. Request it alongside your data scopes if you need refresh. It is not included in the default `athlete:read` fallback.
 
 `ai:chat` is available to pre-registered clients only. It is deliberately excluded from the scopes advertised in discovery metadata, so a client registering through a Client ID Metadata Document cannot request it.
 
