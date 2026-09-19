@@ -9,7 +9,7 @@ icon: 'layer-group'
 
 Batch endpoints let you perform multiple operations in a single API call. Use these when you need to process a training week, onboard a team, or import historical activities.
 
-The examples read your key from a `SATURDAY_API_KEY` environment variable, as in [Quickstart](/quickstart). Sandbox keys are issued with their own base URL; using one against `api.saturday.fit` returns `401 invalid_api_key`.
+The examples read your key from a `SATURDAY_API_KEY` environment variable, as in [Quickstart](/quickstart). Sandbox keys are issued with a separate base URL; using one against `api.saturday.fit` returns `401 invalid_api_key`.
 
 ## Batch calculate
 
@@ -97,7 +97,7 @@ for (let i = 0; i < week.length; i++) {
 
 ### Response format
 
-Counts and the request ID sit at the top level; there is no `metadata` object. Each entry in `results` is the same body the single calculate endpoint returns, so it carries `tier`, `safety`, and `attribution` and does not carry an index.
+Counts and the request ID sit at the top level. Each entry in `results` is the same body the single calculate endpoint returns, so it carries `tier`, `safety`, and `attribution` and does not carry an index. `errors` appears only when at least one scenario failed.
 
 ```json
 {
@@ -131,7 +131,6 @@ Counts and the request ID sit at the top level; there is no `metadata` object. E
       }
     }
   ],
-  "errors": [],
   "total": 2,
   "succeeded": 2,
   "failed": 0,
@@ -166,7 +165,7 @@ Onboard multiple athletes in one call. Useful for team imports or platform migra
 POST /v1/athletes/batch
 ```
 
-This endpoint takes a partner API key only. An athlete-delegated OAuth token is rejected up front with `403` rather than partway through, so a scope mistake never leaves some athletes created and others not.
+This endpoint takes a partner API key only. An athlete-delegated OAuth token is rejected up front with `403` and code `athlete_scope` rather than partway through, so a scope mistake never leaves some athletes created and others not.
 
 <CodeGroup>
 
@@ -246,12 +245,12 @@ for (const athlete of results.created) {
 | Max athletes per batch | 100 |
 | Minimum per athlete | At least one of `name`, `email`, or `external_id` |
 
-Each athlete is also validated on `weight_kg` (must be positive), `year_of_birth` (1900 to the current year), and `sex` (`male`, `female`, or `intersex`). A violation fails that item only.
+Each athlete is also validated on `weight_kg` (a negative value is rejected), `year_of_birth` (1900 to the current year), and `sex` (`male`, `female`, or `intersex`). A violation fails that item only, with code `invalid_value`; an item naming none of `name`, `email`, or `external_id` fails with `missing_identifier`.
 
-The batch is also checked against your account's total athlete quota before processing. If you are at the cap the whole request returns `403` with the code `resource_limit`, rather than partially filling.
+The batch is also checked against your account's total athlete quota before processing. If you are at the cap the whole request returns `403` with the code `resource_limit_exceeded`, rather than partially filling.
 
 <Warning>
-  **`external_id` is not deduplicated.** Saturday does not reject or merge an athlete whose `external_id` you have already used; every create mints a new athlete with a new UUID. Retrying a batch that partially succeeded will therefore create duplicates of the athletes that succeeded the first time. Track the returned IDs against your own `external_id` values and retry only the items that failed.
+  **`external_id` is not deduplicated.** Saturday does not reject or merge an athlete whose `external_id` you used before; every create mints a new athlete with a new UUID. Retrying a batch that partially succeeded will therefore create duplicates of the athletes that succeeded the first time. Track the returned IDs against your `external_id` values and retry only the items that failed.
 </Warning>
 
 ## Activity import
@@ -268,14 +267,14 @@ An imported activity accepts these fields and no others. Unknown keys are ignore
 |-------|----------|-------------|
 | `type` | Yes | One of `bike`, `run`, `swim`, `row`, `ski`, `lift`, `hike` |
 | `duration_min` | Yes | Positive integer |
-| `intensity_level` | No | 1 to 10 |
-| `thermal_stress_level` | No | 1 to 10 |
+| `intensity_level` | No | 1 to 9; the calculation clamps values outside the scale |
+| `thermal_stress_level` | No | 1 to 9; the calculation clamps values outside the scale |
 | `is_race_event` | No | Boolean |
-| `external_id` | No | Your own activity ID, carried through and used by finish-screen deep links |
+| `external_id` | No | Your activity ID, carried through and used by finish-screen deep links |
 | `calculate` | No | Calculate a prescription for this activity, see below |
 
 <Note>
-  There is no timestamp field on import. Imported activities are stamped with the time Saturday created them, so a backfill does not preserve the original activity dates. Keep your own date mapping via `external_id` if you need it.
+  Imported activities are stamped with the time Saturday created them, so a backfill does not preserve the original activity dates. Keep a date mapping keyed by `external_id` if you need it.
 </Note>
 
 <CodeGroup>
@@ -341,7 +340,7 @@ const response = await fetch(
 
 </CodeGroup>
 
-Up to **200 activities** per import. Exceeding that returns `400` with `batch_too_large`. The import is also checked against the athlete's activity quota before processing, returning `403` with `resource_limit` if it would exceed the cap.
+Up to **200 activities** per import. Exceeding that returns `400` with `batch_too_large`. The import is also checked against the athlete's activity quota before processing, returning `403` with `resource_limit_exceeded` if it would exceed the cap. Per-item validation fails an item with `missing_field` when `type` is absent and `invalid_value` for an unknown `type` or a non-positive `duration_min`.
 
 ### Calculating prescriptions during import
 
@@ -365,9 +364,9 @@ Imports count against rate limits per item, like batch calculate.
 
 ## Error handling in batch operations
 
-Batch operations use partial success semantics. If 3 of 5 items succeed and 2 fail, the 3 successes are committed, the 2 failures are returned in `errors`, and the HTTP status is `200` rather than `400` because some items succeeded.
+Batch operations use partial success semantics. If 3 of 5 items succeed and 2 fail, the 3 successes are committed and the 2 failures are returned in `errors`. The HTTP status is `200` whenever the request itself was accepted, even when every item failed; a `400` or `403` means nothing was processed.
 
-Every batch response uses the same envelope. The success array is named for the operation (`results`, `created`, or `imported`), and alongside it sit `errors`, `total`, `succeeded`, `failed`, and `request_id`. Each error is a flat object with `index`, `code`, and `message`:
+Every batch response uses the same envelope. The success array is named for the operation (`results`, `created`, or `imported`), and alongside it sit `total`, `succeeded`, `failed`, `request_id`, and, when anything failed, `errors`. Each error is a flat object with `index`, `code`, and `message`:
 
 ```json
 {

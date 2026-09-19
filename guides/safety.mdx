@@ -10,7 +10,7 @@ icon: 'shield-halved'
 Saturday is a nutrition API for endurance athletes, and nutrition advice can cause harm, in rare cases fatal harm. This page covers Saturday's safety model, what the API gives you, and what you are expected to do with it.
 
 <Warning>
-  Exercise-associated hyponatremia has killed athletes at the Boston Marathon, London Marathon, Marine Corps Marathon, and multiple Ironman races. It happens when athletes overdrink and dilute their blood sodium. Saturday's guardrails exist because of this failure mode, not to satisfy a compliance checklist.
+  Exercise-associated hyponatremia has killed athletes at the Boston Marathon, London Marathon, Marine Corps Marathon, and multiple Ironman races. It happens when athletes overdrink and dilute their blood sodium. Saturday's guardrails exist because of this failure mode.
 </Warning>
 
 ## What can go wrong
@@ -97,7 +97,7 @@ Saturday bounds every calculation. The limits are computed per athlete and per a
 These apply on every calculation and are not partner-overridable. That is deliberate. A caller able to raise a ceiling could raise it past what is safe for that athlete, and the athlete would have no way to know it happened. The ceilings are not uniform either: several scale with the athlete, so a smaller athlete is held to a tighter limit than a larger one on the same session.
 
 <Note>
-  Teaser ranges are display buckets, and both ends are bounded. The upper bound is clamped to the engine's ceiling, so a bucket never implies an intake the engine would not prescribe. The lower bound never reads zero for a value the engine actually prescribed, so a 350 mg/hr sodium prescription renders `200-500` rather than `0-500`. A zero low bound means the prescribed value is genuinely near zero.
+  Teaser ranges are display buckets, and both ends are bounded. The upper bound is clamped to the engine's ceiling, so a bucket never implies an intake the engine would not prescribe. The lower bound never reads zero for a value the engine prescribed, so a 350 mg/hr sodium prescription renders `200-500` rather than `0-500`. A zero low bound means the prescribed value is near zero.
 
   The bounds still describe a bucket rather than a target. Render the range as a range, and do not treat either endpoint as a recommended intake.
 </Note>
@@ -106,7 +106,7 @@ These apply on every calculation and are not partner-overridable. That is delibe
 
 A number that reads low usually has one of these causes:
 
-- **The athlete capped themselves.** `carb_upper_limit_override` is a ceiling the athlete sets on their own carbohydrate, and the engine does not exceed it.
+- **The athlete capped themselves.** `carb_upper_limit_override` is a ceiling the athlete sets on their carbohydrate, and the engine does not exceed it.
 - **Stated carb experience is low.** An athlete who reports never having fueled at high carbohydrate rates is held below a target they have not trained for.
 - **`performance` is `false`.** An athlete who is not prioritizing performance gets a lower carbohydrate ceiling.
 - **Conditions are cool.** Low thermal stress pulls fluid and sodium down sharply. Overdrinking without sodium is the hyponatremia mechanism, so the engine is conservative in the cold by design.
@@ -126,7 +126,7 @@ Sending the same activity with a fuller profile is the fastest way to tell a gua
 | 0.0-0.5 | Mostly defaults | Prefer the band over a single number, and prompt to finish the profile |
 
 <Note>
-  `requires_human_review` is present on every response and is currently always `false`. Read it if you want to be forward-compatible, but do not build a flow whose only trigger is that field going `true`.
+  `requires_human_review` is present on every response and is always `false`. Do not build a flow whose only trigger is that field.
 </Note>
 
 ## The `not_instructions` field
@@ -152,8 +152,8 @@ The field is aimed at AI consumers. It marks Saturday's prescription data as nut
 
 ### Prohibited
 
-- Do not filter warnings according to your own risk assessment.
-- Do not layer your own safety logic on top of Saturday's. Two sets of limits produce conflicting advice, and yours will not know what the engine already capped.
+- Do not filter warnings according to your risk assessment.
+- Do not layer separate safety logic on top of Saturday's. Two sets of limits produce conflicting advice, and yours will not know what the engine capped.
 - Do not present prescriptions with no safety context at all.
 - Do not wire Saturday's numbers to automated triggers such as auto-ordering hydration products.
 
@@ -161,6 +161,6 @@ The field is aimed at AI consumers. It marks Saturday's prescription data as nut
 
 Saturday's AI coach carries eating-disorder handling: it keeps to performance framing and avoids calorie, weight, and restriction language.
 
-The partner API has no athlete field for this. There is no `eating_disorder_flag` to set on an athlete, and the calculation engine takes no such input. If you hold that knowledge about an athlete, it stays on your side and shapes your own copy.
+The partner API carries no such flag on an athlete, and the calculation engine takes no such input. If you hold that knowledge about an athlete, it stays on your side and shapes your copy.
 
 Note which direction the caution runs. Saturday's guardrails protect against under-fueling and against fluid without sodium. Adding restriction-flavored caution to a fueling target inverts that, so keep your framing on performance and on meeting the target.

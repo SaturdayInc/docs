@@ -98,7 +98,7 @@ This combines the activity's parameters with the athlete's profile. Recalculatin
 
 The response is tier-aware, with the same semantics as `/v1/nutrition/calculate`:
 
-- **Full tier** (subscribed, covered, or in-trial athletes): `tier: "full"` with the `prescription` object (carb, sodium, and fluid totals and per-hour rates), stored on the activity. Trial responses also carry `tier_source: "trial"`, `trial_ends_at`, and `trial_calls_remaining_today`. Each calculation debits the trial's daily call allowance, exactly like nutrition calculate.
+- **Full tier** (subscribed, covered, or in-trial athletes): `tier: "full"` with the `prescription` object (carb, sodium, and fluid totals and per-hour rates), stored on the activity. When the fueling profile is incomplete, the stored prescription carries `carb_range_g_per_hr` and the other range fields with `profile_complete: false` in place of exact numbers. Trial responses also carry `tier_source: "trial"`, `trial_ends_at`, and `trial_calls_remaining_today`. Each calculation debits the trial's daily call allowance, exactly like nutrition calculate.
 - **Teaser tier**: `tier: "teaser"` with per-hour ranges (`carb_range_g_per_hr`, `sodium_range_mg_per_hr`, `fluid_range_ml_per_hr`), a `subscription_cta` carrying the athlete's subscribe link, and required attribution. Nothing is stored, so `GET .../prescription` keeps returning the last full-tier result if there was one.
 
 `safety` metadata is included on every tier.
@@ -205,7 +205,7 @@ const response = await fetch(
 | `rating` | integer | Yes | Overall prescription quality, 1 (poor) to 5 (excellent) |
 | `notes` | string | No | Free-text feedback on how the fueling went |
 
-Feedback is stored on the activity and returned with it on read, so your UI can show an athlete what they said last time and a coach can review a block of training. It does not currently feed back into the calculation: prescriptions come from the athlete's profile and the activity's parameters, and a rated activity does not change the next one. Update the profile fields to change future prescriptions.
+Feedback is stored on the activity and returned with it on read, so your UI can show an athlete what they said last time and a coach can review a block of training. Feedback does not change the calculation: prescriptions come from the athlete's profile and the activity's parameters, so a rated activity does not change the next one. Update the profile fields to change future prescriptions.
 
 ## Activity type inference
 

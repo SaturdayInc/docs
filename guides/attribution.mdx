@@ -25,7 +25,7 @@ teaser and full responses differ.
 |---|---|
 | **Teaser data** (free ranges) shown to any user | **Required.** The "Powered by Saturday" mark, linking out, near the data. |
 | **Full data** (subscribed athlete, exact numbers) | **Required, lighter.** A compact "Powered by Saturday" mark wherever Saturday data appears. Placement is yours; presence is not optional. |
-| **Personal, single-account use** (your own data, no third-party users) | The marks are welcome and appreciated. No pre-launch review. |
+| **Personal, single-account use** (your data, no third-party users) | The marks are welcome and appreciated. No pre-launch review. |
 
 <Note>
   **Safety metadata is never gated and never stripped.** Whatever tier you show, the safety
@@ -42,7 +42,7 @@ Refer to Saturday one of two ways, and no other:
 Two rules on the words:
 
 - **Link the mark** to `https://saturday.fit` (or to the `subscribe_url` from a teaser response, so
-  the athlete lands on their own upgrade path). A linked mark is how a curious athlete finds full
+  the athlete lands on their upgrade path). A linked mark is how a curious athlete finds full
   precision, and it is what Saturday gets in exchange for the nutrition intelligence you get free.
 - **Plain text is a valid fallback.** Where a logo will not fit, appropriately sized text reading
   "Powered by Saturday" satisfies the requirement.
@@ -67,7 +67,7 @@ Scope it by surface:
 |---|---|
 | **Summary card / feed / overview** | "Powered by Saturday" beside the fuel, hydration, or sodium figures. |
 | **Detail view / report / history** | The same mark, once in the header or per entry. |
-| **Exports and downstream transfer** (CSV, PDF, another API, a webhook you forward) | Keep the attribution adjacent to the data and repeated per page. If you pass Saturday data to another system, carry the requirement forward in your own terms. |
+| **Exports and downstream transfer** (CSV, PDF, another API, a webhook you forward) | Keep the attribution adjacent to the data and repeated per page. If you pass Saturday data to another system, carry the requirement forward in your terms. |
 | **Derived or blended output** (Saturday data fed into your analytics, a model, or merged with other sources) | Name Saturday as a contributing data source. Do not imply Saturday endorses the combined result. |
 | **Shared images / social** (a card or infographic a user exports) | The mark stays visible in the image. |
 
@@ -97,8 +97,8 @@ device theme.
 - **Contrast:** keep the mark legible against whatever sits behind it, using the variant rule above.
 - **Do not** recolor, restretch, rotate, animate, add effects to, or rebuild the mark, and do not use
   it, or any part of it, as your app icon or avatar. Preserve the original aspect ratio.
-- **Keep your brand dominant.** The Saturday mark appears near your own name, stays separate from
-  it, and is never larger or more prominent than your own branding.
+- **Keep your brand dominant.** The Saturday mark appears near your name, stays separate from
+  it, and is never larger or more prominent than your branding.
 
 Do not rename or rebrand Saturday's fueling terms and metrics. Call them what Saturday calls them so
 athletes carry one vocabulary across every app they use.
@@ -109,7 +109,7 @@ When your surface lists Saturday as an app or integration (an app directory, an 
 a connected-services tile), use the Saturday app icon rather than the attribution marks. The
 [app icon download](https://saturday.fit/brand/app-icon/saturday-app-icon-squircle-256.png) is the 256px squircle. The assets are available at eight sizes, 24px through 1024px, in
 two shapes. Prefer the `squircle` files, pre-masked to the iOS-style continuous-corner shape: use
-that shape unless your platform already applies its own icon mask or your design system has a
+that shape unless your platform applies an icon mask or your design system has a
 strong style reason for another one. The full-bleed square files exist for platforms that mask
 icons themselves. Use 48px or larger where the surface allows (24px is the floor), and do not
 recolor, crop, re-mask, or add effects. The icon identifies the Saturday app; the marks credit
@@ -117,8 +117,11 @@ Saturday data. Both can appear on one screen doing different jobs.
 
 ## Data license
 
-Attribution rides alongside the data-use terms every response already carries in its
+Attribution rides alongside the data-use terms every response carries in its
 `X-Saturday-Data-License` header, with `X-Saturday-Data-Attribution` added on teaser responses.
+Every calculation response also carries an `attribution` object with the text, logo URL, and link to
+display. Its `required` flag is `true` on teaser responses and `false` on full responses, where the
+compact mark is a term of use rather than a per-response flag.
 Saturday's prescriptions, product database, and knowledge base are proprietary: no training or
 fine-tuning of models on response data, no reverse-engineering the calculations, no reselling or
 building a derived database. Full terms: [Data Policy](/guides/data-policy).

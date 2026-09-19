@@ -36,11 +36,11 @@ The athlete gets a push notification naming you as the coach now covering their 
 
 When you stop covering an athlete, by choice, on a downgrade, or when you stop coaching, the athlete becomes payment-responsible:
 
-1. Your charge stops. You are paid through the current period, with no mid-cycle charge and no refund for the remainder.
+1. Your charge for them stops. Stripe credits the unused remainder of the current cycle against your next invoice; there is no cash refund.
 2. The athlete keeps access through the end of that paid period plus a **14-day grace**.
-3. They get a notification ("Your membership is ending soon") and a persistent screen with a countdown and a take-over button.
+3. They get a notification that your coverage is ending, and their app shows a countdown with a take-over button until the grace ends.
 4. They are offered a one-time 20%-off annual deal, valid for the grace window, and emailed a secure link to redeem it.
-5. If they are an unlinked self-payer, the message is about unlinking only, with no payment talk.
+5. If they were paying for themselves and you remove them, the message is about unlinking only, with no payment talk.
 
 <Note>
   The 14-day grace runs *after* the paid period ends. An athlete keeps Saturday for those 14 extra days, which is the window in which they can take over without ever losing access.
@@ -52,11 +52,11 @@ A fresh relinquish offers an immediate undo for a few seconds. After that window
 
 ## Org-paid athletes
 
-If you are an assistant coach, you cannot end an **org-paid** arrangement unless an org admin has granted you that permission explicitly. It is a separate grant from the general billing-coverage delegation, so being able to cover and uncover your own athletes does not carry it with it. Org admins manage both on the **Access & Roles** page, where role assignment and assistant delegation are available on every plan. See [Permissions](/coaching/team/permissions).
+If you are an assistant coach, you cannot end an **org-paid** arrangement unless an org admin has granted you that permission explicitly. It is a separate grant from the general billing-coverage delegation, so being able to cover and uncover your athletes does not carry it with it. Org admins manage both on the **Access & Roles** page, where role assignment and assistant delegation are available on every plan. See [Permissions](/coaching/team/permissions).
 
 ## When you cancel your plan or stop coaching
 
-Cancelling your coaching plan from **[Coach Subscription](https://coach.saturday.fit/admin/subscription)** takes effect at the end of your paid period, and your covered athletes move to self-pay on that date through this same relinquish flow: 14-day grace, notification, and the 20%-off annual offer. Self-pay athletes unlink. You can undo the cancellation before its effective date.
+Cancelling your coaching plan from **[Coach Subscription](https://coach.saturday.fit/admin/subscription)** takes effect at the end of your paid period. Before it is scheduled you decide, per covered athlete, whether they move to self-pay; those athletes go through this same relinquish flow on that date: 14-day grace, notification, and the 20%-off annual offer. You can undo the cancellation before its effective date.
 
 Separately, if you bill athletes a coaching fee through Stripe Connect, you can refund one of those charges from the **$ Earning** page. That refunds your coaching fee, not the athlete's Saturday subscription.
 

@@ -7,7 +7,7 @@ icon: 'lock'
 
 # Permissions
 
-Permissions decide what each member of your [team](https://coach.saturday.fit/dashboard/team) can do. Roles, delegation, and custom roles are all managed on the [Access & Roles](https://coach.saturday.fit/admin/rbac) page, in three layers: preset roles for every coach, per-assistant delegation for every coach, and a custom-role builder on Head Coach and above.
+Permissions decide what each member of your [team](https://coach.saturday.fit/admin/members) can do. Roles, delegation, and custom roles are all managed on the [Access & Roles](https://coach.saturday.fit/admin/rbac) page, in three layers: preset roles for every coach, per-assistant delegation for every coach, and a custom-role builder on Head Coach and above.
 
 ## Roles and scopes
 
@@ -19,7 +19,7 @@ A permission is never granted in the abstract. Every grant carries a **scope** t
 | Org | Every athlete in the organization |
 | Saturday global | Reserved for Saturday staff |
 
-This is why a head coach and an assistant can both hold "view athlete profile" and see very different rosters: the head coach holds it at org scope, the assistant at relationship scope.
+This is why an org owner and an assistant can both hold "view athlete profile" and see very different rosters: the owner holds it at org scope, the assistant at relationship scope.
 
 ## Preset roles
 
@@ -31,8 +31,8 @@ The built-in roles you can assign on [Access & Roles](https://coach.saturday.fit
 | Program Admin | Org | Org management without athlete data |
 | Performance Director | Org | Org-wide read-only athlete data |
 | Billing Manager | Org | Billing and invoicing for one organization |
-| Head Coach | Org | Manage coaches and athletes in one organization |
-| Coach | Relationship | Manage their own athletes |
+| Head Coach | Org for the team, billing, and governance; Relationship for athlete data | Manage coaches and their athletes in one organization |
+| Coach | Relationship | Manage their athletes |
 | Assistant Coach | Relationship | Limited coaching, per the grants their head coach gives them |
 | Read-Only Coach | Relationship | View selected athletes without making changes |
 
@@ -52,17 +52,17 @@ For any given action, Saturday resolves in this order and stops at the first ans
 
 Three delegation axes let a head coach hand a specific power to a specific assistant without building a custom role. All three are available on every tier, and they compose: turning one on never disturbs the others.
 
-- **Billing.** Lets an assistant cover and uncover their assigned athletes' memberships. A **second, separate** toggle governs ending an org-paid coverage arrangement. Turning on billing delegation alone never grants the org-paid one.
+- **Billing.** **Can cover athletes** lets an assistant cover and uncover their assigned athletes' memberships. A **second, separate** toggle, **Can end org-paid coverage**, governs ending an org-paid arrangement. Turning on billing delegation alone never grants the org-paid one.
 - **Setup.** Lets an assistant adjust an athlete's Setup: carriage, fill and mix, gluc:fruc ratio, and eco-mode. Held by a head coach by default, never by an assistant unless granted.
-- **Governance.** Grants org powers one at a time: branding, SAML configuration, audit-log reading, API-key management, webhook management, org-hierarchy management, and management of the custom roles themselves.
+- **Admin powers.** Grants org powers one toggle at a time, revocable any time: editing org branding, configuring SAML, viewing the audit log, managing the org hierarchy, and managing the custom roles themselves.
 
 ## Custom roles, on Head Coach and above
 
-Head Coach, Business, and Enterprise get the custom-role builder on [Access & Roles](https://coach.saturday.fit/admin/rbac): name a role, then check exactly which permissions it carries and at what scope. Assign it to as many team members as you like. The same tier unlocks per-user permission overrides and the effective-access viewer, which shows what a given member can do once roles, grants, and denies have all been applied.
+Head Coach, Business, and Enterprise get the custom-role builder on [Access & Roles](https://coach.saturday.fit/admin/rbac): name a role, clone a built-in one if you like, then check exactly which permissions it carries and at what scope. Assign it to as many team members as you like. The same tier unlocks per-user permission overrides and the effective-access viewer, which shows what a given member can do once roles, grants, and denies have all been applied.
 
 | Capability area | Example permissions |
 |-----------------|---------------------|
-| Athlete data | View profile and activities, edit profile, adjust Setup, read AI summaries |
+| Athlete data | View profile and activities, edit profile, adjust Setup, read AI reports |
 | Roster | Read at relationship or org scope, start a transfer |
 | Billing | Preview coverage, cover and uncover, end org coverage, refund a coaching charge |
 | Team | Read and write org members, assign roles |
@@ -75,7 +75,7 @@ One permission does not exist, deliberately: viewing an athlete's raw AI convers
 ## Organizations, audit, and hierarchy
 
 - **Org hierarchy** is available on Head Coach and above: create sub-organizations, move coaches and athletes between them, and scope admins per sub-org. Permissions and coverage respect the hierarchy.
-- **The [audit log](https://coach.saturday.fit/admin/audit)** is a Business and Enterprise capability, scoped to the org owner. It records consequential actions across the org: who covered whom, who changed a Setup and what changed, who issued a refund, who edited alert rules.
+- **The [audit log](https://coach.saturday.fit/admin/audit)** is a Business and Enterprise capability, read at org scope: a root-org owner sees the whole tree, a scoped sub-org admin only their subtree. It records consequential actions across the org: who covered whom, who changed a Setup and what changed, who issued a refund, who edited alert rules.
 
 ## See also
 

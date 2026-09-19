@@ -9,7 +9,7 @@ icon: 'bell'
 
 Register a webhook URL and Saturday POSTs events to it as they happen, so you do not have to poll the API for changes.
 
-The examples read your key from a `SATURDAY_API_KEY` environment variable, as in [Quickstart](/quickstart). Sandbox keys are issued with their own base URL; using one against `api.saturday.fit` returns `401 invalid_api_key`.
+The examples read your key from a `SATURDAY_API_KEY` environment variable, as in [Quickstart](/quickstart). Sandbox keys are issued with a separate base URL; using one against `api.saturday.fit` returns `401 invalid_api_key`.
 
 ## Registering a webhook
 
@@ -32,7 +32,7 @@ response = requests.post(
     },
 )
 
-webhook = response.json()
+webhook = response.json()["webhook"]  # 201 Created
 # Save webhook["secret"]: you need it to verify signatures
 print(f"Webhook secret: {webhook['secret']}")
 ```
@@ -50,18 +50,20 @@ const response = await fetch("https://api.saturday.fit/v1/webhooks", {
   }),
 });
 
-const webhook = await response.json();
+const { webhook } = await response.json(); // 201 Created
 // Save webhook.secret: you need it to verify signatures
 console.log(`Webhook secret: ${webhook.secret}`);
 ```
 
 </CodeGroup>
 
+The response is `201` with the new webhook under `webhook` and a `request_id` beside it. The webhook carries `id`, `url`, `events`, `active`, `fail_count`, `created_at` and `updated_at` in milliseconds, and `secret`, a 64-character hex string.
+
 <Warning>
   **Save the webhook secret immediately.** It is returned once, at creation time, and never again. You need it to verify that incoming webhooks came from Saturday.
 </Warning>
 
-A partner may hold up to **20 webhooks**. Registration rejects URLs that resolve to private, loopback, or cloud-metadata addresses, and URLs on ports other than 443 and 80. The scheme must be `https` in production; the test environment also accepts `http`. If Saturday's key service is briefly unavailable at creation time the request returns `503` with `Retry-After` rather than storing an unencrypted secret, so retry on 503.
+A partner may hold up to **20 webhooks**. Registration rejects URLs that resolve to private, loopback, or cloud-metadata addresses, and URLs on ports other than 443 and 80. The scheme must be `https` in production; the test environment also accepts `http`. Each of these rejections, and the 21st webhook, is a `400` with code `webhook_error` and the reason in `message`. If Saturday's key service is briefly unavailable at creation time the request returns `503` with `Retry-After: 30` rather than storing an unencrypted secret, so retry on 503.
 
 ## Available events
 
@@ -81,7 +83,7 @@ These event types are emitted today:
 | `subscription.created` | An athlete unlocks full tier (paid checkout, linked existing subscription, or test-env simulation) |
 | `subscription.cancelled` | An athlete's access degrades to teaser (cancellation, expiry, or refund) |
 
-Registration also accepts four names that will not reach a partner webhook. `subscription.updated` and `partner.rate_limit_approaching` are reserved and have no emitter at all. `concern.detected` and `athlete.needs_attention` are live, but they are delivered on the separate coach webhook lane, to endpoints a coach registers against their own account, never to a partner webhook; see the [Coach API](/guides/coach-api). Subscribing to any of the four on a partner webhook is accepted and then silent, so do not build against them here.
+Registration also accepts four names that will not reach a partner webhook. `subscription.updated` and `partner.rate_limit_approaching` are reserved and have no emitter at all. `concern.detected` and `athlete.needs_attention` are live, but they are delivered on the separate coach webhook lane, to endpoints a coach registers against the coach's account, never to a partner webhook; see the [Coach API](/guides/coach-api). Subscribing to any of the four on a partner webhook is accepted and then silent, so do not build against them here.
 
 Any name outside this list is rejected with `400`, and one bad name fails the entire registration rather than the single event, so register only the names above.
 
@@ -103,7 +105,7 @@ Any name outside this list is rejected with `400`, and one bad name fails the en
 }
 ```
 
-`source` values: `checkout_subscription`, `checkout_lifetime` (no `expires_at`), `existing_subscription_linked` (an already-subscribed Saturday account tapped your CTA and was linked without being charged), `email_match` (a paying Saturday account was linked to your athlete automatically by email, see [Freemium Model, Automatic linking by email](/guides/freemium-model#automatic-linking-by-email)), `simulated` (test env only).
+`source` values: `checkout_subscription`, `checkout_lifetime` (no `expires_at`), `existing_subscription_linked` (a subscribed Saturday account tapped your CTA and was linked without being charged), `email_match` (a paying Saturday account was linked to your athlete automatically by email, see [Freemium Model, Automatic linking by email](/guides/freemium-model#automatic-linking-by-email)), `simulated` (test env only). `expires_at` is in milliseconds.
 
 `subscription.cancelled` means the athlete's next calculate returns teaser ranges:
 
@@ -120,13 +122,15 @@ Any name outside this list is rejected with `400`, and one bad name fails the en
 }
 ```
 
+`reason` is the Stripe event type that ended access, such as `customer.subscription.deleted`, or one of `expired`, `refund`, `dispute`, `email_match_decayed` (an email-matched link that stopped matching), and `simulated` (test env only).
+
 <Note>
   Don't cache tier from webhooks alone. `GET /v1/athletes/{id}` returns a computed `subscription_status` (`full` | `trial` | `teaser`) whenever you need ground truth, for example when an athlete returns from checkout.
 </Note>
 
 ## Webhook payload format
 
-Every webhook delivery has this structure. `id` is a UUID and `created_at` is a Unix timestamp in **milliseconds**:
+Every delivery has this envelope. `id` is a UUID and `created_at` is a Unix timestamp in **milliseconds**. This one carries a full-tier prescription from `POST /v1/nutrition/calculate`:
 
 ```json
 {
@@ -134,16 +138,40 @@ Every webhook delivery has this structure. `id` is a UUID and `created_at` is a 
   "type": "prescription.calculated",
   "created_at": 1765467600000,
   "data": {
-    "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
-    "activity_id": "7c5e2b90-1a3f-4d68-9e02-5b7a4c1d8f36",
+    "tier": "full",
     "carb_g_per_hr": 60,
     "sodium_mg_per_hr": 500,
-    "fluid_ml_per_hr": 600
+    "fluid_ml_per_hr": 600,
+    "total_carb_g": 120,
+    "total_sodium_mg": 1000,
+    "total_fluid_ml": 1200,
+    "safety": {
+      "max_safe_fluid_ml_per_hr": 1500,
+      "max_safe_sodium_mg_per_hr": 3000,
+      "confidence_score": 0.65,
+      "requires_human_review": false,
+      "warnings": [],
+      "not_instructions": true
+    }
   }
 }
 ```
 
-The `data` object is the same resource body the REST API returns for that object, so `athlete.*` events carry the athlete record and `prescription.calculated` carries the calculate response. Athlete, activity, and event identifiers are all UUIDs; they carry no prefix, so do not pattern-match on one.
+What `data` carries depends on the event:
+
+| Event | `data` |
+|-------|--------|
+| `athlete.created`, `athlete.updated`, `athlete.profile_completed` | The athlete record, as `GET /v1/athletes/{athlete_id}` returns it |
+| `athlete.deleted` | `athlete_id` only |
+| `activity.created`, `activity.updated` | The activity record |
+| `activity.deleted` | `athlete_id` and `activity_id` only |
+| `prescription.calculated` | From `POST /v1/nutrition/calculate`: the calculate response, at whichever tier the caller received, teaser included. From an activity calculation: the stored prescription (`carb_g_per_hr`, `sodium_mg_per_hr`, `fluid_ml_per_hr`, the three totals, `calculated_at`) |
+| `feedback.submitted` | The feedback record: `rating`, `notes`, `created_at` |
+| `subscription.created`, `subscription.cancelled` | The payloads above |
+
+The prescription payload names no athlete or activity. A calculation you trigger through the API is identifiable by its response; the webhook is the signal that one ran.
+
+Athlete, activity, and event identifiers are all UUIDs; they carry no prefix, so do not pattern-match on one.
 
 ## Verifying webhook signatures (HMAC-SHA256)
 
@@ -151,6 +179,7 @@ Every delivery carries these headers:
 
 | Header | Value |
 |--------|-------|
+| `Content-Type` | `application/json` |
 | `X-Saturday-Signature` | `t={unix_seconds},v1={hex_hmac}` |
 | `X-Saturday-Event-ID` | The event `id`, matching the `id` in the body |
 | `X-Saturday-Event-Type` | The event `type`, so you can route before parsing |
@@ -176,7 +205,7 @@ import time
 from flask import Flask, request, abort
 
 app = Flask(__name__)
-WEBHOOK_SECRET = "whsec_your_webhook_secret_here"
+WEBHOOK_SECRET = "your_webhook_secret"
 
 @app.route("/webhooks/saturday", methods=["POST"])
 def handle_webhook():
@@ -229,7 +258,7 @@ import crypto from "crypto";
 import express from "express";
 
 const app = express();
-const WEBHOOK_SECRET = "whsec_your_webhook_secret_here";
+const WEBHOOK_SECRET = "your_webhook_secret";
 
 app.post(
   "/webhooks/saturday",
@@ -294,15 +323,15 @@ A delivery counts as failed if your endpoint returns a non-2xx status, times out
 | 4th retry | 2 hours | 2 hr 36 min |
 | 5th retry | 12 hours | 14 hr 36 min |
 
-Retries are scheduled durably, so they survive a restart on Saturday's side. Each retry re-reads your webhook's current URL and secret, which means fixing a bad URL mid-schedule lets the remaining retries land. After the 5th retry the delivery is marked exhausted and is not attempted again.
+Retries are scheduled durably, so they survive a restart on Saturday's side. Each retry re-reads your webhook's current URL and secret, which means fixing a bad URL mid-schedule lets the remaining retries land. After the 5th retry the delivery is marked exhausted and is not attempted again. A webhook you delete or deactivate mid-schedule stops retrying.
 
 Redirects are not followed: a `3xx` counts as a failure, so register the final URL rather than a redirector.
 
 ## Auto-disable
 
-Each exhausted delivery increments a consecutive-failure counter on the webhook. Any successful delivery resets it to zero. At **15 consecutive exhausted deliveries** Saturday sets the webhook inactive and stops sending to it. Given the retry schedule above, that is roughly three days of an endpoint being consistently down, though the exact wall time depends on your event volume.
+Each exhausted delivery increments a consecutive-failure counter on the webhook. Any successful delivery resets it to zero. At **15 consecutive exhausted deliveries** Saturday sets the webhook inactive, stamps `disabled_at`, and stops sending to it. Given the retry schedule above, that is roughly three days of an endpoint being consistently down, though the exact wall time depends on your event volume.
 
-Re-enable it from the API once the endpoint is healthy:
+Re-enable it from the API once the endpoint is healthy. Re-enabling resets `fail_count` to zero and clears `disabled_at`:
 
 ```bash
 curl -X PATCH https://api.saturday.fit/v1/webhooks/{webhook_id} \
@@ -329,6 +358,8 @@ POST   /v1/webhooks/{webhook_id}/test      # send a webhook.test event now
 GET    /v1/webhooks/{webhook_id}/deliveries # recent delivery attempts
 ```
 
-`POST /v1/webhooks/{webhook_id}/test` delivers synchronously and returns the delivery record, including the status code your endpoint returned. Use it to confirm signature verification works before you depend on live events. The test event has type `webhook.test`. Subscribing to it is valid but unnecessary: the test delivery reaches your endpoint regardless. Your handler should still ignore event types it does not recognize rather than erroring on them.
+`PATCH /v1/webhooks/{webhook_id}` takes any of `url`, `events`, and `active`, validates a new URL and event list the same way registration does, and returns the updated webhook. A body naming none of the three returns `400` with code `no_changes`. `DELETE` returns `204`.
 
-`GET /v1/webhooks/{webhook_id}/deliveries` returns the 50 most recent attempts for that webhook, newest first, each with its status, attempt count, and the first kilobyte of your endpoint's response body, which is usually enough to see why a delivery failed.
+`POST /v1/webhooks/{webhook_id}/test` delivers synchronously and returns the delivery record under `delivery`, including the status code your endpoint returned. Use it to confirm signature verification works before you depend on live events. The test event has type `webhook.test` and a `data` object holding a single `message` string. Subscribing to it is valid but unnecessary: the test delivery reaches your endpoint regardless. Your handler should still ignore event types it does not recognize rather than erroring on them.
+
+`GET /v1/webhooks/{webhook_id}/deliveries` returns the 50 most recent attempts for that webhook, newest first, under `deliveries`. Each carries `status` (`pending`, `delivered`, `failed`, or `exhausted`), `status_code`, `attempts`, `next_retry_at`, `completed_at`, and `response_body`, the first kilobyte of your endpoint's response body, which is usually enough to see why a delivery failed.

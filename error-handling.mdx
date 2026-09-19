@@ -47,7 +47,7 @@ Branch on `type` for handling class, and on `code` for the specific case. A type
 | `api_error` | 500, 502, 503 | Saturday-side failure (500), upstream service (502), transient dependency (503) |
 
 <Note>
-  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `key_not_found`, `webhook_not_found`, `conversation_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"` with `code: "rate_limit_exceeded"` or `code: "rate_limited"`. Switching on `type` means using the values in the table above.
+  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `prescription_not_found`, `product_not_found`, `key_not_found`, `webhook_not_found`, `conversation_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"` with `code: "rate_limit_exceeded"` or `code: "rate_limited"`. Switching on `type` means using the values in the table above.
 </Note>
 
 Safety ceilings do not surface as an error status. A prescription that runs into a guardrail returns `200` with the clamped values plus `safety.warnings` and `safety.requires_human_review` set. See [Safety](/guides/safety).
@@ -125,8 +125,8 @@ async function requestWithRetry(
 
 ### Request IDs
 
-Every response carries an `X-Request-Id` header, and every error body repeats it as `request_id`. Quote it when reporting an issue and we can trace that exact request.
+Every response carries an `X-Request-ID` header, and every error body repeats it as `request_id`. Quote it when reporting an issue and we can trace that exact request.
 
 ### Error catalog
 
-`GET /v1/errors` (no auth) lists the error codes for the features currently exposed to you.
+`GET /v1/errors` (no auth) lists the error codes for the features exposed to your key.

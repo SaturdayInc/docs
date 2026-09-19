@@ -9,39 +9,41 @@ import { AppAction } from "/snippets/app-action.jsx"
 
 # Become a coach
 
-There are two doors into coaching. Both end in the same state: a coach account with **[portal access](https://coach.saturday.fit/dashboard)**, your own athlete subscription intact, an empty **[roster](https://coach.saturday.fit/dashboard)**, and an activation checklist on the dashboard.
+There are two doors into coaching. Both end in the same state: a coach account with **[portal access](https://coach.saturday.fit/dashboard)**, your athlete subscription intact, an empty **[roster](https://coach.saturday.fit/dashboard)**, and an activation checklist on the dashboard.
 
 ## The two entry paths
 
 <CardGroup cols={2}>
   <Card title="From the Saturday app" icon="mobile">
-    Already a Saturday athlete? Open the **Accounts** page and tap <AppAction path="/open-app">Become a Coach</AppAction>. Your existing account gains coaching; your own training is untouched. **Stop Coaching** lives on the same page.
+    Have the Saturday app? Open the **Accounts** page and tap <AppAction path="/open-app">Become a Coach</AppAction>. Your existing account gains coaching; your training is untouched. **Stop Coaching** lives on the same page.
   </Card>
   <Card title="From the coach portal" icon="browser">
     No Saturday account yet? Sign up at **[coach.saturday.fit](https://coach.saturday.fit)**. Saturday provisions an athlete account for you, so your coach identity and athlete identity are one account from day one.
   </Card>
 </CardGroup>
 
-<Note>
-  The in-app **Become a Coach** row is behind a staged rollout, so it may not be on your Accounts page yet. Signing up at **[coach.saturday.fit](https://coach.saturday.fit)** works either way and reaches the same account.
-</Note>
-
 ## Every coach is also an athlete
 
 Every coach has a Saturday athlete account and completes athlete onboarding. You coach fueling better having used it, and the <AppAction path="/open-app">persona toggle</AppAction> on the Accounts page switches between **Coaching** and **My Training** without logging out.
 
 - **Portal-first sign-up:** Saturday creates your athlete account and subscription. You can finish athlete onboarding in the app whenever you like.
-- **Already have an app account:** it is kept. Same login, now with coaching.
-- **Signed up twice (app identity does not match portal identity):** Saturday detects the mismatch and offers to link the two into one account, keeping the account with more training history. Linking is the recommended path.
-- **Want them separate?** **Keep them separate** is offered alongside linking. A few account shapes cannot be linked automatically; in those cases Saturday's team completes the link by hand and you keep coaching in the meantime.
+- **Have an app account:** it is kept. Same login, now with coaching.
+- **Signed up twice (app identity does not match portal identity):** Saturday detects the mismatch and offers **Link my accounts**, keeping the account with more training history. Linking is the recommended path.
+- **Want them separate?** **Keep them separate** is offered alongside linking, and you can link later from Settings. A few account shapes cannot be linked self-serve, such as an account that is an athlete on another coach's roster; Saturday support completes those, and you keep coaching in the meantime.
+
+## Your first 30 days
+
+Every new coach account starts on a **30-day Head Coach trial**, no card required, so the roster, alerts, team roll-up, org hierarchy, and custom roles are all open from day one. During the trial you can switch it to Business and back without resetting the window. When the trial ends without a plan, you continue on the free **Coach** plan: API keys, webhooks, and assistants pause until you upgrade, and any athlete the trial covered moves to self-pay through the [relinquish flow](/coaching/billing/take-over-relinquish), with the 14-day grace and the 20%-off annual offer.
+
+A paid Head Coach can also take a one-time, 30-day free **Business** tryout from **[Coach Subscription](https://coach.saturday.fit/admin/subscription)**. Head Coach billing continues unchanged during the tryout, and nothing is charged unless you choose **Keep Business** before it ends.
 
 ## Your activation checklist
 
-An empty dashboard opens with a **Get started** card and four steps, each with its own button:
+An empty dashboard opens with a **Get started** card and four steps, each with a button:
 
 1. **Invite your first athlete** from your **[roster](https://coach.saturday.fit/dashboard)**. See [Invite your first athlete](/coaching/first-athlete).
-2. **Set up billing**, which opens **[Coach Subscription](https://coach.saturday.fit/admin/subscription)** to pick a plan. See [Who pays](/coaching/billing/who-pays).
-3. **Finish your athlete setup** in the app, about 5 minutes. The button shows a QR code that hands your own athlete onboarding to your phone.
+2. **Set up billing**, whose **Choose a plan** button opens **[Coach Subscription](https://coach.saturday.fit/admin/subscription)**. See [Who pays](/coaching/billing/who-pays).
+3. **Finish your athlete setup** in the app, about 5 minutes. **Show QR** displays a code that hands your athlete onboarding to your phone.
 4. **Read the coach docs**, which lands here.
 
 The card tracks progress, collapses to a **Setup complete** strip when all four are done, and can be dismissed. Once dismissed, a **Setup guide** link reopens it.
@@ -58,12 +60,12 @@ You can start without paying. Plans live on **[Coach Subscription](https://coach
 | **Business** | $149/mo flat | Fair-use roster ceiling | Unlimited |
 | **Enterprise** | Custom | Custom | Unlimited |
 
-**Included** means covered by your plan fee, so the athlete pays nothing. The free **Coach** tier is the exception: it lets you coach one athlete, but that athlete pays for their own Saturday subscription. Covering an athlete yourself starts at Pro Coach. See [Who pays](/coaching/billing/who-pays).
+**Included** means covered by your plan fee, so the athlete pays nothing. The free **Coach** tier is the exception: it lets you coach one athlete, but that athlete pays for Saturday themselves. Covering an athlete yourself starts at Pro Coach. See [Who pays](/coaching/billing/who-pays).
 
-Beyond the assistants your plan includes, you can buy extra assistant seats at $10/seat/month and release them at any time. Business and Enterprise are already unlimited, so the seat add-on does not apply to them.
+Beyond the assistants your plan includes, you can buy extra assistant seats at $10/seat/month and release them at any time. Business and Enterprise have no assistant cap, so the seat add-on does not apply to them.
 
 <Tip>
-  **Saturday Lifetime owner?** Your coaching plan is 50% off for as long as you hold it. Pro Coach is $6.50/mo and Head Coach is $25.00/mo. The discount applies automatically and the plan cards show a **Lifetime 50% off** badge.
+  **Saturday Lifetime owner?** Your coaching plan is 50% off for as long as you hold it: Pro Coach $6.50/mo, Head Coach $25.00/mo, Business $74.50/mo. The discount applies automatically and the plan cards show a **Lifetime 50% off** badge.
 </Tip>
 
-Coach plans are billed monthly. Upgrade, downgrade, or cancel from **[Coach Subscription](https://coach.saturday.fit/admin/subscription)**. An upgrade takes effect immediately; a downgrade or cancellation takes effect at the end of your paid period, and both can be undone before then. Cancelling moves your covered athletes to self-pay on that date. See [Take over & relinquish](/coaching/billing/take-over-relinquish) for what your athletes see when that happens.
+Coach plans are billed monthly. Upgrade, downgrade, or cancel from **[Coach Subscription](https://coach.saturday.fit/admin/subscription)**. An upgrade takes effect immediately; a downgrade or cancellation takes effect at the end of your paid period, and both can be undone before then. Before a downgrade or cancellation is scheduled, you decide per athlete above the new plan's included seats whether they move to self-pay or stay coach-paid; the self-pay ones go through the [relinquish flow](/coaching/billing/take-over-relinquish) on the effective date.
