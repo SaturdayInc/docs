@@ -189,7 +189,7 @@ Two endpoints delete, and they are not interchangeable.
 DELETE /v1/athletes/{id}
 ```
 
-Removes the athlete document only. Their activities, prescriptions, and feedback stay in storage.
+Removes the athlete from your roster together with everything stored under them: activities, prescriptions, feedback, AI conversations, consent records, integration tokens, and gear. Connected providers are not told, and the request is not filed with the data warehouse.
 
 ```bash
 POST /v1/athletes/{id}/delete
@@ -198,7 +198,7 @@ POST /v1/athletes/{id}/delete
 The erasure path. It deauthorizes connected providers, purges the athlete's subcollections (activities, conversations, consent, integrations), and files the request the data warehouse honors.
 
 <Warning>
-  Use `POST /v1/athletes/{id}/delete` for a GDPR erasure request. `DELETE` alone leaves the athlete's activity data behind. Neither can be undone.
+  Use `POST /v1/athletes/{id}/delete` for a GDPR erasure request. `DELETE` clears your copy of the athlete but does not revoke their provider connections or notify the data warehouse. Neither can be undone.
 </Warning>
 
 ## Data export (GDPR)

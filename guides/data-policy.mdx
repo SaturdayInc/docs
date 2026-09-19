@@ -106,7 +106,7 @@ Saturday provides endpoints for GDPR compliance:
 | `POST /v1/athletes/{id}/delete` | Right to erasure | Cascading deletion: revokes connected providers, then deletes the profile, activities, conversations, consent records, and integration tokens |
 | `POST /v1/athletes/{id}/consent`, `GET /v1/athletes/{id}/consent`, `DELETE /v1/athletes/{id}/consent/{consent_id}` | Consent records | Append-only log of consent granted or revoked, by type: `data_processing`, `marketing`, `analytics` |
 
-Use the erasure endpoint for right-to-erasure requests. It deletes immediately, and `DELETE /v1/athletes/{id}` removes the profile record only.
+Use the erasure endpoint for right-to-erasure requests. It deletes immediately. `DELETE /v1/athletes/{id}` removes the athlete and everything stored under them from your roster, but does not revoke provider connections or file the warehouse request.
 
 Partners are responsible for responding to athlete data subject requests within the timelines required by applicable law.
 
