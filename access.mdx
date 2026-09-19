@@ -13,12 +13,12 @@ There are four ways to build with Saturday. One question routes you: where do yo
 |------|-----|-------------------|------|-------|
 | Consumer app | An athlete | the Saturday app | app account | app subscription |
 | **Coach portal** | A coach managing real Saturday-app athletes | **the Saturday app** | portal login + `cp_` API keys | Pro Coach+ subscription (portal); `cp_` keys on Business+ |
-| **Individual API** | Dev-athletes, AI-assisted coaching businesses, team-scale builders | **your own system** | self-serve `sk_` key | $5.39/month, no contract |
+| **Individual API** | Dev-athletes, AI-assisted coaching businesses, team-scale builders | **your system** | self-serve `sk_` key | $5.39/month, no contract |
 | **Platform partner** | A platform embedding Saturday for its whole user base | **the partner's system** | `sk_` key via agreement | rev share + athlete subscribe loop |
 
 ## Individual API (self-serve)
 
-You're building your own product, tooling, or coaching stack, and athletes live in **your** database.
+You are building a product, tooling, or a coaching stack, and athletes live in **your** database.
 
 - **Sign up:** [saturday.fit/api](https://saturday.fit/api). Enter an email, complete Stripe Checkout, and your key is revealed once on the success page and emailed to you. Programmatic path: `POST /v1/signup` (no auth) returns a hosted checkout URL, built for AI agents acquiring access for their humans.
 - **Price:** $5.39/month flat. Cancel anytime.
@@ -39,4 +39,4 @@ You run a training platform and want Saturday embedded for your entire user base
 
 ## Discovery for agents
 
-`GET https://api.saturday.fit/v1/` (no auth) self-describes the API: the endpoints currently exposed, plan, price, trial shape, and both signup paths. Site context: [saturday.fit/llms.txt](https://saturday.fit/llms.txt).
+`GET https://api.saturday.fit/v1/` (no auth) self-describes the API: the endpoints exposed to your key, plan, price, trial shape, and both signup paths. Site context: [saturday.fit/llms.txt](https://saturday.fit/llms.txt).

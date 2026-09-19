@@ -14,7 +14,7 @@ Saturday has three authentication methods, one per principal type:
 | **Coach API Key** | A coach's own scripts against their roster | `cp_*` Bearer token in the `Authorization` header |
 | **OAuth2** | Athlete- or coach-delegated access, including the Claude connector | Authorization code flow with PKCE |
 
-Most partner integrations start with API keys. Add OAuth2 when you need athletes or coaches to connect their existing Saturday accounts. Coaches automating against their own roster use a coach API key, covered in the [Coach API](/guides/coach-api).
+Most partner integrations start with API keys. Add OAuth2 when you need athletes or coaches to connect their existing Saturday accounts. Coaches automating against their roster use a coach API key, covered in the [Coach API](/guides/coach-api).
 
 ## API keys
 
@@ -31,9 +31,9 @@ The prefix encodes both the principal and the environment, so a misrouted key fa
 | `cp_test_` | Sandbox | Coach key for a coach's roster surface (`/v1/coach/*`) |
 | `cp_live_` | Production | Coach key in production. Requires the Business tier or higher |
 
-Coach keys (`cp_*`) are minted in the [coach portal](https://coach.saturday.fit) under **[API Keys](https://coach.saturday.fit/admin/api-keys)**, not via `api@saturday.fit`. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster and own config. A coach whose subscription lapses below Pro Coach loses `cp_` key access on the next request.
+Coach keys (`cp_*`) are minted in the [coach portal](https://coach.saturday.fit) under **[API Keys](https://coach.saturday.fit/admin/api-keys)**, not via `api@saturday.fit`. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster and configuration. A coach whose subscription lapses below Pro Coach loses `cp_` key access on the next request.
 
-Coach keys use their own scope vocabulary, chosen at mint time in the portal: `roster:read`, `roster:write`, `billing:read`, `billing:write`, `org:read`, `org:write`, `webhooks:manage`. That is a different model from the partner-key scopes below, and the two do not mix.
+Coach keys use a separate scope vocabulary, chosen at mint time in the portal: `roster:read`, `roster:write`, `reports:read`, `org:read`, `org:write`, `org:admin`, `webhooks:manage`. That is a different model from the partner-key scopes below, and the two do not mix.
 
 ```bash
 curl -H "Authorization: Bearer $SATURDAY_API_KEY" \
@@ -84,7 +84,7 @@ curl -X POST https://api.saturday.fit/v1/partner/api-keys \
 `scopes` accepts `["*"]` for unrestricted, `["read"]` for `GET`/`HEAD`/`OPTIONS`, and `["write"]` for `POST`/`PUT`/`PATCH`/`DELETE`. A read-write key needs both listed: `write` does not imply `read`. A request outside a key's scopes gets a `403` with code `insufficient_scope`.
 
 <Note>
-  Save the key immediately. The full value is returned once at creation. The `id` in that response is what the rotate and revoke endpoints take, and it is not derivable from the key itself, so store it too.
+  Save the key immediately. The full value is returned once at creation. The `id` in that response is what the rotate and revoke endpoints take, so store it with the key.
 </Note>
 
 **Rotating keys.** Rotation mints a replacement and revokes the old key in the same call, with no grace period. The old key stops working immediately.
@@ -110,7 +110,7 @@ curl -X DELETE https://api.saturday.fit/v1/partner/api-keys/{key_id} \
 | Production | `https://api.saturday.fit` | Real athlete data |
 | Sandbox | Issued with your `sk_test_` key | Synthetic test data |
 
-The key prefix and the base URL travel together. A `sk_test_` key does not authenticate against `api.saturday.fit`.
+The key prefix and the base URL travel together. Each environment keeps separate key records, so a key issued by the sandbox does not authenticate against `api.saturday.fit`, and the reverse.
 
 ### Sandbox behavior
 

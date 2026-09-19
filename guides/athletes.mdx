@@ -96,7 +96,7 @@ Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`
 | `carb_experience` | string | `range_0_30`, `range_40_60`, `range_gt_70` | Yes |
 | `usual_carb_consumption` | string | `range_lt_60`, `range_60_80`, `range_80_100`, `range_gt_100` | Yes |
 | `satiety_level` | integer | 1 (mostly whole food) to 9 (high-octane fuel), default 5 | No |
-| `fitness_level` | integer | 1 (just starting) to 9 (elite), default 5 | No |
+| `fitness_level` | integer | 1 (beginner) to 9 (elite), default 5 | No |
 | `carb_upper_limit_override` | integer | 50 to 150 g/hr, default 150 | No |
 
 `carb_experience` is the most carbohydrate per hour the athlete has ever fueled with; `usual_carb_consumption` is what they typically take. Both are stored as range tokens rather than numbers, because a range is what an athlete can answer without guessing.
@@ -179,7 +179,7 @@ The settings object is written as a unit. Send the athlete's complete settings o
 
 The same replacement rule applies if you send a `settings` object through `PATCH /v1/athletes/{id}`.
 
-Saturday rejects `carb_upper_limit_override` outside 50-150 g/hr and `weight_kg` outside 20-250 with a 400 rather than silently clamping, so a bad value in your data surfaces at the boundary instead of distorting a prescription.
+On update and on calculate, Saturday rejects `carb_upper_limit_override` outside 50-150 g/hr and `weight_kg` outside 20-250 with a 400 rather than clamping, so a bad value in your data surfaces at the boundary instead of distorting a prescription.
 
 ## Deleting an athlete
 
