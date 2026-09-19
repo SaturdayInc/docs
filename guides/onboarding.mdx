@@ -43,22 +43,22 @@ Two different completeness checks share a name, and mixing them up is the usual 
 
 `precision.profile_complete`, on a calculation response, is per-call. It requires every profile field **and** the activity parameters for that call: `intensity_level`, `thermal_stress_level`, `meal_before_min`, and `is_race`. An athlete with a perfect stored profile still gets a band if the call omits those. On `POST /v1/nutrition/calculate` you send them in the request body; on `POST .../activities/{id}/calculate` they are read from the stored activity, so set them when you create it.
 
-The athlete's own `profile_complete` field, the one `?profile_complete=false` filters on and `athlete.profile_completed` fires for, covers the stored profile only: `sex`, `year_of_birth`, `weight_kg`, `sweat_level`, `saltiness`, `satiety_level`, `fitness_level`, `carb_experience`, `usual_carb_consumption`, and an answered concerns question.
+The athlete record's `profile_complete` field, the one `?profile_complete=false` filters on and `athlete.profile_completed` fires for, covers the stored profile only: `sex`, `year_of_birth`, `weight_kg`, `sweat_level`, `saltiness`, `satiety_level`, `fitness_level`, `carb_experience`, `usual_carb_consumption`, and an answered concerns question.
 
 <Note>
-Of the profile fields, `sex`, `year_of_birth`, `weight_kg`, `sweat_level`, `saltiness`, `carb_experience`, and `usual_carb_consumption` are the safety core, and `missing_fields` marks them `required: true`. `satiety_level`, `fitness_level`, and `concerns` come back as `required: false`, and exactness needs all of them.
+`missing_fields` names the safety core as `sex`, `age`, `athlete_weight_kg`, `sweat_level`, `saltiness`, `carb_experience`, `usual_carb_consumption`, `intensity_level`, and `thermal_stress_level`, each marked `required: true`. `age` and `athlete_weight_kg` are the calculation-side names for the athlete's `year_of_birth` and `weight_kg`. `satiety_level`, `fitness_level`, `concerns`, `meal_before_min`, and `is_race` come back as `required: false`, and exactness needs all of them.
 </Note>
 
 ## Four ways to collect the profile
 
 ### 1. Hosted onboarding page (recommended start)
 
-An incomplete-profile response for a request with an `athlete_id` can carry `precision.onboarding.url`, a durable athlete-scoped link to Saturday's hosted onboarding page, co-branded with your platform. Check that the URL is present before showing a button, email link, or push action. Requests without an athlete reference do not receive a hosted-onboarding URL.
+An incomplete-profile response for a request with an `athlete_id` can carry `precision.onboarding.url`, a long-lived athlete-scoped link to Saturday's hosted onboarding page, co-branded with your platform. Check that the URL is present before showing a button, email link, or push action. Requests without an athlete reference do not receive a hosted-onboarding URL.
 
 - It asks only the questions that are missing, one per screen, mobile-first, in about two minutes.
 - Each answer commits as it is given, so a half-finished session still narrows the bands.
 - The finish screen asks the athlete's consent to show fuel for their most recent activity. If you have registered an `activity_link_template` on your partner account (`yourapp://activity/{external_id}`, for instance), it deep-links into your activity screen. Otherwise it renders the numbers itself and returns the athlete via your `return_url`.
-- The link stays valid, so athletes can come back and edit their answers.
+- The link stays valid for 90 days, and every later incomplete-profile response carries a fresh one, so athletes can come back and edit their answers.
 
 ### 2. Your UI, our questions (headless)
 

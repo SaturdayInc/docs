@@ -12,7 +12,7 @@ sidebarTitle: 'Quickstart'
 
 **Platform partners:** keys come with your agreement. Contact [api@saturday.fit](mailto:api@saturday.fit).
 
-Keys carry an environment prefix. Production keys start with `sk_live_`, sandbox keys with `sk_test_`, and the two are not interchangeable: a sandbox key does not authenticate against production. See [Authentication](/authentication#environments) for what each environment does and which base URL it uses.
+Keys carry an environment prefix. Production keys start with `sk_live_`, sandbox keys with `sk_test_`. Each environment keeps separate key records, so a key issued by the sandbox does not authenticate against production. See [Authentication](/authentication#environments) for what each environment does and which base URL it uses.
 
 <Note>
   Treat your key like a password. It authenticates every request and spends your daily call allowance.
@@ -189,9 +189,9 @@ A successful response returns a prescription with safety metadata. The request a
 | `sodium_mg_per_hr` | Sodium target in milligrams per hour |
 | `fluid_ml_per_hr` | Fluid target in milliliters per hour |
 | `total_*` | Totals across the whole activity duration |
-| `safety.max_safe_*_per_hr` | Hard ceilings the prescription is held under |
+| `safety.max_safe_*_per_hr` | Advisory thresholds; a prescription above one carries a warning |
 | `safety.confidence_score` | Confidence in this prescription, 0.0 to 1.0 |
-| `safety.requires_human_review` | Set when the case warrants a dietitian's eyes |
+| `safety.requires_human_review` | Always `false` |
 | `safety.warnings` | Safety warnings for this prescription |
 | `safety.not_instructions` | Marks the prescription as guidance, not commands |
 
@@ -203,7 +203,7 @@ A response may also carry a `precision` object describing which profile fields a
 
 ## 4. Teaser and full responses
 
-`tier` reflects the athlete's subscription and trial status, not your key's environment. A partner-key request with no athlete attached returns teaser ranges. A full-tier response can also contain ranges when profile or activity inputs are incomplete; check the returned fields and `precision`, not just `tier`.
+`tier` reflects the athlete's subscription and trial status, not your key's environment. A partner-key request with no athlete attached returns teaser ranges. A full-tier response can also contain ranges when profile or activity inputs are incomplete; check the returned fields and `precision`, not `tier` alone.
 
 | Athlete status | What they get | Example |
 |----------------|---------------|---------|

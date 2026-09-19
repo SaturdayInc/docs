@@ -9,7 +9,7 @@ icon: 'building'
 
 Organizations let partners manage teams of athletes under a single billing structure. This is designed for coaching platforms, team managers, and enterprise partners who onboard athletes in groups.
 
-The examples read your key from a `SATURDAY_API_KEY` environment variable, as in [Quickstart](/quickstart). Sandbox keys are issued with their own base URL; using one against `api.saturday.fit` returns `401 invalid_api_key`.
+The examples read your key from a `SATURDAY_API_KEY` environment variable, as in [Quickstart](/quickstart). Sandbox keys are issued with a separate base URL; using one against `api.saturday.fit` returns `401 invalid_api_key`.
 
 ## Creating an organization
 
@@ -59,7 +59,7 @@ const orgId = org.id;
 | `description` | No | Free text |
 | `sport` | No | Primary sport (e.g. `run`, `bike`, `triathlon`) |
 
-The response includes server-set `id`, `created_at`, `updated_at`, and a maintained `member_count`.
+The response includes server-set `id`, `partner_id`, `created_at`, `updated_at` (Unix seconds), and a maintained `member_count`. Organizations count against your account's organization quota; at the cap the request returns `403` with code `resource_limit_exceeded`.
 
 ## Managing members
 
@@ -104,6 +104,8 @@ const response = await fetch(
 
 </CodeGroup>
 
+The response is `201` with the member: `id`, `email`, `role`, `athlete_id` when linked, and `joined_at` in Unix seconds. `email` is required. Adding the same email twice creates two directory entries; the directory is not deduplicated.
+
 ### Member roles
 
 | Role | Meaning |
@@ -120,7 +122,7 @@ GET /v1/organizations/{org_id}/members
 DELETE /v1/organizations/{org_id}/members/{member_id}
 ```
 
-Removing a member never deletes an athlete profile; it removes the directory entry and decrements `member_count`.
+The list returns every member under `members`, newest first, with `total`. Removing a member never deletes an athlete profile; it removes the directory entry, decrements `member_count`, and returns `204`.
 
 ## Seat subscriptions (team licensing)
 
@@ -141,7 +143,7 @@ POST /v1/organizations/{org_id}/subscriptions
 }
 ```
 
-`type` is `"team"` or `"enterprise"`; dates are unix seconds (`end_date` optional). The response includes `used_seats` (starts at 0) and `status`. Manage with `GET /v1/organizations/{org_id}/subscriptions` and `PATCH .../subscriptions/{sub_id}` (update `seats`, `status`, `end_date`).
+`type` is `"team"` or `"enterprise"`; `seats` must be positive; `start_date` and `end_date` are both required, in Unix seconds, with `end_date` after `start_date`. The response is `201` with the subscription, including `used_seats` (starts at 0) and `status` (`active`). Manage with `GET /v1/organizations/{org_id}/subscriptions`, which returns them under `subscriptions`, and `PATCH /v1/organizations/{org_id}/subscriptions/{sub_id}`, which updates `seats` (positive), `status` (`active`, `expired`, or `cancelled`), and `end_date`.
 
 ### Assign licenses to athletes
 
@@ -157,7 +159,11 @@ POST /v1/organizations/{org_id}/subscriptions/{sub_id}/licenses
 }
 ```
 
-`athlete_id` is required per license (email/name are display metadata); the seat limit is enforced. The licensed athlete's next API call returns full precision. `GET .../licenses` lists assignments; `DELETE .../licenses/{athlete_id}` frees the seat (access degrades on the athlete's next call).
+`athlete_id` is required per license and must name an athlete under your partner account (`404` otherwise); `email` and `name` are display metadata. The request is checked as a whole before anything is written: more licenses than free seats returns `400` with code `seat_limit_exceeded`, and a subscription whose `status` is not `active` returns `400` with code `subscription_inactive`. The response is `201` with the written licenses under `licenses` and their count in `added`.
+
+Licensing writes `org_id` and the subscription onto the athlete record, and the athlete's next API call returns full precision. `GET /v1/organizations/{org_id}/subscriptions/{sub_id}/licenses` lists every license record for the subscription, newest first, including removed ones with `active` set to `false`, so filter on `active` when you want the athletes the seat block covers today.
+
+`DELETE /v1/organizations/{org_id}/subscriptions/{sub_id}/licenses/{athlete_id}` deactivates the license, frees the seat, and returns `200` with `athlete_id` and `removed`. Access degrades on the athlete's next call. It also clears `org_id` from the athlete record, so an athlete who should keep the organization's checkout discount needs `org_id` asserted again afterwards.
 
 ## Organization offers (negotiated discounts)
 
@@ -212,13 +218,13 @@ const response = await fetch(
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `discount_percent` | Yes | `1` to `30`. 30 is the stack cap (see below), and offers above it are rejected up front so you never promise athletes a number checkout won't honor. |
+| `discount_percent` | Yes | `1` to `30`. 30 is the stack cap (see below), and offers above it are rejected with `400 out_of_range` so you never promise athletes a number checkout will not honor. |
 | `applies_to_plan` | No | `"12_month"`, `"1_month"`, or omit to apply to all plans |
 | `negotiated_by` | No | Human label for the audit trail, such as a coach name. Informational, not authentication |
-| `starts_at` / `ends_at` | No | Unix **seconds**. Omit either for an open-ended window |
+| `starts_at` / `ends_at` | No | Unix **seconds**. Omit either for an open-ended window; `ends_at` must be after `starts_at` |
 | `note` | No | Free text: why this discount exists |
 
-The response echoes the stored offer plus `stack_cap_percent`, the hard ceiling on the total stacked discount (currently `30`).
+The response is `200` with the stored offer (`id`, `org_id`, `active`, `created_at`, and the fields you sent) plus `stack_cap_percent`, the hard ceiling on the total stacked discount (`30`).
 
 ### Reading and removing the offer
 
@@ -241,7 +247,7 @@ PATCH /v1/athletes/{athlete_id}
 }
 ```
 
-`org_id` is partner-asserted, the same trust posture as `partner_plan`, and the organization must already exist: pointing at an org you have not created returns `400` rather than silently producing an athlete whose team discount never applies. A seat license is **not** required, since the discount is for the athlete's own purchase and not a license entitlement. Set `org_id` to an empty string to remove the affiliation.
+`org_id` is partner-asserted, the same trust posture as `partner_plan`, and the organization must exist first: pointing at an org you have not created returns `400` rather than silently producing an athlete whose team discount never applies. A seat license is **not** required, since the discount is for the athlete's purchase and not a license entitlement. Set `org_id` to an empty string or `null` to remove the affiliation.
 
 ### Stacking with partner offers
 
@@ -249,7 +255,7 @@ If your platform also has a partner-level offer (e.g. bundle pricing for your an
 
 A 20% partner offer combined with a 15% org offer gives `1 - (0.80 × 0.85) = 32%`, which the cap reduces to 30%.
 
-Checkout applies one combined discount, and Saturday's subscribe landing page shows the stacked percent, the exact number the athlete will pay, along with which sources contributed. See [Freemium Model, How discounts stack](/guides/freemium-model#how-discounts-stack) for the full discount flow.
+Checkout applies one combined discount. See [Freemium Model, How discounts stack](/guides/freemium-model#how-discounts-stack) for the full discount flow.
 
 ## Listing organizations
 
@@ -257,7 +263,7 @@ Checkout applies one combined discount, and Saturday's subscribe landing page sh
 GET /v1/organizations
 ```
 
-Returns all organizations created by your partner account.
+Returns the organizations created by your partner account, newest first, under `organizations`, with a `pagination` object (`total`, `has_more`, `next_cursor`). `limit` defaults to 50 and is capped at 200; pass `cursor` from `next_cursor` for the next page.
 
 ## Updating an organization
 
@@ -272,6 +278,8 @@ PATCH /v1/organizations/{org_id}
 }
 ```
 
+Send only the fields you are changing. `id`, `partner_id`, `created_at`, and `member_count` are server-owned and ignored.
+
 ## Finding an organization's athletes
 
-Athletes reference their organization through the `org_id` field on the athlete record (`POST /v1/athletes` and `PATCH /v1/athletes/{athlete_id}`, see [Organization offers](#organization-offers-negotiated-discounts) above). There is no endpoint that lists an organization's athletes. To build a team roster view, keep your own athlete-to-org mapping as you assert `org_id`, or for licensed teams use the seat-subscription [license list](#assign-licenses-to-athletes): `GET .../licenses` returns exactly the athletes the org covers.
+Athletes reference their organization through the `org_id` field on the athlete record (`POST /v1/athletes` and `PATCH /v1/athletes/{athlete_id}`, see [Organization offers](#organization-offers-negotiated-discounts) above). To build a team roster view, keep an athlete-to-org mapping as you assert `org_id`, or for licensed teams read the seat-subscription [license list](#assign-licenses-to-athletes) and filter on `active`.

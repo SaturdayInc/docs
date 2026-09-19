@@ -138,14 +138,14 @@ The `safety.confidence_score` (0.0-1.0) reports how much of the athlete's fuelin
 To compare fueling across different conditions (a cool morning against a hot afternoon, say), call `POST /v1/nutrition/calculate` once per scenario and diff the results yourself, or use `POST /v1/nutrition/calculate/batch` to submit up to 50 scenarios in a single request. Each scenario in a batch debits your quota individually.
 
 <Note>
-  Two prescription shapes. The `calculate` endpoints return a flat response (`carb_g_per_hr`, `sodium_mg_per_hr`, … with a nested `safety` block). The stored-prescription read (`GET /v1/athletes/{id}/activities/{id}/prescription`) returns a wrapped response: `{ "prescription": { … }, "safety": { … } }`. Read the fields accordingly depending on which endpoint you called.
+  Two prescription shapes. The `calculate` endpoints return a flat response (`carb_g_per_hr`, `sodium_mg_per_hr`, … with a nested `safety` block). The stored-prescription read (`GET /v1/athletes/{id}/activities/{id}/prescription`) returns a wrapped response: `{ "prescription": { … }, "safety": { … } }`. Read the fields according to the endpoint you called.
 </Note>
 
 ## Calculation timing
 
 Every engine run carries a deliberate computation window, the same one athletes see in the Saturday app. Size your loading state around it:
 
-- **Single calculation** (`POST /v1/nutrition/calculate`, `POST .../activities/{id}/calculate`): roughly 1 to 3 seconds, scaling with activity duration and rising with intensity. Recalculating an activity that already has a prescription takes about half as long.
+- **Single calculation** (`POST /v1/nutrition/calculate`, `POST .../activities/{id}/calculate`): roughly 1 to 3 seconds, scaling with activity duration and shorter at low intensity. Recalculating an activity that has a prescription takes about half as long.
 - **Batch** (`POST /v1/nutrition/calculate/batch`): each scenario adds about half a single calculation's time. The response headers arrive immediately with `X-Batch-Estimated-Ms`, the expected total processing time, so you can size a progress indicator before the body lands. The completed body includes `estimated_ms` and `elapsed_ms`.
 - **Estimate without calculating:** send the same batch payload with `"estimate_only": true` to get `estimated_ms` back immediately, with no calculations run and no quota debited. Useful when your HTTP client can't read streamed headers early.
 - **Reads are instant.** Fetching a stored prescription (`GET .../prescription`) carries no computation window.

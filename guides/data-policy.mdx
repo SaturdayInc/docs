@@ -34,7 +34,7 @@ Partners may not use API response data for:
 - **Creating** derivative databases from product catalog data
 
 <Warning>
-  Saturday's prescriptions are the product of 15 years of coaching expertise and a PhD in Sport Physiology. Using API responses to train a competing model is grounds for immediate termination.
+  Using API responses to train or fine-tune a model is grounds for immediate termination.
 </Warning>
 
 ## Response headers
@@ -56,7 +56,7 @@ When displaying teaser/free response data, partners must show "Powered by Saturd
 - **Link**: Attribution must link to `saturday.fit` or the subscription `subscribe_url`
 - **Mark**: use the "Powered by Saturday" logo where it fits; appropriately sized plain text is a valid fallback
 
-Teaser responses carry `X-Saturday-Data-Attribution: required`, and repeat the same terms in the response body's `attribution` object.
+Teaser responses carry `X-Saturday-Data-Attribution: required`. Every calculation response carries an `attribution` object with the text, logo URL, and link to display; its `required` flag is `true` on teaser responses.
 
 ### Full tier (required, lighter)
 
@@ -102,8 +102,11 @@ Saturday provides endpoints for GDPR compliance:
 
 | Endpoint | Right | Description |
 |----------|-------|-------------|
-| `POST /v1/athletes/{id}/export` | Data portability | Export all athlete data as JSON |
-| `DELETE /v1/athletes/{id}` | Right to erasure | Cascading deletion of all data |
+| `POST /v1/athletes/{id}/export` | Data portability | Export the athlete's profile, activities, AI conversations, and consent records as JSON |
+| `POST /v1/athletes/{id}/delete` | Right to erasure | Cascading deletion: revokes connected providers, then deletes the profile, activities, conversations, consent records, and integration tokens |
+| `POST /v1/athletes/{id}/consent`, `GET /v1/athletes/{id}/consent`, `DELETE /v1/athletes/{id}/consent/{consent_id}` | Consent records | Append-only log of consent granted or revoked, by type: `data_processing`, `marketing`, `analytics` |
+
+Use the erasure endpoint for right-to-erasure requests. It deletes immediately, and `DELETE /v1/athletes/{id}` removes the profile record only.
 
 Partners are responsible for responding to athlete data subject requests within the timelines required by applicable law.
 
@@ -114,13 +117,15 @@ Saturday retains athlete data only for as long as the partner account is active,
 - Partner must delete all cached Saturday response data within 30 days
 - Athletes' data remains available for GDPR export for 30 days, then is deleted
 
+The grace period applies to partner-account termination. An erasure request through the API deletes immediately.
+
 ## Product database protection
 
-Saturday's curated product database (186+ endurance nutrition products) is competitive intellectual property. The following protections apply:
+Saturday's curated product database is competitive intellectual property. The following protections apply:
 
 - **All product queries require an `athlete_id`.** There is no anonymous product browsing.
 - **Per-athlete rate limits** apply on product endpoints. Queries past the limit are served with a progressive delay rather than an error, so a legitimate burst still works and a crawl does not.
-- **No bulk export.** Product listing endpoints are cursor-paginated with a maximum page size of 10.
+- **No bulk export.** Search returns at most 10 matches, and the curated list is cursor-paginated with a maximum page size of 10.
 - **All product access is logged** with partner_id, athlete_id, and the query.
 
 Systematic scraping, automated enumeration, or bulk extraction of the product database is grounds for immediate account suspension.

@@ -7,7 +7,7 @@ icon: 'user-group'
 
 # Add assistants
 
-From Pro Coach up, you can bring assistant coaches onto your team to share the roster load. Each assistant gets their own login, their own book of athletes, and whatever powers you delegate to them. You manage the team itself from your [team page](https://coach.saturday.fit/dashboard/team).
+From Pro Coach up, you can bring assistant coaches onto your team to share the roster load. Each assistant has a login, a book of athletes, and whatever powers you delegate to them. You manage the team itself on [Members](https://coach.saturday.fit/admin/members), in the Control panel.
 
 ## Assistants included with each plan
 
@@ -22,12 +22,12 @@ From Pro Coach up, you can bring assistant coaches onto your team to share the r
 Reaching the included count is not a wall. On Pro Coach and Head Coach you can buy additional assistant seats at $10 per seat per month, and they stack on top of the included allotment, so a Pro Coach with three purchased seats can hold four assistants without changing plan. The portal offers the seat inline when you hit the cap. Business and Enterprise have no assistant cap, so the seat add-on does not apply to them.
 
 <Note>
-  **A separate limit governs Business organizations.** A Business org's total coach seats are capped by a fair-use ceiling of 20 coaches, or one coach per five coach-paid athletes, whichever is higher. That ceiling counts coaches across the org, not assistants under one head coach.
+  **A separate limit governs Business organizations.** A Business org's total coach seats are capped by a fair-use ceiling of 20 coaches, or one coach per five coach-paid athletes, whichever is higher. Self-paying athletes do not count toward it. That ceiling counts coaches across the org, not assistants under one head coach.
 </Note>
 
 ## Invite an assistant
 
-From your [team page](https://coach.saturday.fit/dashboard/team), or **Settings → Team**, choose **Invite assistant** and enter their email. When they accept and activate, they appear on your team and can be assigned athletes.
+From [Members](https://coach.saturday.fit/admin/members), choose **Invite assistant coach** and enter their email, or use **Bulk Invite via CSV** with one `email,role` row per coach. When they accept and activate, they appear on your team and can be assigned athletes.
 
 Once an assistant activates, they can read your whole roster, and assigning athletes to them records which ones they own. See [Assign athletes](/coaching/team/assign-athletes) for what assignment does and does not control.
 
@@ -35,17 +35,17 @@ Once an assistant activates, they can read your whole roster, and assigning athl
 
 By default an assistant can coach the athletes assigned to them: view fueling data, read AI reports, and message the athlete. What an assistant cannot do by default:
 
-- Adjust an athlete's Setup. That is its own grant, separate from general athlete access, so an assistant can read and act on an athlete without being able to re-dial their fueling.
-- End an org-paid coverage arrangement. That is a money action reserved for the head coach or org owner, and it has its own toggle.
+- Adjust an athlete's Setup. That is a separate grant from general athlete access, so an assistant can read and act on an athlete without being able to re-dial their fueling.
+- End an org-paid coverage arrangement. That is a money action reserved for the head coach or org owner, and it has a separate toggle.
 - Manage billing or the team itself.
 
 ## Manage your team
 
-| Action | What it does |
-|--------|--------------|
-| Resend invite | Re-send a pending assistant invite |
-| Remove assistant | Take an assistant off the team |
-| Assign athletes or groups | Give an assistant a roster to coach |
+| Action | Where | What it does |
+|--------|-------|--------------|
+| Remove assistant | Members | Takes an assistant off the team. If they coach athletes, you choose how to reassign them first |
+| Assign athletes | Roster | Gives an assistant athletes to own, one at a time or in bulk |
+| Assign a group | Control panel, Groups | Gives an assistant a whole group to see and manage |
 
 Removing an assistant asks for confirmation and then offers an undo.
 

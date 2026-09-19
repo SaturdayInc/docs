@@ -158,6 +158,22 @@
     {
       "source": "/docs/feature-gates",
       "destination": "/guides/feature-gates"
+    },
+    {
+      "source": "/oauth",
+      "destination": "/guides/oauth2"
+    },
+    {
+      "source": "/docs/oauth",
+      "destination": "/guides/oauth2"
+    },
+    {
+      "source": "/mcp",
+      "destination": "/guides/mcp-integration"
+    },
+    {
+      "source": "/webhooks",
+      "destination": "/guides/webhooks"
     }
   ],
   "navbar": {

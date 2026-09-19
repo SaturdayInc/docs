@@ -23,9 +23,9 @@ The fastest setup is a preset applied across your whole roster, which you then r
 
 | Preset | Behavior |
 |--------|----------|
-| **Hands off** | In-portal only, no email or push. The default. |
-| **Balanced** | Core concerns on email in a daily digest. The hyponatremia pattern is turned on and routed in real time, since it is a safety signal. Push stays off. |
-| **Hands on** | All seven triggers on, email and push on, urgent items in real time, and a slightly earlier under-fueling trip point. |
+| **Hands-off** | In-portal only, no email or push. The default. |
+| **Balanced** | Core concerns on email in a daily digest. The hyponatremia pattern is turned on and routed in real time. Push stays off. |
+| **Hands-on** | All seven triggers on, email and push on, urgent items in real time, and a slightly earlier under-fueling trip point. |
 
 ## Then refine by scope
 
@@ -35,7 +35,7 @@ Rules resolve at three scopes, layered from broadest to narrowest:
 - **Group**, one group. Create groups first in your [roster](https://coach.saturday.fit/dashboard).
 - **Athlete**, a single athlete, which wins last.
 
-So you might run Balanced overall, Hands on for your race-prep group, and a custom rule for one athlete you are watching closely.
+So you might run Balanced overall, Hands-on for your race-prep group, and a custom rule for one athlete you are watching closely.
 
 When an athlete belongs to more than one group, Saturday does not pick a group arbitrarily. It reduces across every group the athlete matches and takes the most sensitive setting, then applies any athlete-level override on top.
 
@@ -44,17 +44,17 @@ When an athlete belongs to more than one group, Saturday does not pick a group a
 - **Triggers.** Seven of them: under-fueling, symptoms, low session ratings, a hyponatremia pattern, a dialing-down trend, a sleep trend, and an athlete who has gone quiet.
 - **Thresholds.** The line that counts as a concern, which defaults to the [shared concern cutoff](/coaching/roster/flags-and-groups) of 70% of prescribed, and a separate urgent line for real-time pings, which defaults to 50% for under-fueling. Leave either unset and it inherits the shared cutoff.
 - **Urgent versus digest.** Real time for urgent items, a once-a-day bundle for the rest, one bundle per athlete per day.
-- **Channels.** In-portal, email, and mobile push. SMS is not offered.
-- **Quiet hours.** Suppress non-urgent pings overnight, in your own time zone.
+- **Channels.** In-portal, email, and mobile push.
+- **Quiet hours.** Hold non-urgent pings overnight, in your time zone. The default window is 22:00 to 07:00.
 - **Combinations.** Two-trigger AND rules, for example "ping me only when sodium is short and there is a symptom in the same session". Both legs must be session-level triggers; the sleep trend and the gone-quiet flag describe a window rather than a single session, so they cannot be combined.
 
 <Note>
-  **Webhook delivery is not live yet.** You can select the webhook channel on a rule, and the portal marks it as pending rather than silently dropping it. Managing an organization's webhooks is a Business and Enterprise capability. For programmatic alerting today, use the [Coach API](/guides/coach-api) or the [Claude connector](/guides/coach-connector), which read and write the same rule model the GUI does.
+  A rule can also carry a **webhook** channel, which the portal marks as pending rather than dropping. Managing an organization's webhooks is a Business and Enterprise capability. For programmatic alerting, use the [Coach API](/guides/coach-api) or the [Claude connector](/guides/coach-connector), which read and write the same rule model the GUI does.
 </Note>
 
 ## Payment-failure alerts
 
-You can be alerted when any roster athlete, coach-paid or self-paying, has a payment failure, so an athlete never quietly loses access on your watch. This rule is configured alongside the fueling triggers and carries no percentage threshold. When the athlete is the payer they are alerted too, at a noise level you set, and deep-linked to update their card. Who pays for each athlete is set from the athlete's row menu on your [roster](https://coach.saturday.fit/dashboard), under Cover, Stop covering, and Change payer; see [Take over & relinquish](/coaching/billing/take-over-relinquish) for the grace-window behavior behind this.
+You can be alerted when any roster athlete, coach-paid or self-paying, has a payment failure, so an athlete never quietly loses access on your watch. This rule is configured alongside the fueling triggers, with separate channels and cadence, and carries no percentage threshold. When the athlete is the payer, Saturday also sends them a push about their card, decline-aware and separate from yours. Who pays for each athlete is set from the athlete's row menu on your [roster](https://coach.saturday.fit/dashboard), under Cover, Stop covering, and Change payer; see [Take over & relinquish](/coaching/billing/take-over-relinquish) for the grace-window behavior behind this.
 
 ## See also
 

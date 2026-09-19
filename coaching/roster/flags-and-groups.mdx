@@ -11,15 +11,15 @@ Your [roster](https://coach.saturday.fit/dashboard) surfaces who needs your atte
 
 ## Flags
 
-Each athlete carries a needs-attention summary over a look-back window of 7, 14, or 30 days, defaulting to 14. An athlete who has been fueling well shows no flag. An athlete who crossed a concern cutoff is flagged with the top reasons, such as "Sodium 57%" or "1 symptom".
+Each athlete carries a needs-attention summary over a look-back window of 7, 14, or 30 days, defaulting to 14. An athlete who has been fueling well shows no flag. An athlete who crossed a concern cutoff is flagged with the top reasons, such as "Sodium 57%", "1 symptom", or "rated 2/5".
 
 A missing value is never a flag. An unrated session, an activity with no fueling reported, or a nutrient with no data stays silent rather than counting against the athlete. Only a value that is present and past its cutoff ever flags.
 
 The roster also gives you:
 
 - A last-activity column, sorted on the underlying date rather than the displayed text, so you can see who has gone quiet.
-- A payer-status column showing who funds each athlete's membership. See [Who pays](/coaching/billing/who-pays).
-- Filters for flag, group, payer status, and assigned assistant.
+- A **Who pays** column showing who funds each athlete's membership. See [Who pays](/coaching/billing/who-pays).
+- Filter pills for **Self-paid**, **Coach-paid**, **Org-paid**, **Trial**, **Ending**, **Past-due**, and **Needs attention**, which combine. Groups appear as collapsible sections.
 - Inline actions (cover and uncover, add to group, message) without leaving the roster.
 
 ### The concern cutoffs
@@ -33,23 +33,25 @@ Flags come from one shared concern definition, so the roster markers, the sessio
 | Fueling symptom | Any fueling symptom at severity 2 or higher, on a 0 to 3 scale |
 | Low session rating | A rating of 2 or lower, on a 1 to 5 scale |
 
-You can tune these cutoffs. An alert rule can also carry its own threshold at a given scope, which applies to that alert without moving the roster marker. See [Configuring alerts](/coaching/roster/configuring-alerts).
+You can tune these cutoffs. An alert rule can also carry its threshold at a given scope, which applies to that alert without moving the roster marker. See [Configuring alerts](/coaching/roster/configuring-alerts).
 
 ## Groups
 
-Group athletes however you coach: by squad, by event, by training block such as "70.3 Build". Build and edit groups from the group manager on your [roster](https://coach.saturday.fit/dashboard). A group lets you act on many athletes in one move, message everyone at once, hand the whole group to an assistant coach, and scope alert rules to that group.
+Group athletes however you coach: by squad, by event, by training block such as "70.3 Build". Build and edit groups from the group manager on your [roster](https://coach.saturday.fit/dashboard). A group lets you act on many athletes in one move, message everyone at once, and scope alert rules to that group.
 
-Org admins on Head Coach and above get a second, governance-oriented view at [Control panel, Groups](https://coach.saturday.fit/admin/groups): the whole org group tree, assigning an org group to an assistant, promoting a personal group so the org can share it, and a read-only view of who sees what. Day-to-day grouping still happens on the roster.
+A group is **manual**, where you pick the athletes, or **smart**, where you set rules on sport, fitness level, last activity, subscription, sex, or age range and membership updates as your roster changes.
+
+Org admins on Head Coach and above get a second, governance-oriented view at [Control panel, Groups](https://coach.saturday.fit/admin/groups): the whole org group tree, assigning an org group to an assistant coach, promoting a personal group so the org can share it, and a read-only view of who sees what. Day-to-day grouping still happens on the roster.
 
 ### Working with groups
 
-| Action | What it does |
-|--------|--------------|
-| Create a group | Name it, then add athletes now or later |
-| Add to group (bulk) | Multi-select athletes, then **Add to group** |
-| Assign group to assistant | Delegate a whole group to an assistant coach |
-| Group broadcast | Message everyone in the group |
-| Delete group | Removes the grouping, not the athletes |
+| Action | Where | What it does |
+|--------|-------|--------------|
+| Create a group | Roster | Name it, pick manual or smart, then add athletes now or later |
+| Add to group (bulk) | Roster | Multi-select athletes, then **Add to group** |
+| Assign group to assistant | Control panel, Groups | The assistant sees and manages the group and everyone in it, now and as it changes. Separate from owning individual athletes |
+| Group broadcast | Roster | Message everyone in the group |
+| Delete group | Roster | Removes the grouping, not the athletes |
 
 Deleting a group and removing an athlete both ask for confirmation and then offer an undo before the change is committed.
 
@@ -57,4 +59,4 @@ Deleting a group and removing an athlete both ask for confirmation and then offe
 
 - [The AI report](/coaching/roster/ai-report) for the narrative behind an athlete's flags.
 - [Configuring alerts](/coaching/roster/configuring-alerts) to turn flags into the right pings.
-- [Assign athletes](/coaching/team/assign-athletes) to delegate groups to your team.
+- [Assign athletes](/coaching/team/assign-athletes) to delegate athletes and groups to your team.
