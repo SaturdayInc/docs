@@ -83,6 +83,8 @@ curl -X POST https://api.saturday.fit/v1/partner/api-keys \
 
 `scopes` accepts `["*"]` for unrestricted, `["read"]` for `GET`/`HEAD`/`OPTIONS`, and `["write"]` for `POST`/`PUT`/`PATCH`/`DELETE`. A read-write key needs both listed: `write` does not imply `read`. A request outside a key's scopes gets a `403` with code `insufficient_scope`.
 
+`environment` is optional and defaults to the environment of the host you call: `live` on `api.saturday.fit`, `test` on the sandbox host. Naming the other environment, or any other value, is a `400` with code `invalid_value`, because a key record only ever authenticates on the host that issued it.
+
 <Note>
   Save the key immediately. The full value is returned once at creation. The `id` in that response is what the rotate and revoke endpoints take, so store it with the key.
 </Note>
@@ -154,4 +156,4 @@ Authentication and authorization failures share the standard [error envelope](/e
 | `coach_tier_required` | `authorization_error` | 403 | A `cp_` key whose coach is below Pro Coach |
 | `internal_error` | `api_error` | 503 | Key verification is temporarily unavailable. Retry rather than rotating a working key |
 
-A key used against the wrong environment resolves as `invalid_api_key`, because the key does not exist in that environment's records.
+A key used against the wrong environment fails closed as `invalid_api_key`, and the message names the environment the key was issued for. Each environment keeps separate key records, and a record whose environment is not the host's is refused even if it is present.

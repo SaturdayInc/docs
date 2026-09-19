@@ -619,6 +619,8 @@ Coach API responses identify each athlete by Saturday UID, the same identifier t
 
 Coach requests draw from the coach's bucket: 50 requests per second with a burst of 500, the same whether the call is a REST request to `/v1/coach/*` on either credential or a coach tool used in chat through the connector. Coach tools in chat also pass the connector's shared bucket, as every connector call does. The billing reads share the coach bucket with the rest of the coach surface. Athlete tools used in the same chat, and a coach token's athlete-self calls on `/v1/athletes/*`, keep the per-athlete bucket that applies to every athlete-delegated caller. A roster pull or digest is one request whatever the roster size. Every response carries the rate-limit headers and a `429` carries `Retry-After`; see [rate limiting](/rate-limiting).
 
+A coach API key reaches `/v1/coach/*` only; on any other endpoint it is refused with `403 insufficient_scope`.
+
 ## SDKs
 
 Both the [TypeScript](https://github.com/SaturdayInc/saturday-node) and [Python](https://github.com/SaturdayInc/saturday-python) SDKs expose the coach surface as a `coach` resource:

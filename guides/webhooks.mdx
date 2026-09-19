@@ -138,6 +138,7 @@ Every delivery has this envelope. `id` is a UUID and `created_at` is a Unix time
   "type": "prescription.calculated",
   "created_at": 1765467600000,
   "data": {
+    "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "tier": "full",
     "carb_g_per_hr": 60,
     "sodium_mg_per_hr": 500,
@@ -165,11 +166,11 @@ What `data` carries depends on the event:
 | `athlete.deleted` | `athlete_id` only |
 | `activity.created`, `activity.updated` | The activity record |
 | `activity.deleted` | `athlete_id` and `activity_id` only |
-| `prescription.calculated` | From `POST /v1/nutrition/calculate`: the calculate response, at whichever tier the caller received, teaser included. From an activity calculation: the stored prescription (`carb_g_per_hr`, `sodium_mg_per_hr`, `fluid_ml_per_hr`, the three totals, `calculated_at`) |
+| `prescription.calculated` | From `POST /v1/nutrition/calculate`: the calculate response, at whichever tier the caller received, teaser included, plus `athlete_id` when the request named an athlete. From an activity calculation: the stored prescription (`carb_g_per_hr`, `sodium_mg_per_hr`, `fluid_ml_per_hr`, the three totals, `calculated_at`) plus `athlete_id` and `activity_id` |
 | `feedback.submitted` | The feedback record: `rating`, `notes`, `created_at` |
 | `subscription.created`, `subscription.cancelled` | The payloads above |
 
-The prescription payload names no athlete or activity. A calculation you trigger through the API is identifiable by its response; the webhook is the signal that one ran.
+A calculation with no athlete (a `POST /v1/nutrition/calculate` without `athlete_id`) carries neither id; `tier` tells you which tier the caller received.
 
 Athlete, activity, and event identifiers are all UUIDs; they carry no prefix, so do not pattern-match on one.
 

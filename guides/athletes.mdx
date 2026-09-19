@@ -179,7 +179,7 @@ The settings object is written as a unit. Send the athlete's complete settings o
 
 The same replacement rule applies if you send a `settings` object through `PATCH /v1/athletes/{id}`.
 
-On update and on calculate, Saturday rejects `carb_upper_limit_override` outside 50-150 g/hr and `weight_kg` outside 20-250 with a 400 rather than clamping, so a bad value in your data surfaces at the boundary instead of distorting a prescription.
+On create, on update and on calculate, Saturday rejects `carb_upper_limit_override` outside 50-150 g/hr and `weight_kg` outside 20-250 with a `400` of code `out_of_range` rather than clamping, so a bad value in your data surfaces at the boundary instead of distorting a prescription. Batch create reports the same code per item.
 
 ## Deleting an athlete
 
@@ -189,7 +189,7 @@ Two endpoints delete, and they are not interchangeable.
 DELETE /v1/athletes/{id}
 ```
 
-Removes the athlete document only. Their activities, prescriptions, and feedback stay in storage.
+Removes the athlete from your roster together with everything stored under them: activities, prescriptions, feedback, AI conversations, consent records, integration tokens, and gear. Connected providers are not told, and the request is not filed with the data warehouse.
 
 ```bash
 POST /v1/athletes/{id}/delete
@@ -198,7 +198,7 @@ POST /v1/athletes/{id}/delete
 The erasure path. It deauthorizes connected providers, purges the athlete's subcollections (activities, conversations, consent, integrations), and files the request the data warehouse honors.
 
 <Warning>
-  Use `POST /v1/athletes/{id}/delete` for a GDPR erasure request. `DELETE` alone leaves the athlete's activity data behind. Neither can be undone.
+  Use `POST /v1/athletes/{id}/delete` for a GDPR erasure request. `DELETE` clears your copy of the athlete but does not revoke their provider connections or notify the data warehouse. Neither can be undone.
 </Warning>
 
 ## Data export (GDPR)
