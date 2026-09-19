@@ -29,11 +29,11 @@ There are two ways to reach Saturday's MCP server, depending on who you are:
 
 | You are | Auth | What you get |
 |---------|------|--------------|
-| A **partner** (e.g. an AI platform) | `sk_*` partner key | Your partner-scoped tools over your own `partners/{id}` athletes |
-| A **person** (athlete or coach) | "Sign in with Saturday" OAuth via the [Claude connector](/guides/coach-connector) | Your own data (athlete) and, for coaches, your roster + config |
+| A **partner** (e.g. an AI platform) | `sk_*` partner key | Your partner-scoped tools over the athletes under your partner account |
+| A **person** (athlete or coach) | "Sign in with Saturday" OAuth via the [Claude connector](/guides/coach-connector) | Your data (athlete) and, for coaches, your roster + config |
 
 <Note>
-  **End users connect via the Claude connector, not an API key.** If you're an individual athlete or coach connecting your own Saturday account to Claude, see the [Claude Connector guide](/guides/coach-connector): you paste `https://api.saturday.fit/mcp` into Claude and sign in, with no API key. The configuration below is for **partners** integrating their platform with a partner API key.
+  **End users connect via the Claude connector, not an API key.** If you're an individual athlete or coach connecting your Saturday account to Claude, see the [Claude Connector guide](/guides/coach-connector): you paste `https://api.saturday.fit/mcp` into Claude and sign in, with no API key. The configuration below is for **partners** integrating their platform with a partner API key.
 </Note>
 
 ### Server configuration (partners)
@@ -54,59 +54,87 @@ Add Saturday to your MCP client configuration with your partner API key:
 }
 ```
 
-The server speaks the MCP **Streamable HTTP** transport and protocol revision **2025-11-25** (negotiating down to older revisions a client offers).
+### Protocol
+
+The server speaks the MCP **Streamable HTTP** transport: JSON-RPC 2.0 over `POST /mcp`, answered as `application/json`. A `GET /mcp` returns `405` with `Allow: POST`, the signal that tells a client probing for the older HTTP+SSE transport to fall back. Request bodies are capped at 1 MB.
+
+It advertises protocol revision **2025-11-25** and negotiates down to 2025-06-18, 2025-03-26, or 2024-11-05 when `initialize` offers one of those. An `MCP-Protocol-Version` header naming any other revision returns `400`; with no header the server assumes 2025-03-26. The resolved revision is echoed back in the same header on every response.
+
+The methods served are `initialize`, `notifications/initialized`, `tools/list`, `tools/call`, `prompts/list`, and `prompts/get`; anything else returns JSON-RPC `-32601`. `initialize` returns `instructions`, standing guidance that tells the model to gather inputs, call Saturday's tools, and report their output rather than improvise fueling advice. Hosts that honor the field surface it automatically.
+
+An unauthenticated `POST /mcp` returns `401` with a `WWW-Authenticate` challenge pointing at the OAuth discovery document; see [Discovery](/guides/oauth2#discovery-remote-mcp-connectors).
 
 ### Tool catalog
 
-When your agent connects, it discovers tools including:
+Every connection sees the tools below, minus those whose feature gate is closed for the caller. Each tool carries a description, a `title`, a structured `inputSchema`, and MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`). Tool arguments use the same snake_case names as the REST API, and a result arrives as the REST response body in `content[0].text`, with `isError` set on failure.
 
-| Tool | Description |
-|------|-------------|
-| `calculate_nutrition` | Calculate fuel/hydration/electrolyte prescription for an activity |
-| `search_products` | Search the curated nutrition product database |
-| `analyze_product_fit` | Score how well a product covers an athlete's prescription |
-| `get_athlete` / `update_athlete` | Read or update an athlete's profile and settings |
-| `create_activity` | Create an activity for an athlete |
-| `calculate_activity_prescription` | Calculate the prescription for an existing activity |
-| `get_activity_prescription` | Get the stored prescription for an activity |
-| `build_bottling_plan` | Turn a prescription into a concrete, bottle-by-bottle mix plan (renders the [Bottle Builder app](#bottle-builder-interactive-mcp-app)) |
-| `record_bottling_choice` | Persist the athlete's chosen bottling plan |
-| `infer_activity_type` | Infer activity type from metadata |
-| `search_knowledge` | Search Saturday's sports nutrition knowledge base |
+| Tool | What it does | Gate |
+|------|--------------|------|
+| `calculate_nutrition` | Fuel, hydration, and electrolyte targets for an activity described inline, or for a stored athlete via `athlete_id` | |
+| `create_athlete` | Create an athlete under the partner account | |
+| `get_athlete` | Read an athlete's profile and fueling settings | |
+| `list_athletes` | Page through the partner's athletes | |
+| `update_athlete` | Partial update of an athlete; `settings` replaces the whole settings object | |
+| `create_activity` | Record a training activity or race for an athlete | |
+| `list_activities` | Page through an athlete's activities | |
+| `get_activity` | One activity with its stored prescription and feedback | |
+| `calculate_activity_prescription` | Calculate and store the prescription for a stored activity | |
+| `get_activity_prescription` | Read a stored prescription | |
+| `search_products` | Search the curated catalog by name, brand, type, or keyword | `products` |
+| `list_curated_products` | Page through the curated catalog, ten products per page | `products` |
+| `list_product_categories` | The product taxonomy, optionally filtered by keyword | `products` |
+| `analyze_product_fit` | Servings of a product needed to cover an athlete's prescription for an activity | `products` |
+| `search_knowledge` | Search Saturday's sports nutrition knowledge base | `ai_coach` |
+| `get_athlete_insights` | AI-generated insights from an athlete's history | `ai_data` |
+| `list_activity_types` | The supported sports and their algorithms | |
+| `infer_activity_type` | Classify an activity from its title, description, or metadata | |
+| `build_bottling_plan` | Turn prescription totals into a bottle-by-bottle plan | `bottling` |
+| `record_bottling_choice` | Persist the plan the athlete committed to | `bottling` |
+
+The gate column names the feature whose stage decides visibility for your partner account; `products`, `ai_coach`, and `ai_data` are described on the [Feature Gates](/guides/feature-gates) page, and `bottling` is raised per partner. A gated tool is absent from `tools/list` and a call to it returns the same "unknown tool" error as a name that never existed, so absence from `tools/list` is the answer, not an error to retry. Call `tools/list` rather than hardcoding the catalog.
+
+On an athlete-delegated connection (the Claude connector), `create_athlete` and `list_athletes` are listed but rejected with `athlete_scope`: the token manages one athlete, and any `athlete_id` argument naming a different athlete is rejected the same way.
 
 <Note>
   **Product tools follow the athlete's subscription.** `search_products`,
   `list_curated_products`, and `analyze_product_fit` take an optional `athlete_id`
   and answer at that athlete's tier. A connection where the caller *is* the
-  athlete (the Claude connector) resolves it from their own account and never
+  athlete (the Claude connector) resolves it from the signed-in account and never
   needs to pass one; a platform integration on a partner key passes the athlete's
   id, and gets the category tier until it does. See
   [Freemium Model](/guides/freemium-model#the-product-catalog).
 </Note>
 
-That is a slice, not the catalog. An athlete connection currently exposes about twenty tools, a coach connection more (see the coach note below), and the set moves as features ship, so call `tools/list` rather than hardcoding it. Each tool carries a description, a structured input schema, and MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`).
+### Bottling plans
 
-Some tools are feature-gated and simply do not appear on connections that lack the feature, including the two bottling tools below. A tool you cannot see is also not callable, so absence from `tools/list` is the answer, not an error to retry.
-
-### Bottle Builder (interactive MCP App)
-
-`build_bottling_plan` is an **[MCP App](https://modelcontextprotocol.io/)**: alongside its structured result it returns an interactive HTML view (resource `ui://saturday/bottle-builder`) that renders inline in supporting clients such as Claude.ai. The athlete can drag a strategy slider (even, balanced, or concentrated), move fuel between bottles, adjust fill levels, edit their own vessels, and watch carbs, sodium, and scoop amounts recompute live. When the target will not fit the bottles on hand, it returns a "carry it more concentrated, top up with water" plan rather than a dead end. Clients that don't render MCP App views still receive the full plan as text and structured content.
+`build_bottling_plan` takes `carb_g`, `sodium_mg`, `fluid_ml`, and `duration_min` from a prescription, plus optional `activity_id`, `activity_type`, `strategy`, `vessel_count`, `vessels`, and `products`, and returns the plan twice: as text in `content`, and as `structuredContent` carrying the `plan` object with a `createdAt` and `seq` election key, the `products` you passed, and the athlete's `saved` carriage context when one exists. `strategy` is `evenly`, `concentrate`, or `goldilocks` (the default, which balances the two). When the totals will not fit the vessels, the plan carries an escalation state: carry it more concentrated and top up with water, rather than a dead end. `record_bottling_choice` takes the committed `plan` object back, once, when the athlete settles on it.
 
 <Note>
-  **Coach tools.** When a **coach on Pro Coach tier or higher** (Pro Coach, Head Coach, Business, or Enterprise) connects via the [Claude connector](/guides/coach-connector), an additional set of roster and configuration tools appears: `get_roster`, `get_roster_digest`, `get_athlete_fueling_rollup`, `get_athlete_report`, `get_session_detail`, `get_notification_rules`, `set_notification_rules`, `apply_alert_preset`, `get_report_settings`, `set_report_settings`, `list_webhooks`, `register_webhook`, and `delete_webhook`. These are invisible to athlete-only users and to other partners, and tier is re-checked per request, so a lapsed coach loses them without an error. See the [Claude Connector guide](/guides/coach-connector) for the full coach tool catalog and the [Coach API](/guides/coach-api) for the equivalent REST surface.
+  **Coach tools.** When a **coach on Pro Coach tier or higher** (Pro Coach, Head Coach, Business, or Enterprise) connects via the [Claude connector](/guides/coach-connector), an additional set of roster and configuration tools appears: `get_roster`, `get_roster_digest`, `get_athlete_fueling_rollup`, `get_athlete_report`, `get_session_detail`, `get_notification_rules`, `set_notification_rules`, `apply_alert_preset`, `get_report_settings`, `set_report_settings`, `list_webhooks`, `register_webhook`, and `delete_webhook`. These are invisible to athlete-only users and to other partners, and tier is re-checked per request, so a lapsed coach loses them without an error. Every athlete argument is confined to the coach's roster. See the [Claude Connector guide](/guides/coach-connector) for the full coach tool catalog and the [Coach API](/guides/coach-api) for the equivalent REST surface.
 
-  The webhook tools are the one place where being able to call a tool does not mean it will do anything. Registration succeeds on any coach tier and hands back a signing secret and an endpoint marked active, but concern events are only delivered to coaches on **Business or Enterprise**. On Pro Coach or Head Coach the endpoint stays quiet, with nothing on the endpoint object to say why.
+  The webhook tools are the one place where being able to call a tool does not mean it will do anything. Registration succeeds on any coach tier and hands back a signing secret and an endpoint marked active, but concern events are delivered only to coaches on **Business or Enterprise**; delivery re-reads the tier each time, so a Pro Coach or Head Coach endpoint stays quiet.
 </Note>
+
+## Prompts
+
+The server advertises the `prompts` capability with two static prompts, which hosts with a prompt picker surface as one-click starters. `prompts/get` returns a single user message phrased as the athlete's request, which starts the tool chain: profile, prescription, then bottles.
+
+| Prompt | Arguments |
+|--------|-----------|
+| `fuel_plan` | `activity` and `duration` (required), `conditions` |
+| `build_bottles` | `activity` and `duration` (required), `vessels` |
+
+An unknown prompt name or a missing required argument returns JSON-RPC `-32602`.
 
 ## Example: Claude agent with Saturday MCP
 
-Here's how a Claude-powered agent might use Saturday's tools in a conversation:
+How a Claude-powered agent might use Saturday's tools in a conversation:
 
 **Athlete asks:** "I have a 3-hour bike race on Saturday. It's going to be 30C and humid. What should I eat?"
 
 **Agent's tool calls:**
 1. `calculate_nutrition` with `{activity_type: "bike", duration_min: 180, intensity_level: 8, is_race: true, thermal_stress_level: 8}`
-2. `search_products` with `{query: "gel"}` (matched against product name, brand, type, and keywords)
+2. `search_products` with `{query: "gel"}` (matched against product name, brand, type, and keywords, ten results at most)
 
 **Agent synthesizes:** Uses Saturday's prescription + product results + safety warnings to give a complete race-day fueling plan.
 
@@ -120,7 +148,7 @@ Three constraints run through them:
 - Safety warnings must be surfaced to the user.
 - The `not_instructions: true` field on a result means "present this to the human, do not execute it".
 
-Read the live descriptions from `tools/list` rather than copying them into your own prompt: they change, and the copy in your prompt will not.
+Read the live descriptions from `tools/list` rather than copying them into your prompt: they change, and the copy in your prompt will not.
 
 ## Tool call example
 
@@ -220,8 +248,8 @@ When building AI agents that consume Saturday via MCP:
 
 - **Don't autonomously act on prescriptions** (e.g., auto-ordering supplements)
 - **Don't strip safety metadata** from results before presenting to users
-- **Don't modify prescription numbers** based on your own logic
-- **Don't use response data for ML training.** This violates Saturday's data policy
+- **Don't modify prescription numbers.** Report what Saturday returned
+- **Don't use response data for ML training.** The [data policy](/guides/data-policy) forbids it
 - **Don't make excessive tool calls.** Batch when possible
 
 ## LLM discoverability
