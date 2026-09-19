@@ -9,7 +9,7 @@ icon: 'toggle-on'
 
 Saturday's API features progress through launch stages. The stage controls a feature's visibility, who can reach it, and what stability you can expect from it.
 
-Not all API features ship at the same time. When you integrate Saturday, some features are in early access (alpha), some in public beta, and some stable (GA). If an endpoint returns a `404` when you expect it to work, check the feature stage: it may be in STEALTH or require alpha access.
+Features ship at different times: some are in early access (alpha), some in public beta, and some stable (GA). If an endpoint returns a `404` when you expect it to work, check the feature stage: it may be in STEALTH or require alpha access.
 
 ## Launch stages
 
@@ -70,22 +70,24 @@ X-Saturday-Feature-Stage: DEPRECATED
 Deprecation: true
 ```
 
-The `Deprecation` header follows [RFC 8594](https://www.rfc-editor.org/rfc/rfc8594). Sunset dates are announced per feature; ask at [api@saturday.fit](mailto:api@saturday.fit) if a feature you depend on is marked deprecated.
+The `Deprecation` header carries `true`. Sunset dates are announced per feature; ask at [api@saturday.fit](mailto:api@saturday.fit) if a feature you depend on is marked deprecated.
 
 ## The feature keys
 
-Five keys carry a stage. Each covers the routes listed beside it.
+Five keys gate REST routes. Each covers the routes listed beside it.
 
 | Feature | What it controls | Shipped default |
 |---------|-----------------|-----------------|
 | `nutrition` | Fuel/hydration/electrolyte calculation, prep, inference | ALPHA |
-| `products` | Curated product database (186+ products) | ALPHA |
+| `products` | Curated product database | ALPHA |
 | `gear` | Gear management CRUD (bottles, flasks) | STEALTH |
 | `ai_coach` | AI coaching with SSE streaming | STEALTH |
 | `ai_data` | AI-generated insights, churn risk, ML bias | STEALTH |
 
+Two more keys gate MCP tools rather than REST routes: `coach` (the coach tools, which also require a coach principal on the request) and `bottling` (`build_bottling_plan` and `record_bottling_choice`). Neither has a shipped default, so each is STEALTH until set in configuration.
+
 <Warning>
-  The right-hand column is the default the gateway falls back to, not a statement about production. Each environment stores its own stages in configuration, and a per-partner override can raise a single partner above the global stage. Read `GET /v1/` for what your key can actually reach today.
+  The right-hand column is the default the gateway falls back to, not a statement about production. Each environment stores stages in configuration, and a per-partner override can raise a single partner above the global stage. Read `GET /v1/` for what your key can reach today.
 </Warning>
 
 Stage changes are made in configuration rather than by deploying, and propagate within 5 minutes.
@@ -127,4 +129,4 @@ The response lists the reachable endpoints, marking alpha-stage ones. Features i
 | `X-Saturday-Feature-Stage` | ALPHA, BETA, DEPRECATED | Stage name |
 | `X-Saturday-Alpha-Notice` | ALPHA (on allowlist) | Stability warning + support contact |
 | `X-Saturday-Beta-Notice` | BETA | Breaking changes warning |
-| `Deprecation` | DEPRECATED | `true` (RFC 8594) |
+| `Deprecation` | DEPRECATED | `true` |

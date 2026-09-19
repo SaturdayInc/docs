@@ -9,7 +9,7 @@ icon: 'plug'
 
 Saturday publishes a remote MCP connector for [Claude](https://claude.ai). There is one connector and one URL; which tools appear depends on who signs in.
 
-- An **athlete** (any active Saturday subscriber) gets self-tools over their own data.
+- An **athlete** (any active Saturday subscriber) gets self-tools over the signed-in account's data.
 - A **coach** (Pro Coach tier or above) additionally gets roster and config tools.
 
 A coach is also an athlete, so a coach sees both tool sets. An athlete-only subscriber never sees the coach tools.
@@ -22,7 +22,7 @@ In Claude, add a custom connector pointing at:
 https://api.saturday.fit/mcp
 ```
 
-Claude auto-discovers Saturday's authorization server (RFC 9728 / RFC 8414 discovery), walks you through **"Sign in with Saturday,"** and shows a branded consent screen. A coach granting access sees an explicit disclosure that Claude will be able to read their athletes' fueling data and manage their alert settings.
+Claude auto-discovers Saturday's authorization server (RFC 9728 / RFC 8414 discovery), walks you through **"Sign in with Saturday,"** and shows a branded consent screen. A coach granting access sees an explicit disclosure that Claude will be able to read their athletes' fueling data and manage their alert settings, and will never write to an athlete's training data.
 
 <Note>
   **Subscriber wall.** Only an active Saturday subscriber can complete the connect flow. A non-subscriber sees a "subscription required" page carrying a **Subscribe** link to plans and a **"Use a different account"** option for re-authenticating after signing in with the wrong account. Nothing is written to their account. A lapsed subscriber loses access within about an hour, on the next token refresh (access tokens live one hour).
@@ -34,12 +34,12 @@ The connector speaks the MCP Streamable HTTP transport (`POST /mcp`) and protoco
 
 ## Athlete tools
 
-When an athlete connects, Claude can read and write their own Saturday data. Athlete tools operate strictly on the signed-in athlete; there is no athlete selector. The full catalog is in [MCP Integration](/guides/mcp-integration#tool-catalog). Highlights:
+When an athlete connects, Claude can read and write that athlete's Saturday data. Athlete tools operate strictly on the signed-in athlete; there is no athlete selector. The full catalog is in [MCP Integration](/guides/mcp-integration#tool-catalog). Highlights:
 
-- `get_athlete`, `update_athlete` read and update their own profile.
-- `list_activities`, `get_activity`, `create_activity` manage their own activities.
+- `get_athlete`, `update_athlete` read and update the athlete's profile.
+- `list_activities`, `get_activity`, `create_activity` manage the athlete's activities.
 - `calculate_activity_prescription`, `get_activity_prescription` ask Saturday's engine to compute the prescription. It is never writable by hand.
-- `build_bottling_plan`, `record_bottling_choice` turn the prescription into a bottle-by-bottle mix plan. `build_bottling_plan` renders the interactive [Bottle Builder app](/guides/mcp-integration#bottle-builder-interactive-mcp-app).
+- `build_bottling_plan`, `record_bottling_choice` turn the prescription into a bottle-by-bottle plan the athlete owns and edits in Saturday, and record the plan they commit to. [Bottling plans](/guides/mcp-integration#bottling-plans) has the arguments and result shape.
 - `calculate_nutrition`, `search_products`, `analyze_product_fit`, `get_athlete_insights`, `search_knowledge`.
 
 <Warning>
@@ -48,7 +48,7 @@ When an athlete connects, Claude can read and write their own Saturday data. Ath
 
 ## Coach tools
 
-A Pro Coach or above additionally sees the tools below. Every athlete argument is confined to the coach's roster (a non-roster athlete returns "resource not found"). They cover the same operations as the [Coach REST API](/guides/coach-api), with one gap: the REST surface can disable and re-enable a webhook endpoint, and the connector cannot.
+A Pro Coach or above additionally sees the tools below. Every athlete argument is confined to the coach's roster (a non-roster athlete returns "resource not found"). They cover the same reads and configuration writes as the [Coach REST API](/guides/coach-api); disabling and re-enabling a webhook endpoint is a REST operation.
 
 ### Read tools
 
@@ -71,11 +71,11 @@ A Pro Coach or above additionally sees the tools below. Every athlete argument i
 | `apply_alert_preset` | `preset`, `scope?`, `scope_id?` | apply `hands_off` / `balanced` / `hands_on` |
 | `get_report_settings` | `scope?`, `scope_id?` | read AI-report + concern settings |
 | `set_report_settings` | `settings`, `scope?`, `scope_id?` | upsert report window/focus + concern cutoffs |
-| `list_webhooks` | none | list webhook endpoints (no secrets) |
+| `list_webhooks` | `active_only?` | list webhook endpoints (no secrets); `active_only` narrows to active ones |
 | `register_webhook` | `url`, `events?` | register an endpoint; returns the signing secret once |
 | `delete_webhook` | `webhook_id` | delete an endpoint |
 
-`scope` is `overall` (whole roster), `group` (a coach group), or `athlete` (one athlete), and the most specific scope wins. `scope_id` is required for `group` and `athlete`.
+`scope` is `overall` (whole roster), `group` (a coach group), or `athlete` (one athlete), and the most specific scope wins. `scope_id` is required for `group` and `athlete`. For `scope: "athlete"`, `scope_id` is checked against the roster the same way an `athlete_id` is.
 
 Config writes are idempotent: `set_notification_rules` replaces the rule set at a scope, so re-running the same call is a no-op, and the MCP path needs no idempotency key.
 
@@ -97,7 +97,7 @@ Claude translates that into:
 
 ## Lapsed coach
 
-If a coach's tier lapses mid-session, the coach tools disappear on the next entitlement check while the athlete self-tools remain, since the coach is still a subscriber. The result is a degrade to their own data, with no error and no broken state. Webhook deliveries to an unentitled coach stop.
+If a coach's tier lapses mid-session, the coach tools disappear on the next request while the athlete self-tools remain, since the coach is still a subscriber. The result is a degrade to the coach's athlete data, with no error and no broken state. Webhook deliveries to an unentitled coach stop.
 
 ## See also
 
