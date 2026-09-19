@@ -33,7 +33,7 @@ The prefix encodes both the principal and the environment, so a misrouted key fa
 
 Coach keys (`cp_*`) are minted in the [coach portal](https://coach.saturday.fit) under **[API Keys](https://coach.saturday.fit/admin/api-keys)**, not via `api@saturday.fit`. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster and configuration. A coach whose subscription lapses below Pro Coach loses `cp_` key access on the next request.
 
-Coach keys use a separate scope vocabulary, chosen at mint time in the portal: `roster:read`, `roster:write`, `reports:read`, `org:read`, `org:write`, `org:admin`, `webhooks:manage`. That is a different model from the partner-key scopes below, and the two do not mix.
+Coach keys use a separate scope vocabulary, chosen at mint time in the portal: `roster:read`, `roster:write`, `reports:read`, `org:read`, `org:write`, `org:admin`, `webhooks:manage`, `billing:read`. That is a different model from the partner-key scopes below, and the two do not mix. The portal offers each coach only the scopes their role and plan can mint.
 
 ```bash
 curl -H "Authorization: Bearer $SATURDAY_API_KEY" \

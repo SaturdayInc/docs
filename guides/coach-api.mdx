@@ -7,7 +7,7 @@ icon: 'users'
 
 # Coach API
 
-The Coach API exposes a coach's Saturday surface over a coach-scoped REST API, and over an [MCP connector](/guides/coach-connector): the per-athlete fueling rollup, AI reports, the roster's needs-attention markers, and the notification and alerting settings.
+The Coach API exposes a coach's Saturday surface over a coach-scoped REST API, and over an [MCP connector](/guides/coach-connector): the per-athlete fueling rollup, AI reports, the roster's needs-attention markers, the notification and alerting settings, and a read-only view of the coach's billing.
 
 It is built for a coach who wants to automate fueling monitoring: read who needs attention, pull a report, and configure alert rules and digests across a whole roster programmatically.
 
@@ -38,7 +38,7 @@ OAuth2 coaches use the [connector OAuth flow](/guides/oauth2) with coach scopes 
 
 ## Scopes and capabilities
 
-A coach token or key carries scopes, and each scope confers one or more of four capabilities. A route is reachable only when the credential confers the capability it requires; otherwise it returns the uniform `404`.
+A coach token or key carries scopes, and each scope confers one or more of five capabilities. A route is reachable only when the credential confers the capability it requires; otherwise it returns the uniform `404`.
 
 | Capability | OAuth scope | Endpoints |
 |------------|-------------|-----------|
@@ -46,23 +46,27 @@ A coach token or key carries scopes, and each scope confers one or more of four 
 | Read reports | `coach:reports` | `GET /v1/coach/roster/digest`, `GET /v1/coach/athletes/{athlete_uid}/report` |
 | Configure alerts and reports | `coach:alerts` | `GET` and `PUT /v1/coach/config/notification-rules`, `POST /v1/coach/config/preset`, `GET` and `PUT /v1/coach/config/report-settings` |
 | Manage webhooks | `coach:webhooks` | `GET` and `POST /v1/coach/webhooks`, `DELETE /v1/coach/webhooks/{id}`, `POST /v1/coach/webhooks/{id}/disable`, `POST /v1/coach/webhooks/{id}/enable` |
+| Read billing | none (API keys only) | `GET /v1/coach/billing/seat-state`, `GET /v1/coach/billing/ledger`, `GET /v1/coach/billing/tier-status`, `GET /v1/coach/billing/connect/summary`, `GET /v1/coach/billing/connect/earnings`, `GET /v1/coach/billing/connect/transactions`, `GET /v1/coach/billing/connect/arrangements` |
 
 Reading config takes the same capability as writing it: a credential without it gets `404` from `GET /v1/coach/config/notification-rules` as well as from `PUT`.
 
-An API key's scopes, chosen when the key is minted in the portal, map onto the same four capabilities:
+An API key's scopes, chosen when the key is minted in the portal, map onto the same capabilities. Billing is reachable with an API key only; the OAuth connector has no billing scope.
 
-| API-key scope | Read roster | Read reports | Configure alerts and reports | Manage webhooks |
-|---------------|-------------|--------------|------------------------------|-----------------|
-| `roster:read` | Yes | | | |
-| `roster:write` | Yes | | Yes | |
-| `reports:read` | | Yes | | |
-| `org:read` | Yes | Yes | | |
-| `org:write` | Yes | Yes | Yes | |
-| `org:admin` | Yes | Yes | Yes | Yes |
-| `webhooks:manage` | | | | Yes |
-| `*` (keys minted before scoped keys existed) | Yes | Yes | Yes | Yes |
+| API-key scope | Read roster | Read reports | Configure alerts and reports | Manage webhooks | Read billing |
+|---------------|-------------|--------------|------------------------------|-----------------|--------------|
+| `roster:read` | Yes | | | | |
+| `roster:write` | Yes | | Yes | | |
+| `reports:read` | | Yes | | | |
+| `org:read` | Yes | Yes | | | |
+| `org:write` | Yes | Yes | Yes | | |
+| `org:admin` | Yes | Yes | Yes | Yes | |
+| `webhooks:manage` | | | | Yes | |
+| `billing:read` | | | | | Yes |
+| `*` (keys minted before scoped keys existed) | Yes | Yes | Yes | Yes | |
 
-Scopes union: a key with several scopes holds every capability any of them confers, and nothing more. `roster:write` also reads the roster, since configuring alerts against a roster means seeing it. `roster:read` alone does not open the report routes; add `reports:read`, or pick `org:read` or higher.
+Scopes union: a key with several scopes holds every capability any of them confers, and nothing more. `roster:write` also reads the roster, since configuring alerts against a roster means seeing it. `roster:read` alone does not open the report routes; add `reports:read`, or pick `org:read` or higher. Billing is never bundled: only a key that carries `billing:read` reads billing, whatever else it carries, so a key built for roster automation cannot see money unless the coach ticked that scope.
+
+The portal offers each coach only the scopes their role and plan can mint. `webhooks:manage` needs a coaching role and the Pro Coach plan or higher; `org:admin` needs an organization owner or admin role; `billing:read` needs the role that sees the portal's Billing pages. A solo coach on Business mints everything except `org:admin`.
 
 <Warning>
   **Roster confinement.** Every `{athlete_uid}` you pass is checked against your roster. An athlete who isn't on your roster, and an athlete who doesn't exist, both return `404 resource_not_found`. The two cases are indistinguishable, so the API never reveals whether an athlete exists.
@@ -385,13 +389,235 @@ Each delivery is a `POST` carrying the event name in `X-Saturday-Event-Type` and
 
 Each event is delivered once. A non-2xx response or a connection failure is recorded and counts toward the endpoint's `fail_count`; a 2xx resets it, and the endpoint is disabled automatically after 15 consecutive failures. Re-enabling it clears the count.
 
+## Billing (read-only)
+
+A key carrying `billing:read` reads the figures the portal's Billing pages show, for the coach who minted the key: their seats, their financial ledger, their platform subscription, and their Stripe Connect earnings. Every amount is an integer number of cents in the row's `currency` (`usd`), and every timestamp is Unix milliseconds, the same values the portal renders. There is no billing write scope: covering athletes, changing plans, refunds and payouts stay in the portal.
+
+A coach with no organization reads their figures on every endpoint. A coach with no Stripe Connect account gets a null account and zero totals from the Connect endpoints, never an error.
+
+### Seat state
+
+`GET /v1/coach/billing/seat-state` returns the live seat picture from the roster header: the funding tier, the included allotment and how much of it is used, the coach-paid count and what covering one more athlete costs now. Pass `?org_id=` to read the organization's seats as payer; only the coach's organization is accepted, and any other value answers `404`.
+
+```bash
+curl -H "Authorization: Bearer cp_live_..." \
+  https://api.saturday.fit/v1/coach/billing/seat-state
+```
+
+```json
+{
+  "tier": "business",
+  "included_total": 50,
+  "included_used": 12,
+  "coach_paid_count": 0,
+  "next_athlete_price_cents": 0,
+  "volume_tier": 0,
+  "volume_discount_pct": 0,
+  "total_monthly_cents": 0,
+  "is_fair_use": true
+}
+```
+
+### Ledger
+
+`GET /v1/coach/billing/ledger` returns one page of the coach's financial ledger, newest first: coaching fees received, platform and Stripe fee deductions, subscription charges and refunds.
+
+| Query param | Values | Default |
+|-------------|--------|---------|
+| `view` | `all`, `expenditures` (charges and coach-covered seats), `inflows` (receipts) | `all` |
+| `limit` | `1` to `200` | `50` |
+| `cursor` | the `next_cursor` from the previous page | first page |
+
+```bash
+curl -H "Authorization: Bearer cp_live_..." \
+  "https://api.saturday.fit/v1/coach/billing/ledger?view=inflows&limit=50"
+```
+
+```json
+{
+  "entries": [
+    {
+      "id": "e_1",
+      "entry_id": "e_1",
+      "user_uid": "coach_abc",
+      "direction": "receipt",
+      "amount_cents": 5000,
+      "currency": "usd",
+      "category": "coaching_fee_received",
+      "counterparty_type": "athlete",
+      "counterparty_id": "ath_123",
+      "counterparty_display_name": "A. Rider",
+      "source_type": "stripe_charge",
+      "source_reference_id": "ch_1",
+      "description": "Coaching fee from A. Rider",
+      "occurred_at": 1749480000000,
+      "created_at": 1749480000000,
+      "charge_group_id": "ch_1",
+      "settlement_status": "settled"
+    }
+  ],
+  "next_cursor": "1749480000000"
+}
+```
+
+`next_cursor` is present only when another page exists; pass it back as `cursor`. An empty ledger is `{"entries": []}`. A `view`, `limit` or `cursor` outside its domain answers `400 invalid_value`.
+
+### Tier status
+
+`GET /v1/coach/billing/tier-status` returns the coach's active platform tier subscriptions and whether any source currently grants access.
+
+```json
+{
+  "subscriptions": [
+    {
+      "subscription_id": "ts_1",
+      "subscriber_type": "user",
+      "subscriber_id": "coach_abc",
+      "tier": "business",
+      "channel": "web_stripe",
+      "source_sku": "price_1",
+      "status": "active",
+      "current_period_start": 1748000000000,
+      "current_period_end": 1750600000000,
+      "amount_cents": 9900,
+      "lifetime_discount_applied": false,
+      "auto_renew": true,
+      "created_at": 1748000000000,
+      "updated_at": 1748000000000
+    }
+  ],
+  "count": 1,
+  "status": { "has_purchase": false, "has_tier_sub": true, "is_active": true, "source": "tier_subscription", "tier_id": "business" }
+}
+```
+
+### Connect summary
+
+`GET /v1/coach/billing/connect/summary` returns the Stripe Connect account status plus this month's and lifetime totals.
+
+```json
+{
+  "connect_account": {
+    "coach_uid": "coach_abc",
+    "stripe_account_id": "acct_1",
+    "charges_enabled": true,
+    "payouts_enabled": true,
+    "details_submitted": true,
+    "requirements_currently_due_count": 0,
+    "country": "US",
+    "default_currency": "usd",
+    "updated_at": 1749500000000
+  },
+  "is_onboarded": true,
+  "active_arrangements": 3,
+  "month_charges_cents": 15000,
+  "month_fees_cents": 2025,
+  "month_net_cents": 12975,
+  "lifetime_charges_cents": 240000,
+  "lifetime_fees_cents": 32400,
+  "lifetime_net_cents": 207600,
+  "platform_fee_bps": 1000
+}
+```
+
+Without a Connect account, `connect_account` is `null`, `is_onboarded` is `false` and every total is `0`.
+
+### Connect earnings
+
+`GET /v1/coach/billing/connect/earnings` returns the gross, Stripe fee, platform fee and net totals across settled charges, plus the twenty most recent per-charge breakdowns.
+
+```json
+{
+  "summary": {
+    "coach_uid": "coach_abc",
+    "total_gross_cents": 240000,
+    "total_stripe_fee_cents": 8400,
+    "total_platform_fee_cents": 24000,
+    "total_net_cents": 207600,
+    "charge_count": 48,
+    "settled_count": 46,
+    "settling_count": 2,
+    "currency": "usd"
+  },
+  "breakdowns": [
+    {
+      "charge_group_id": "ch_1",
+      "gross_amount_cents": 5000,
+      "stripe_fees_cents": 175,
+      "platform_fee_cents": 500,
+      "net_to_coach_cents": 4325,
+      "currency": "usd",
+      "settlement_status": "settled",
+      "occurred_at": 1749480000000,
+      "athlete_uid": "ath_123",
+      "athlete_display_name": "A. Rider"
+    }
+  ]
+}
+```
+
+`breakdowns` is an empty list when there are no charges.
+
+### Connect transactions
+
+`GET /v1/coach/billing/connect/transactions` returns one page of Connect charges, newest first, with the fee decomposition of each. `limit` and `cursor` work as on the ledger; `total` counts the charges in this page.
+
+```json
+{
+  "charges": [
+    {
+      "charge_id": "ch_1",
+      "arrangement_id": "arr_1",
+      "coach_uid": "coach_abc",
+      "athlete_uid": "ath_123",
+      "amount_cents": 5000,
+      "platform_fee_cents": 500,
+      "stripe_fees_cents": 175,
+      "net_to_coach_cents": 4325,
+      "currency": "usd",
+      "status": "succeeded",
+      "captured_at": 1749480000000,
+      "stripe_webhook_event_id": "evt_1"
+    }
+  ],
+  "total": 1,
+  "next_cursor": "1749480000000"
+}
+```
+
+### Connect arrangements
+
+`GET /v1/coach/billing/connect/arrangements` returns every coach-to-athlete billing arrangement the coach has configured, in any status.
+
+```json
+{
+  "arrangements": [
+    {
+      "arrangement_id": "arr_1",
+      "coach_uid": "coach_abc",
+      "athlete_uid": "ath_123",
+      "stripe_connect_account_id": "acct_1",
+      "billing_mode": "recurring",
+      "amount_cents": 5000,
+      "currency": "usd",
+      "interval": "month",
+      "status": "active",
+      "platform_fee_bps": 1000,
+      "created_at": 1749400000000,
+      "activated_at": 1749400000000
+    }
+  ],
+  "total": 1
+}
+```
+
 ## Athlete identity
 
 Coach API responses identify each athlete by Saturday UID, the same identifier the portal uses, and carry their fueling data exactly as the coach sees it there: sessions, symptoms, ratings, sleep, and the calculator profile snapshot. The coach owns the coaching relationship, so the API applies no de-identification; identity levels belong to the portal's export feature. Handling that personal data downstream is your responsibility. See the [data policy](/guides/data-policy).
 
 ## Rate limits
 
-Coach requests, on either credential, are metered in the same partner bucket as the Claude connector. An OAuth coach token also passes through the per-athlete bucket that applies to every athlete-delegated caller, keyed on the coach's UID. A roster pull or digest is one request whatever the roster size. Every response carries the rate-limit headers and a `429` carries `Retry-After`; see [rate limiting](/rate-limiting).
+Coach requests draw from the coach's bucket: 50 requests per second with a burst of 500, the same whether the call is a REST request to `/v1/coach/*` on either credential or a coach tool used in chat through the connector. Coach tools in chat also pass the connector's shared bucket, as every connector call does. The billing reads share the coach bucket with the rest of the coach surface. Athlete tools used in the same chat, and a coach token's athlete-self calls on `/v1/athletes/*`, keep the per-athlete bucket that applies to every athlete-delegated caller. A roster pull or digest is one request whatever the roster size. Every response carries the rate-limit headers and a `429` carries `Retry-After`; see [rate limiting](/rate-limiting).
 
 ## SDKs
 
@@ -410,6 +636,10 @@ const report = await saturday.coach.report('ath_123', { window: 14 });
 await saturday.coach.applyPreset({ scope: 'overall', preset: 'balanced' });
 const wh = await saturday.coach.registerWebhook('https://my-system.example.com/saturday');
 // wh.secret is returned once; store it now
+
+// Billing reads need a key carrying billing:read
+const earnings = await saturday.coach.connectEarnings();
+const ledger = await saturday.coach.ledger({ view: 'inflows', limit: 50 });
 ```
 
 ```python Python
@@ -423,6 +653,10 @@ report = client.coach.report("ath_123", window=14)
 client.coach.apply_preset(scope="overall", preset="balanced")
 wh = client.coach.register_webhook("https://my-system.example.com/saturday")
 # wh["secret"] is returned once; store it now
+
+# Billing reads need a key carrying billing:read
+earnings = client.coach.connect_earnings()
+ledger = client.coach.ledger(view="inflows", limit=50)
 ```
 
 </CodeGroup>
