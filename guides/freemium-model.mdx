@@ -31,38 +31,41 @@ Partner integrates (free) -> Athletes see teasers (free) -> Athletes subscribe f
 
 ## Detecting response type
 
+Both teaser responses and incomplete full-tier profiles carry range fields. Choose the number display from those fields; use `tier` separately to decide whether to show the subscription CTA. Exact zero values may be omitted, so the exact branch defaults them to zero.
+
 <CodeGroup>
 
 ```python Python
 data = response.json()
 
-if data["tier"] == "teaser":
-    # Show ranges and subscription CTA
+if "carb_range_g_per_hr" in data:
     show_range(data["carb_range_g_per_hr"])
     show_range(data["sodium_range_mg_per_hr"])
     show_range(data["fluid_range_ml_per_hr"])
-    show_upgrade_cta(data["subscription_cta"]["subscribe_url"])
 else:
-    # Show exact numbers
-    show_exact(data["carb_g_per_hr"])
-    show_exact(data["sodium_mg_per_hr"])
-    show_exact(data["fluid_ml_per_hr"])
+    show_exact(data.get("carb_g_per_hr", 0))
+    show_exact(data.get("sodium_mg_per_hr", 0))
+    show_exact(data.get("fluid_ml_per_hr", 0))
+
+if data["tier"] == "teaser":
+    show_upgrade_cta(data["subscription_cta"]["subscribe_url"])
 ```
 
 ```typescript TypeScript
 const data = await response.json();
 
-if (data.tier === "teaser") {
-  // Show ranges and subscription CTA
+if (data.carb_range_g_per_hr !== undefined) {
   showRange(data.carb_range_g_per_hr);
   showRange(data.sodium_range_mg_per_hr);
   showRange(data.fluid_range_ml_per_hr);
-  showUpgradeCTA(data.subscription_cta.subscribe_url);
 } else {
-  // Show exact numbers
-  showExact(data.carb_g_per_hr);
-  showExact(data.sodium_mg_per_hr);
-  showExact(data.fluid_ml_per_hr);
+  showExact(data.carb_g_per_hr ?? 0);
+  showExact(data.sodium_mg_per_hr ?? 0);
+  showExact(data.fluid_ml_per_hr ?? 0);
+}
+
+if (data.tier === "teaser") {
+  showUpgradeCTA(data.subscription_cta.subscribe_url);
 }
 ```
 
@@ -120,7 +123,7 @@ products never debits the cap.
 
 ## 30-day full-precision trial
 
-Every athlete's first calculate request starts a **30-day trial of full-precision responses — 15 calls on the first UTC day (exploration allowance), then 5 calls per athlete per UTC day**. During the trial, full responses carry trial metadata so you can build countdown UX:
+An athlete-scoped calculation with real profile or optional activity inputs starts a **30-day trial of full-tier responses: 15 calls on the first UTC day (exploration allowance), then 5 calls per athlete per UTC day**. Zero-data calls do not start the trial. Complete inputs are still required for exact numbers. During the trial, full responses carry trial metadata so you can build countdown UX:
 
 ```json
 {
@@ -221,5 +224,5 @@ Full placement rules, marks, sizing, and the per-surface matrix live on the
 The API is designed as a distribution play. More partners = more athletes seeing Saturday = more subscribers. The API doesn't need to make money directly — it needs to make Saturday the default nutrition layer.
 
 <Note>
-**Trial clock (2026-06):** the 30-day full-precision trial starts at the athlete's first *narrower-than-full-wide* calculation — i.e., once any real profile data exists. Zero-data calculations never start (or burn) the trial. Collect the fueling profile first ([Athlete Onboarding](/guides/onboarding)) and the trial window delivers genuinely exact numbers from day one.
+The trial starts once real profile or optional activity inputs are present. Zero-data calculations never start or burn it. Collect the [fueling profile](/guides/onboarding) and provide the per-activity inputs so trial calculations can return exact numbers.
 </Note>

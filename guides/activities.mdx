@@ -136,7 +136,7 @@ Returns the most recently calculated prescription for this activity, wrapped wit
 `calculated_at` is a Unix timestamp in seconds, not an ISO 8601 string. Timestamps across the athlete and activity objects (`created_at`, `updated_at`) use the same encoding.
 
 <Note>
-  The `{prescription, safety}` envelope is the same on every Saturday endpoint that returns prescription data. Read `prescription.*` for values and `safety.*` for guardrails. The `not_instructions: true` flag marks these as recommendations for a person to consider, not commands to execute.
+  On this stored-prescription endpoint, read `prescription.*` for values and `safety.*` for guardrails. `POST /v1/nutrition/calculate` instead returns flat nutrition fields. The activity calculation uses the tier-aware envelope described above. The `not_instructions: true` flag marks these as recommendations for a person to consider, not commands to execute.
 </Note>
 
 <Warning>

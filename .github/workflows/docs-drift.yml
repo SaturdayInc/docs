@@ -107,9 +107,9 @@ jobs:
           base='${{ github.event.pull_request.base.sha }}'
           git fetch --no-tags --depth=1 origin "$base" 2>/dev/null || true
           added=$(git diff "$base"...HEAD -- api-drift-baseline.txt \
-                  | grep -E '^\+[^+#]' | wc -l)
+                  | awk '/^\+[^+#]/ { count++ } END { print count+0 }')
           removed=$(git diff "$base"...HEAD -- api-drift-baseline.txt \
-                    | grep -E '^-[^-#]' | wc -l)
+                    | awk '/^-[^-#]/ { count++ } END { print count+0 }')
           echo "baseline entries removed by this PR: $removed"
           echo "baseline entries added by this PR:   $added"
           if [ "$added" -gt 0 ]; then

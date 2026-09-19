@@ -95,6 +95,8 @@ When you include an `athlete_id`, Saturday reads that athlete's stored profile: 
 
 ## Understanding the response
 
+This example shows an exact full-tier response with complete inputs. Teaser responses and incomplete full-tier profiles contain range fields instead, even when the request succeeds.
+
 ```json
 {
   "tier": "full",
@@ -156,7 +158,8 @@ Every engine run carries a deliberate computation window, the same one athletes 
 
 Responses depend on the athlete's Saturday subscription status:
 
-- **Subscribed athletes** get exact numbers: `"carb_g_per_hr": 72`
+- **Subscribed athletes with complete inputs** get exact numbers: `"carb_g_per_hr": 72`
+- **Subscribed athletes with incomplete inputs** get ranges and a `precision` object naming the missing fields
 - **Free/teaser athletes** get ranges: `"carb_range_g_per_hr": "60-90"`
 
 Teaser ranges are bucketed to a fixed grid, 30 g/hr for carbohydrate and 500 units/hr for sodium and fluid, so the same underlying number always lands in the same bucket.

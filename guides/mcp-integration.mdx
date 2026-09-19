@@ -124,38 +124,43 @@ Read the live descriptions from `tools/list` rather than copying them into your 
 
 ## Tool call example
 
+These examples use the MCP SDK 1.x APIs: install `mcp>=1.26,<2` for Python or `@modelcontextprotocol/sdk@^1` and `zod` for TypeScript. Set `SATURDAY_API_KEY` to your partner key.
+
 <CodeGroup>
 
 ```python Python
+import asyncio
 import os
 
-# Using the MCP Python SDK
-from mcp import ClientSession, StdioServerParameters
+from mcp import ClientSession
+from mcp.client.streamable_http import streamablehttp_client
 
-async with ClientSession(
-    StdioServerParameters(
-        command="npx",
-        args=["mcp-remote", "https://api.saturday.fit/mcp"],
-        env={"SATURDAY_API_KEY": os.environ["SATURDAY_API_KEY"]},
-    )
-) as session:
-    # List available tools
-    tools = await session.list_tools()
-    for tool in tools:
-        print(f"{tool.name}: {tool.description}")
 
-    # Call a tool
-    result = await session.call_tool(
-        "calculate_nutrition",
-        {
-            "activity_type": "run",
-            "duration_min": 90,
-            "intensity_level": 5,
-            "athlete_weight_kg": 70,
-            "thermal_stress_level": 6,
-        },
-    )
-    print(result)
+async def main():
+    async with streamablehttp_client(
+        "https://api.saturday.fit/mcp",
+        headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
+    ) as (read_stream, write_stream, _):
+        async with ClientSession(read_stream, write_stream) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            for tool in tools.tools:
+                print(f"{tool.name}: {tool.description}")
+
+            result = await session.call_tool(
+                "calculate_nutrition",
+                arguments={
+                    "activity_type": "run",
+                    "duration_min": 90,
+                    "intensity_level": 5,
+                    "athlete_weight_kg": 70,
+                    "thermal_stress_level": 6,
+                },
+            )
+            print(result)
+
+
+asyncio.run(main())
 ```
 
 ```typescript TypeScript
@@ -182,15 +187,19 @@ const tools = await client.listTools();
 tools.tools.forEach((t) => console.log(`${t.name}: ${t.description}`));
 
 // Call a tool
-const result = await client.callTool("calculate_nutrition", {
-  activity_type: "run",
-  duration_min: 90,
-  intensity_level: 5,
-  athlete_weight_kg: 70,
-  thermal_stress_level: 6,
+const result = await client.callTool({
+  name: "calculate_nutrition",
+  arguments: {
+    activity_type: "run",
+    duration_min: 90,
+    intensity_level: 5,
+    athlete_weight_kg: 70,
+    thermal_stress_level: 6,
+  },
 });
 
 console.log(result);
+await client.close();
 ```
 
 </CodeGroup>

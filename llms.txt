@@ -6,7 +6,7 @@ Saturday calculates personalized fuel, hydration, and electrolyte recommendation
 
 ## Authentication
 
-All requests require a Bearer token in the Authorization header. Partner API keys use the `sk_test_` (sandbox) or `sk_live_` (production) prefix.
+Authenticated API requests use a Bearer token in the Authorization header. Partner API keys use the `sk_test_` (sandbox) or `sk_live_` (production) prefix. Signup and public discovery endpoints do not require a key.
 
 ```
 Authorization: Bearer $SATURDAY_API_KEY
@@ -43,7 +43,7 @@ Every response includes safety metadata (confidence_score, warnings, max_safe_fl
 
 ## Freemium Model
 
-Subscribed athletes get exact numbers; free athletes get ranges (teasers). Safety data is complete either way.
+Subscribed athletes with complete profile and activity inputs get exact numbers. Incomplete inputs and free athletes get ranges. Check the range fields and precision object separately from tier. Safety data is complete either way.
 
 ## Data Use
 
