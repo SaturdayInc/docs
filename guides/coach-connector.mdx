@@ -39,7 +39,7 @@ When an athlete connects, Claude can read and write that athlete's Saturday data
 - `get_athlete`, `update_athlete` read and update the athlete's profile.
 - `list_activities`, `get_activity`, `create_activity` manage the athlete's activities.
 - `calculate_activity_prescription`, `get_activity_prescription` ask Saturday's engine to compute the prescription. It is never writable by hand.
-- `build_bottling_plan`, `record_bottling_choice` turn the prescription into a bottle-by-bottle plan the athlete owns and edits in Saturday, and record the plan they commit to. [Bottling plans](/guides/mcp-integration#bottling-plans) has the arguments and result shape.
+- `build_bottling_plan`, `record_bottling_choice` turn the prescription into a bottle-by-bottle plan, returned as text and structured content, and record the plan they commit to. [Bottling plans](/guides/mcp-integration#bottling-plans) has the arguments and result shape.
 - `calculate_nutrition`, `search_products`, `analyze_product_fit`, `get_athlete_insights`, `search_knowledge`.
 
 <Warning>
