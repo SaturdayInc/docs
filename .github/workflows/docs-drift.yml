@@ -92,9 +92,14 @@ jobs:
   # a PR may append to is an off switch, and the next real regression gets
   # written into it instead of reported. Removing entries is the point and is
   # always allowed.
+  #
+  # GitHub-hosted, unlike the drift job: this one reads only this public repo, and
+  # the org's self-hosted runners refuse public repositories, so on self-hosted it
+  # queued until cancelled and never ran (issue #36; engine-constants.yml has the
+  # full reasoning). Hosted minutes are free for public repos.
   baseline-shrink-only:
     if: github.event_name == 'pull_request'
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
