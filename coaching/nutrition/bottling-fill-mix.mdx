@@ -19,18 +19,18 @@ icon: 'bottle-water'
 
 ## How carriage is structured
 
-Carriage is stored per activity type, not globally. A cycling Setup and a running Setup are separate, each an ordered list of **slots**. A slot is one vessel with a maximum volume, and the order is the fill priority: Saturday fills slots top-down until the prescribed fluid is covered.
+Carriage is stored per sport, not globally, and an athlete can keep several named Setups for one sport, such as a road Setup and a gravel Setup, each tagged with the disciplines it is for. A Setup is an ordered list of **slots**. A slot is one vessel with a maximum volume, and the order is the fill priority: Saturday fills slots top-down, each with the largest container the athlete owns that fits, until the prescribed fluid is covered. When the athlete bottles a session, the app suggests the Setups tagged with that session's discipline first, with a pinned default ahead of the rest, and the athlete can pick a different one at that step.
 
-So "how many bottles" is the slot count for that activity type, and "how big" is each slot's volume ceiling.
+So "how many bottles" is at most the Setup's slot count, and "how big" is each slot's volume ceiling.
 
 <Note>
-  **There is no concentration dial.** Concentration is an outcome, not an input. You set what the athlete carries and how large each vessel is; Saturday works out how much carbohydrate and sodium go into each one to hit the prescription. To make a mix less concentrated, give the athlete more fluid capacity to spread the same carbohydrate across.
+  **The athlete chooses how the mix is spread.** At the top of **Make your bottles.** the athlete picks a filling method. With three or more containers, **Concentrate** puts the carbohydrate and salt in as few bottles as possible and keeps the rest plain water, **Goldilocks** (the usual default) keeps some bottles plain water and mixes the rest the same, and **Evenly** puts the same, more dilute mix in every container. With two containers the choice is **Keep 1 Fresh H₂O** or **Evenly**. The totals never change between methods, only where they go, and a very strong mix carries a warning such as "Try hot water to mix!". To make every bottle less concentrated, the athlete picks **Evenly**, or you give them more fluid capacity to spread the same carbohydrate across.
 </Note>
 
 ## What you do as a coach
 
 - **Read it first.** Open the athlete's current carriage before changing anything, so you are adjusting from ground truth rather than a guess.
-- **Edit the slots.** Pick the activity type, then add, remove, or resize its slots, one to six per Setup, choosing bottle, flask, bladder, or handheld. Saturday re-maps the consumption plan and shows a one-line impact preview as you go. See [The Setup](/coaching/nutrition/setup-dials).
+- **Edit the slots.** Pick which of the athlete's Setups to edit, then add, remove, or resize its slots, one to six per Setup, choosing bottle, flask, bladder, or handheld. Saturday re-maps the consumption plan and shows a one-line impact preview as you go. See [The Setup](/coaching/nutrition/setup-dials).
 - **Pre-fill for a new athlete.** For an athlete who is less comfortable with the app, you can dial in their bottling from your roster before they ever open it, so they arrive to a working plan.
 
 ## See also

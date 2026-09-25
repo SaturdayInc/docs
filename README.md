@@ -11,6 +11,7 @@
 ```bash
 python scripts/check-docs-drift.py --backend ../fuel-backend
 python scripts/check-engine-constants.py --docs .
+python scripts/check-app-claims.py --docs .
 python scripts/test-response-examples.py
 npx mint@latest broken-links --check-anchors --check-external
 npx mint@latest validate
