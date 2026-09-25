@@ -267,7 +267,7 @@ An imported activity accepts these fields and no others. Unknown keys are ignore
 |-------|----------|-------------|
 | `type` | Yes | One of `bike`, `run`, `swim`, `row`, `ski`, `lift`, `hike` |
 | `duration_min` | Yes | Positive integer |
-| `intensity_level` | No | 1 to 9; the calculation clamps values outside the scale |
+| `intensity_level` | No | 1 to 9; the calculation clamps values outside the scale. `lift` and `hike` use 1 to 3, store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | No | 1 to 9; the calculation clamps values outside the scale |
 | `is_race_event` | No | Boolean |
 | `external_id` | No | Your activity ID, carried through and used by finish-screen deep links |

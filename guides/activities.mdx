@@ -72,7 +72,7 @@ console.log(`Activity ID: ${activity.id}`);
 |-------|------|----------|-------------|
 | `type` | string | Yes | Activity type (see [supported types](/guides/nutrition-calculation#supported-activity-types)) |
 | `duration_min` | integer | Yes | Expected duration in minutes |
-| `intensity_level` | integer | No | 1-9 scale |
+| `intensity_level` | integer | No | 1-9 scale; `lift` and `hike` use 1-3 (low, medium, high), store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | integer | No | 1-9 scale |
 | `is_race_event` | boolean | No | Whether this is a race |
 | `meal_before_min` | integer | No | Minutes between the athlete's last meal and the start |
