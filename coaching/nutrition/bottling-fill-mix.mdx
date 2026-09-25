@@ -19,7 +19,7 @@ icon: 'bottle-water'
 
 ## How carriage is structured
 
-Carriage is stored per sport, not globally, and an athlete can keep several named Setups for one sport, such as a road Setup and a gravel Setup, each tagged with the disciplines it is for. A Setup is an ordered list of **slots**. A slot is one vessel with a maximum volume, and the order is the fill priority: Saturday fills slots top-down, each with the largest container the athlete owns that fits, until the prescribed fluid is covered. When the athlete bottles a session, the app suggests the Setups tagged with that session's discipline first, with a pinned default ahead of the rest, and the athlete can pick a different one at that step.
+Carriage is stored per sport, not globally, and an athlete can keep several named carriage Setups for one sport, such as a road Setup and a gravel Setup, optionally tagged with the disciplines each is for. A carriage Setup is an ordered list of **slots**. A slot is one vessel with a maximum volume, and the order is the fill priority: Saturday fills slots top-down, each with the largest container the athlete owns that fits, until the prescribed fluid is covered. When the athlete bottles a session, the app lists Setups tagged with that session's discipline first, then untagged ones, with a pinned default leading within each group, and the athlete can pick a different one at that step.
 
 So "how many bottles" is at most the Setup's slot count, and "how big" is each slot's volume ceiling.
 
