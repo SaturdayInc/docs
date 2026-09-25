@@ -3,6 +3,8 @@
 This is the Saturday documentation site, built with **Mintlify**.
 Dev server: `mintlify dev` (or check `package.json` scripts).
 
+A page naming endpoints, fields or webhook events: run `scripts/check-docs-drift.py` locally before merge (README, "Local checks"), against a fuel-backend worktree at `origin/main`, since the shared checkout is often on another branch. No PR check here can run it; fuel-backend's hourly Docs Drift catches it after merge.
+
 <!-- MICHELLE-VISUAL-VERIFY-START -->
 ## Visual Verification Mandate
 

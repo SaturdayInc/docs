@@ -25,7 +25,7 @@ To verify a DNS change: `dig docs.saturday.fit CNAME` answers `cname.mintlify-dn
 
 Mintlify deploys from Git: a merge to `main` rebuilds the site. A rebuild can also be triggered by hand from [dashboard.mintlify.com](https://dashboard.mintlify.com) on the Saturday API project.
 
-Two checks run on every pull request from `.github/workflows/`. Engine Constants (GitHub-hosted) fails the PR if a page prints an engine value. Docs Drift asks for the self-hosted runner, which does not accept jobs from a public repository, so it queues until it is cancelled: run it locally instead (README, "Local checks") and cancel the queued run. The fuel-backend copy of the same check runs on backend pull requests and catches the other direction.
+Engine Constants (GitHub-hosted) runs on every pull request and fails it if a page prints an engine value. Docs Drift here only keeps `api-drift-baseline.txt` from growing. The drift check itself needs fuel-backend's private source, so it runs from fuel-backend: on every backend pull request, and hourly against both repos' `main`. A merged page that names an endpoint, field or event the API lacks is caught within about an hour and routed to the SRE sweep. Run the check locally before merging such a page (README, "Local checks").
 
 ## Site configuration
 
