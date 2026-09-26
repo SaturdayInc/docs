@@ -23,6 +23,8 @@ RETIRED = [
      "the athlete picks a filling method on Make your bottles.: Concentrate, Goldilocks, Evenly, or Keep 1 Fresh H2O"),
     (r"stored per activity type|slot count for that activity type|slots for the chosen activity type",
      "an athlete can keep several named Setups per sport, tagged by discipline"),
+    (r"\bAI coach",
+     "Saturday's AI is the assistant; coach means a human coach"),
 ]
 
 
