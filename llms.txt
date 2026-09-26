@@ -23,7 +23,7 @@ Coaches use a separate surface with separate credentials: a `cp_live_` / `cp_tes
 - GET /v1/athletes: list the partner's athletes
 - POST /v1/athletes/{athlete_id}/activities: create an activity
 - POST /v1/athletes/{athlete_id}/activities/{activity_id}/calculate: calculate that activity's prescription
-- POST /v1/ai/conversations: start an AI coaching conversation (SSE streaming)
+- POST /v1/ai/conversations: start an AI-to-AI conversation with Saturday's assistant (SSE streaming)
 - POST /v1/webhooks: register a webhook for real-time events
 
 ## Coach Endpoints
