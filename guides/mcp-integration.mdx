@@ -84,14 +84,14 @@ Every connection sees the tools below, minus those whose feature gate is closed 
 | `list_curated_products` | Page through the curated catalog, ten products per page | `products` |
 | `list_product_categories` | The product taxonomy, optionally filtered by keyword | `products` |
 | `analyze_product_fit` | Servings of a product needed to cover an athlete's prescription for an activity | `products` |
-| `search_knowledge` | Search Saturday's sports nutrition knowledge base | `ai_coach` |
-| `get_athlete_insights` | AI-generated insights from an athlete's history | `ai_data` |
+| `search_knowledge` | Search Saturday's sports nutrition knowledge base | `knowledge` |
+| `get_athlete_insights` | AI-generated insights from an athlete's history | `athlete_insights` |
 | `list_activity_types` | The supported sports and their algorithms | |
 | `infer_activity_type` | Classify an activity from its title, description, tags, or the source's own workout type | |
 | `build_bottling_plan` | Turn prescription totals into a bottle-by-bottle plan | `bottling` |
 | `record_bottling_choice` | Persist the plan the athlete committed to | `bottling` |
 
-The gate column names the feature whose stage decides visibility for your partner account; `products`, `ai_coach`, and `ai_data` are described on the [Feature Gates](/guides/feature-gates) page, and `bottling` is raised per partner. A gated tool is absent from `tools/list` and a call to it returns the same "unknown tool" error as a name that never existed, so absence from `tools/list` is the answer, not an error to retry. Call `tools/list` rather than hardcoding the catalog.
+The gate column names the feature whose stage decides visibility for your partner account; `products`, `knowledge`, and `athlete_insights` are described on the [Feature Gates](/guides/feature-gates) page, and `bottling` is raised per partner. A tool whose feature is at ALPHA appears only for partners on that feature's alpha allowlist, the same rule its REST routes apply. A gated tool is absent from `tools/list` and a call to it returns the same "unknown tool" error as a name that never existed, so absence from `tools/list` is the answer, not an error to retry. Call `tools/list` rather than hardcoding the catalog.
 
 On the Claude connector, `list_athletes` returns the signed-in athlete alone and `create_athlete` returns that same athlete rather than creating one. On any other athlete-delegated token both are rejected with `athlete_scope`. On every delegated connection an `athlete_id` argument naming a different athlete is rejected with `athlete_scope`.
 

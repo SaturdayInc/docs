@@ -74,17 +74,18 @@ The `Deprecation` header carries `true`. Sunset dates are announced per feature;
 
 ## The feature keys
 
-Five keys gate REST routes. Each covers the routes listed beside it.
+Six keys gate REST routes. Each covers the routes listed beside it.
 
 | Feature | What it controls | Shipped default |
 |---------|-----------------|-----------------|
 | `nutrition` | Fuel/hydration/electrolyte calculation, prep, inference | ALPHA |
 | `products` | Curated product database | ALPHA |
 | `gear` | Gear management CRUD (bottles, flasks) | STEALTH |
-| `ai_coach` | AI coaching with SSE streaming | STEALTH |
-| `ai_data` | AI-generated insights, churn risk, ML bias | STEALTH |
+| `knowledge` | Knowledge base search, topics and articles (`/v1/knowledge/*`) | STEALTH |
+| `athlete_insights` | AI-generated athlete insights, churn risk, ML bias | STEALTH |
+| `ai_to_ai_conversations` | AI-to-AI conversations: your AI talking with Saturday's assistant over SSE (`/v1/ai/conversations`) | STEALTH |
 
-Two more keys gate MCP tools rather than REST routes: `coach` (the coach tools, which also require a coach principal on the request) and `bottling` (`build_bottling_plan` and `record_bottling_choice`). Neither has a shipped default, so each is STEALTH until set in configuration.
+`products`, `knowledge` and `athlete_insights` gate their MCP tools as well as their REST routes, with the same rule: at ALPHA a tool appears only for partners on the feature's alpha allowlist (see [MCP Integration](/guides/mcp-integration#tool-catalog)). Two more keys gate MCP tools rather than REST routes: `coach` (the coach tools, which also require a coach principal on the request) and `bottling` (`build_bottling_plan` and `record_bottling_choice`). Neither has a shipped default, so each is STEALTH until set in configuration.
 
 <Warning>
   The right-hand column is the default the gateway falls back to, not a statement about production. Each environment stores stages in configuration, and a per-partner override can raise a single partner above the global stage. Read `GET /v1/` for what your key can reach today.
@@ -99,8 +100,8 @@ Features are grouped so a stage transition can move several at once:
 | Group | Features | Example transition |
 |-------|----------|-------------------|
 | `core` | nutrition, products | "Move core to BETA" gives all partners nutrition and products |
-| `advanced` | ai_coach, ai_data | "Move advanced to ALPHA" gives selected partners the AI features |
-| `all` | All 5 features | "Move all to GA" |
+| `advanced` | knowledge, athlete_insights, ai_to_ai_conversations | "Move advanced to ALPHA" gives selected partners the knowledge base, athlete insights and AI-to-AI conversations |
+| `all` | All 6 features | "Move all to GA" |
 
 ## Getting alpha access
 

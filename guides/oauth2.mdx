@@ -248,7 +248,7 @@ const newTokens = await response.json();
 | `activity:read` | View activities and prescriptions |
 | `activity:write` | Create, update, delete activities |
 | `nutrition:read` | Calculate nutrition prescriptions |
-| `ai:chat` | AI Coach conversations |
+| `ai:chat` | Talk with Saturday's assistant on the athlete's behalf (AI-to-AI conversations) |
 | `offline_access` | Be issued a refresh token, and use it |
 
 `offline_access` grants no data access by itself. It is the OIDC and MCP signal that you want to stay connected without sending the athlete back through consent every hour. Request it alongside your data scopes if you need refresh. It is not included in the default `athlete:read` fallback.
