@@ -1,0 +1,50 @@
+name: App Claims
+
+# Keep retired app claims off the published pages. The app opens the coaching
+# nutrition pages from its own help tips, so a page naming a control the app no
+# longer has misleads the athlete holding that screen. The list of retired
+# claims, and why each one retired, lives in scripts/check-app-claims.py.
+#
+# Runs on ubuntu-latest for the reason engine-constants.yml gives: this
+# repository is public and the self-hosted runner group does not serve public
+# repositories, while GitHub-hosted minutes are free here.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.mdx'
+      - 'scripts/check-app-claims.py'
+      - '.github/workflows/app-claims.yml'
+  push:
+    branches: [main]
+    paths:
+      - '**.mdx'
+      - 'scripts/check-app-claims.py'
+  workflow_dispatch:
+
+concurrency:
+  group: app-claims-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app-claims:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: No retired app claims on published pages
+        run: python3 scripts/check-app-claims.py --docs .
+
+      - name: The check still rejects a page carrying one
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          cp -r ./* "$work"/
+          printf '\nThere is no concentration dial.\n' >> "$work/coaching/nutrition/bottling-fill-mix.mdx"
+          if python3 scripts/check-app-claims.py --docs "$work"; then
+            echo "The check passed a page carrying a retired claim. It is broken."
+            exit 1
+          fi
+          rm -rf "$work"
