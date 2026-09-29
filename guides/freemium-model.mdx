@@ -21,7 +21,7 @@ Partner integrates (free) -> Athletes see teasers (free) -> Athletes subscribe f
 | **Hydration** | Range: `"fluid_range_ml_per_hr": "500-1000"` | Exact: `"fluid_ml_per_hr": 620` |
 | **Sodium** | Range: `"sodium_range_mg_per_hr": "200-500"` | Exact: `"sodium_mg_per_hr": 485` |
 | **Products** | Category only ("gel") | Specific products + schedule |
-| **Product catalog** | Taxonomy + CTA | Search, browse, and full label data |
+| **Product catalog** | Taxonomy + CTA | Search, browse, and per-serving carbs, sodium, fluid and caffeine |
 | **Safety metadata** | Full | Full |
 | **Confidence score** | Shown | Shown |
 
@@ -80,7 +80,8 @@ on the **athlete's** subscription, not on your partner account. Every product ro
 `athlete_id`, and the answer follows that athlete's standing:
 
 - **Subscribed, or inside their 30-day trial**: `tier: "full"`. Search and browse
-  return products; a barcode lookup returns full label data for a curated product,
+  return products; a barcode lookup returns a curated product's per-serving carbs, sodium,
+  fluid and caffeine,
   or a `product_not_found` 404.
 - **Anyone else**: `tier: "teaser"`. The product arrays come back empty and the
   response carries the category taxonomy plus the same `cta` object your teaser
