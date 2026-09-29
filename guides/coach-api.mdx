@@ -180,17 +180,19 @@ The markers come from Saturday's single shared concern definition, so they match
 
 The session object above is abbreviated. Each entry also carries the as-used and suggested prescription totals, prep fidelity, leftover reuse, report source and completeness, intensity, the profile snapshot, opaque `vessel_reports` and `weather` maps, and the derived `adherence_vs_suggested`, `dial_down_gap`, and `per_hour` triples.
 
-#### Data-source attribution
+#### Data sources
 
-A session recorded on a connected device names its source, and some device makers require that name, with the device model, wherever their data or anything derived from it is shown.
+A session recorded on a connected device names where it came from.
 
 | Field | Meaning |
 |-------|---------|
-| `source_provider` | The service the session came from (for example `garmin`). Absent for sessions logged in Saturday. |
-| `device_model` | The device model that service reported (for example `Forerunner 965`). Absent when none was reported. |
-| `source_attributions` | The attribution text to show, verbatim and untranslated, beside the session and beside anything you build from it (for example `Garmin Forerunner 965`). The session's own first, then each linked leg's. Absent when no source requires one. |
+| `source_provider` | The service the session came from (for example `wahoo`). Absent for sessions logged in Saturday. |
+| `device_model` | The device model that service reported (for example `ELEMNT BOLT`). Absent when none was reported. |
+| `source_attributions` | Attribution text a source requires wherever its data, or anything built from it, is shown. Show it verbatim and untranslated beside the session and beside anything you build from it. Absent when no source behind the session requires one. |
 
-The AI report response carries `source_attributions` too: every source behind the sessions the narrative was written from. Show them with the narrative.
+The AI report and AI plan responses carry `source_attributions` too, for the sessions the narrative was written from (absent or empty when none requires one). Show them with the narrative.
+
+Sessions from some connected services stay on Saturday and are never returned by the Coach API, so no response carries them or anything built from them. When an athlete has connected such a service, the fueling rollup, AI report and AI plan responses, and that athlete's roster row, carry a `withheld` object (`kind`: `connected_app_sessions`, plus a `message` to show). Treat the sessions you do get as incomplete: a short list does not mean the athlete trained less.
 
 The adherence fractions are uncapped, so a value above `1.0` is genuine over-consumption rather than an error. Every missing value stays `null`, never `0`, and an absent `symptoms` key is not a zero.
 
