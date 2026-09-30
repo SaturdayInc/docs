@@ -411,7 +411,7 @@ A coach with no organization reads their figures on every endpoint. A coach with
 
 ### Seat state
 
-`GET /v1/coach/billing/seat-state` returns the live seat picture from the roster header: the funding tier, the included allotment and how much of it is used, the coach-paid count and what covering one more athlete costs now. Pass `?org_id=` to read the organization's seats as payer; only the coach's organization is accepted, and any other value answers `404`.
+`GET /v1/coach/billing/seat-state` returns the live seat picture from the roster header: the funding tier, the included allotment and how much of it is used, the coach-paid count, coach-paid athletes whose seat starts billing later (`pending_coach_paid_count`: their own paid Monthly time has not run out yet), and what covering one more athlete costs now. Pass `?org_id=` to read the organization's seats as payer; only the coach's organization is accepted, and any other value answers `404`.
 
 ```bash
 curl -H "Authorization: Bearer cp_live_..." \
@@ -424,6 +424,7 @@ curl -H "Authorization: Bearer cp_live_..." \
   "included_total": 50,
   "included_used": 12,
   "coach_paid_count": 0,
+  "pending_coach_paid_count": 0,
   "next_athlete_price_cents": 0,
   "volume_tier": 0,
   "volume_discount_pct": 0,
