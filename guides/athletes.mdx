@@ -77,7 +77,7 @@ Every field is optional at create time. The athlete's fueling profile is what ma
 | `name` | string | Display name |
 | `email` | string | Enables [automatic linking](/guides/freemium-model#automatic-linking-by-email) to an existing Saturday subscriber |
 | `sex` | string | `male`, `female`, or `intersex` |
-| `year_of_birth` | integer | Used to derive age |
+| `year_of_birth` | integer | Used to derive age. The athlete must be 14 or older |
 | `weight_kg` | number | Body weight, 20 to 250 |
 | `settings` | object | The fueling profile, below |
 | `partner_plan` | string | Set to `annual` to assert bundle-offer eligibility |
@@ -180,6 +180,23 @@ The settings object is written as a unit. Send the athlete's complete settings o
 The same replacement rule applies if you send a `settings` object through `PATCH /v1/athletes/{id}`.
 
 On create, on update and on calculate, Saturday rejects `carb_upper_limit_override` outside 50-150 g/hr and `weight_kg` outside 20-250 with a `400` of code `out_of_range` rather than clamping, so a bad value in your data surfaces at the boundary instead of distorting a prescription. Batch create reports the same code per item.
+
+Saturday is for athletes 14 and up. On create and on update, a `year_of_birth` that makes the athlete younger than 14 (the current year minus the birth year) is refused with a `400` of code `under_minimum_age` and param `year_of_birth`, and nothing in that request is saved. The message names the minimum age:
+
+```json
+{
+  "error": {
+    "type": "invalid_request",
+    "code": "under_minimum_age",
+    "message": "Saturday is for athletes 14 and up, and year_of_birth 2014 is under that age. Nothing was saved. See https://docs.saturday.fit/guides/athletes",
+    "param": "year_of_birth",
+    "documentation_url": "https://docs.saturday.fit/errors#under_minimum_age",
+    "request_id": "req_a1b2c3d4e5f6"
+  }
+}
+```
+
+On update, `year_of_birth` must be a whole number; any other value is refused with `invalid_value`.
 
 ## Deleting an athlete
 
