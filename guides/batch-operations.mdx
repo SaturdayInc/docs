@@ -245,7 +245,7 @@ for (const athlete of results.created) {
 | Max athletes per batch | 100 |
 | Minimum per athlete | At least one of `name`, `email`, or `external_id` |
 
-Each athlete is also validated on `weight_kg` (a negative value is rejected), `year_of_birth` (1900 to the current year), and `sex` (`male`, `female`, or `intersex`). A violation fails that item only, with code `invalid_value`; an item naming none of `name`, `email`, or `external_id` fails with `missing_identifier`.
+Each athlete is also validated on `weight_kg` (a negative value is rejected), `year_of_birth` (1900 to the current year), and `sex` (`male`, `female`, or `intersex`). A violation fails that item only, with code `invalid_value`; an item naming none of `name`, `email`, or `external_id` fails with `missing_identifier`. A `year_of_birth` that makes the athlete younger than 14 (the current year minus the birth year) fails that item with `under_minimum_age`, and the item's message names the minimum age.
 
 The batch is also checked against your account's total athlete quota before processing. If you are at the cap the whole request returns `403` with the code `resource_limit_exceeded`, rather than partially filling.
 
