@@ -10,10 +10,12 @@
 #   debt   real drift, too expensive to fix in the PR that found it
 #   limit  the checker cannot tell this apart from drift, and the docs are right
 #
+# A json fence that is not a Saturday payload (a client's config file) is not a
+# limit: mark it on the page with {/* docs-drift: not-api */} on the line before
+# the fence. A limit entry for one of its keys goes stale, and fails a backend PR,
+# the day any Go struct gains a tag with that name.
+#
 # Format: kind<TAB>identity<TAB>why
 
 # documented field that exists nowhere in the API
 field	cramp	limit: a symptom map KEY in "symptoms": { "cramp": 1 }, not a schema field. The checker reads every key in a json fence and cannot see that this map is open-ended
-field	headers	limit: a key in the MCP CLIENT config example, which is a third-party config file that happens to be json, not a Saturday API payload
-field	saturday	limit: the MCP server nickname a reader chooses inside their own mcpServers config, same fence as above
-field	transport	limit: MCP client transport setting, same fence as above

@@ -21,6 +21,15 @@ WHAT IT CHECKS, and the oracle each check trusts:
      bodies, so checking against the spec alone reports real, correctly
      documented fields as drift and blames the docs for spec debt.
 
+     A json fence that is not a Saturday payload, such as an MCP client's
+     config file, is marked on the page with an MDX comment on the line before
+     its opening fence:  {/* docs-drift: not-api */}  Its keys are then not
+     field-checked; its endpoints and event names still are. Marking the fence
+     beats baselining its keys: a baseline entry goes stale, and fails a
+     backend PR that has nothing to do with the docs, as soon as any Go struct
+     anywhere gains a tag with the same name (`headers`, from a Gmail
+     response struct, 2026-10-01).
+
   3. events  Every webhook event name in the docs is a member of
      webhook.AllEventTypes(). Not cosmetic: registration returns on the FIRST
      unknown name, so one stale event name in a docs example means a partner
@@ -132,20 +141,22 @@ def spec_property_names(spec_path):
 
 
 def go_json_tags(backend):
-    """Field names the Go code marshals, from struct tags. Tests are excluded:
-    a name that only ever appears in a fixture is not a shipped field."""
-    tags = set()
+    """Field name -> first Go file (backend-relative) that tags it. Tests are
+    excluded: a name that only ever appears in a fixture is not a shipped field."""
+    tags = {}
     for rel in GO_API_DIRS:
         root_dir = os.path.join(backend, rel)
         if not os.path.isdir(root_dir):
             continue
         for root, dirs, files in os.walk(root_dir):
-            dirs[:] = [d for d in dirs if d not in ("testdata", "vendor")]
-            for fn in files:
+            dirs[:] = sorted(d for d in dirs if d not in ("testdata", "vendor"))
+            for fn in sorted(files):
                 if not fn.endswith(".go") or fn.endswith("_test.go"):
                     continue
-                src = open(os.path.join(root, fn), errors="replace").read()
-                tags.update(re.findall(r'json:"([a-zA-Z_][a-zA-Z0-9_]*)', src))
+                path = os.path.join(root, fn)
+                src = open(path, errors="replace").read()
+                for tag in re.findall(r'json:"([a-zA-Z_][a-zA-Z0-9_]*)', src):
+                    tags.setdefault(tag, os.path.relpath(path, backend))
     return tags
 
 
@@ -169,20 +180,24 @@ def go_event_types(backend):
 
 
 FENCE = re.compile(r"^\s*```(\S*)")
+NOT_API = re.compile(r"^\s*\{/\*\s*docs-drift:\s*not-api\b")
 ENDPOINT = re.compile(r"\b(GET|POST|PUT|PATCH|DELETE)\s+(/v1/[A-Za-z0-9_{}/.\-]*)")
 JSON_KEY = re.compile(r'"([a-z][a-z0-9_]*)"\s*:')
 BACKTICKED = re.compile(r"`([a-z][a-z0-9_]*\.[a-z][a-z0-9_.]*)`")
 
 
 def read_pages(docs_dir):
-    """Yield (relative path, list of (line number, text, inside-json-fence))."""
+    """Yield (relative path, list of (line number, text, inside-json-fence)).
+    A json fence whose opening line follows a NOT_API marker (blank lines
+    between are fine) yields its lines as outside, so its keys are not
+    field-checked."""
     for root, dirs, files in os.walk(docs_dir):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
         for fn in sorted(files):
             if not fn.endswith(".mdx") or fn.endswith(".draft.mdx"):
                 continue
             rel = os.path.relpath(os.path.join(root, fn), docs_dir)
-            lines, lang, in_fence = [], None, False
+            lines, lang, in_fence, marked = [], None, False, False
             for i, raw in enumerate(open(os.path.join(root, fn), errors="replace"), 1):
                 m = FENCE.match(raw)
                 if m:
@@ -190,7 +205,12 @@ def read_pages(docs_dir):
                         in_fence, lang = False, None
                     else:
                         in_fence, lang = True, m.group(1)
+                        if marked and lang == "json":
+                            lang = "json:not-api"
+                    marked = False
                     continue
+                if not in_fence and raw.strip():
+                    marked = bool(NOT_API.match(raw))
                 lines.append((i, raw.rstrip("\n"), in_fence and lang == "json"))
             yield rel, lines
 
@@ -232,9 +252,12 @@ def near(name, known, n=3):
 
 
 def collect(docs_dir, backend, spec_path):
-    """Every finding, before the baseline is applied."""
+    """Every finding, before the baseline is applied, plus where each known
+    field name comes from (the spec, else the first Go file tagging it)."""
     ops = spec_operations(spec_path)
-    known_fields = spec_property_names(spec_path) | go_json_tags(backend)
+    field_source = go_json_tags(backend)
+    field_source.update({n: "the spec" for n in spec_property_names(spec_path)})
+    known_fields = set(field_source)
     events = go_event_types(backend)
     known_paths = {p for _, p in ops}
     event_namespaces = {e.split(".", 1)[0] for e in events} if events else set()
@@ -282,7 +305,7 @@ def collect(docs_dir, backend, spec_path):
                     findings["event"].append((token, rel, lineno, token, detail))
 
     undocumented = sorted(k for k in ops if k not in mentioned_ops)
-    return findings, ops, undocumented, events
+    return findings, ops, undocumented, events, field_source
 
 
 LABELS = {
@@ -314,7 +337,8 @@ def main():
         print("--backend must point at a fuel-backend checkout")
         return 1
 
-    findings, ops, undocumented, events = collect(docs_dir, backend, spec_path)
+    findings, ops, undocumented, events, field_source = collect(
+        docs_dir, backend, spec_path)
     if events is None:
         print("cannot read webhook.AllEventTypes() from the backend checkout; "
               "the event check cannot run")
@@ -377,6 +401,8 @@ def main():
                   f"Delete these lines from {BASELINE_NAME}.")
             for identity in stale:
                 print(f"       {identity}   ({allowed[identity]})")
+                if kind == "field" and identity in field_source:
+                    print(f"         now known from {field_source[identity]}")
 
     if args.list:
         print(f"\nSpec operations no page mentions ({len(undocumented)}), "
