@@ -192,7 +192,7 @@ A session recorded on a connected device names where it came from.
 
 The AI report and AI plan responses carry `source_attributions` too, for the sessions the narrative was written from (absent or empty when none requires one). Show them with the narrative.
 
-Sessions from some connected services stay on Saturday and are never returned by the Coach API, so no response carries them or anything built from them. When an athlete has connected such a service, the fueling rollup, AI report and AI plan responses, and that athlete's roster row, carry a `withheld` object (`kind`: `connected_app_sessions`, plus a `message` to show). Treat the sessions you do get as incomplete: a short list does not mean the athlete trained less.
+Sessions from some connected services stay on Saturday and are never returned by the Coach API, so no response carries them or anything built from them. A workout recorded by Garmin or COROS alone is withheld; when the same workout also reached Saturday from another service, it comes back with only that other service's details. When an athlete has connected such a service, the fueling rollup, AI report and AI plan responses, and that athlete's roster row, carry a `withheld` object (`kind`: `connected_app_sessions`, plus a `message` to show). Treat the sessions you do get as incomplete: a short list does not mean the athlete trained less.
 
 The adherence fractions are uncapped, so a value above `1.0` is genuine over-consumption rather than an error. Every missing value stays `null`, never `0`, and an absent `symptoms` key is not a zero.
 
