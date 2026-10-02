@@ -82,7 +82,7 @@ Six keys gate REST routes. Each covers the routes listed beside it.
 | `products` | Curated product database | ALPHA |
 | `gear` | Gear management CRUD (bottles, flasks) | STEALTH |
 | `knowledge` | Knowledge base search, topics and articles (`/v1/knowledge/*`) | STEALTH |
-| `athlete_insights` | AI-generated athlete insights, churn risk, ML bias | STEALTH |
+| `athlete_insights` | AI-generated athlete insights, ML bias | STEALTH |
 | `ai_to_ai_conversations` | AI-to-AI conversations: your AI talking with Saturday's assistant over SSE (`/v1/ai/conversations`) | STEALTH |
 
 `products`, `knowledge` and `athlete_insights` gate their MCP tools as well as their REST routes, with the same rule: at ALPHA a tool appears only for partners on the feature's alpha allowlist (see [MCP Integration](/guides/mcp-integration#tool-catalog)). Two more keys gate MCP tools rather than REST routes: `coach` (the coach tools, which also require a coach principal on the request) and `bottling` (`build_bottling_plan` and `record_bottling_choice`). Neither has a shipped default, so each is STEALTH until set in configuration.
