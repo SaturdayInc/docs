@@ -380,7 +380,7 @@ curl -X POST https://api.saturday.fit/v1/coach/webhooks \
 | `POST /v1/coach/webhooks/{id}/disable` | disable (stop delivery, keep the endpoint) |
 | `POST /v1/coach/webhooks/{id}/enable` | re-enable |
 
-**Event types:** `concern.detected` and `athlete.needs_attention`, which an empty `events` list subscribes you to (`["*"]` subscribes to every coach event), plus `coach.message.sent`, which is opt-in and fires only for Enterprise coaches, mirroring messages the coach sends from the portal. An unknown event name fails registration with `400`. The URL must be public `https` on the standard port; internal, metadata, and loopback URLs are rejected at registration.
+**Event types:** `concern.detected` and `athlete.needs_attention`, which an empty `events` list subscribes you to (`["*"]` subscribes to every coach event), plus `coach.message.sent`, which is opt-in and fires only for Enterprise coaches, mirroring messages the coach sends from the portal. `athlete.deleted` (`data`: `athlete_uid` only) fires when an athlete you coached deletes their Saturday account; it goes to every endpoint subscribed to any of these events, so a system holding what they said about the athlete can delete it, and carries one `X-Saturday-Event-ID` per athlete. An unknown event name fails registration with `400`. The URL must be public `https` on the standard port; internal, metadata, and loopback URLs are rejected at registration.
 
 Each delivery is a `POST` carrying the event name in `X-Saturday-Event-Type` and an HMAC-SHA256 signature in `X-Saturday-Signature` (`t=<unix seconds>,v1=<hex>`) computed with the secret returned at registration. See [Webhooks](/guides/webhooks) for verifying it. The body is the event, with `data` shaped per event type:
 
