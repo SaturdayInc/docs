@@ -68,7 +68,7 @@ A Pro Coach or above additionally sees the tools below. Every athlete argument i
 |------|------|----------|
 | `get_notification_rules` | `scope?`, `scope_id?` | read the rules at one scope |
 | `set_notification_rules` | `rules`, `scope?`, `scope_id?` | replace the rules at a scope (idempotent upsert) |
-| `apply_alert_preset` | `preset`, `scope?`, `scope_id?` | apply `hands_off` / `balanced` / `hands_on` |
+| `apply_alert_preset` | `preset`, `scope?`, `scope_id?` | apply `hands_off` / `balanced` / `hands_on`; the scope's hourly cap stays as it was |
 | `get_report_settings` | `scope?`, `scope_id?` | read AI-report + concern settings |
 | `set_report_settings` | `settings`, `scope?`, `scope_id?` | upsert report window/focus + concern cutoffs |
 | `list_webhooks` | `active_only?` | list webhook endpoints (no secrets); `active_only` narrows to active ones |
@@ -78,6 +78,8 @@ A Pro Coach or above additionally sees the tools below. Every athlete argument i
 `scope` is `overall` (whole roster), `group` (a coach group), or `athlete` (one athlete), and the most specific scope wins. `scope_id` is required for `group` and `athlete`. For `scope: "athlete"`, `scope_id` is checked against the roster the same way an `athlete_id` is.
 
 Config writes are idempotent: `set_notification_rules` replaces the rule set at a scope, so re-running the same call is a no-op, and the MCP path needs no idempotency key.
+
+The rules carry `hourly_cap` (`{ enabled, per_hour }`), the limit on emails, and separately pushes, that one athlete's alerts send the coach in any 60 minutes. `per_hour` runs from 1 to 12, and a value outside that range is refused; with no scope setting it, the cap is on at 1 per hour. Alerts over the limit go out together in one message when the hour frees, so none is dropped, and `enabled: false` removes the limit (quiet hours and each rule's cadence still apply). In-portal alerts and webhook events are never limited. Because `set_notification_rules` replaces the whole rule set, leaving `hourly_cap` out clears it at that scope; read the rules first and send it back to keep it.
 
 <Note>
   Webhook delivery requires the Business or Enterprise tier. `register_webhook` succeeds below that line, but nothing is delivered until the tier qualifies.
