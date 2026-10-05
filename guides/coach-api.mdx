@@ -245,7 +245,7 @@ Served from cache unless a newer session has landed or `refresh=true`.
 
 ## Configuration
 
-Most of the Coach API is a configuration surface. It writes the same alert-rule and report-settings model the portal reads: channels, triggers, per-trigger thresholds, the overall/group/athlete scope hierarchy, cadence, quiet hours, two-trigger combinators, and AI-report defaults. The portal UI and the API are two views of one config model.
+Most of the Coach API is a configuration surface. It writes the same alert-rule and report-settings model the portal reads: channels, triggers, per-trigger thresholds, the overall/group/athlete scope hierarchy, cadence, quiet hours, the hourly cap, two-trigger combinators, and AI-report defaults. The portal UI and the API are two views of one config model.
 
 <Info>
   **Scope precedence.** Config applies at one of three scopes: `overall` (the whole roster), `group` (a coach group), or `athlete` (one athlete). When resolving what an athlete sees, the most specific scope wins (athlete over group over overall). `scope_id` is required for `group` and `athlete`, and omitted for `overall`.
@@ -255,7 +255,7 @@ Most of the Coach API is a configuration surface. It writes the same alert-rule 
 
 `GET /v1/coach/config/notification-rules?scope=overall` reads the rules set at exactly that scope, not the merged resolution. A scope with no rules returns an empty rule set.
 
-`PUT /v1/coach/config/notification-rules` replaces the rule set at a scope and answers `{"ok": true, "scope": "..."}`. It is an idempotent upsert: re-running with the same body is a no-op, so no per-request idempotency key is needed. A malformed rule set (an unknown trigger, channel, or cadence, a bad combinator, or quiet hours enabled without valid `HH:MM` times) returns `400 invalid_config`.
+`PUT /v1/coach/config/notification-rules` replaces the rule set at a scope and answers `{"ok": true, "scope": "..."}`. It is an idempotent upsert: re-running with the same body is a no-op, so no per-request idempotency key is needed. A malformed rule set (an unknown trigger, channel, or cadence, a bad combinator, quiet hours enabled without valid `HH:MM` times, or an hourly cap outside 1 to 12) returns `400 invalid_config`. Every field you leave out is cleared at that scope, `hourly_cap` included, so the broader scope's value applies.
 
 ```bash
 curl -X PUT https://api.saturday.fit/v1/coach/config/notification-rules \
@@ -272,7 +272,8 @@ curl -X PUT https://api.saturday.fit/v1/coach/config/notification-rules \
       "combinators": [
         { "trigger_a": "under_fuel", "trigger_b": "symptom", "channel": "push", "cadence": "realtime" }
       ],
-      "quiet_hours": { "enabled": true, "start": "22:00", "end": "06:00", "tz": "America/Denver" }
+      "quiet_hours": { "enabled": true, "start": "22:00", "end": "06:00", "tz": "America/Denver" },
+      "hourly_cap": { "enabled": true, "per_hour": 2 }
     }
   }'
 ```
@@ -285,11 +286,13 @@ curl -X PUT https://api.saturday.fit/v1/coach/config/notification-rules \
 
 **Thresholds** are fractions of the as-used prescription. `urgent_threshold` sets the urgent band (`0.6` means below 60%). `amber_threshold` is optional and decouples this trigger's marker line from the shared cutoff; omit it to use the resolved concern cutoff.
 
+**Hourly cap** limits the emails, and separately the pushes, that one athlete's alerts send you in any 60 minutes, urgent alerts included. `per_hour` is a whole number from 1 to 12; with no scope setting `hourly_cap`, it is on at 1 per hour. Alerts over the limit wait and go out together in one email (or one push) when the hour frees, so none is dropped. `"enabled": false` removes the limit; quiet hours and each rule's cadence still apply. In-portal alerts and webhook events are never limited. When an athlete is in two groups that set different caps, the looser one applies: off, or else the higher `per_hour`. The GET response carries `hourly_cap` only where that scope sets it.
+
 **Combinators** are bounded two-trigger ANDs: both legs must be markers on the same session ("sodium short AND a cramp"). Exactly two distinct session-level triggers (`under_fuel`, `symptom`, `low_rating`, `hyponatremia_pattern`, `dial_down`), with no OR, NOT, or nesting. `sleep_trend` and `went_quiet` are window-level and cannot be combined.
 
 ### Presets
 
-`POST /v1/coach/config/preset` applies a named starting point at a scope, which you can then tweak rule by rule. It answers `{"ok": true, "preset": "..."}`; an unknown preset returns `400 invalid_config`.
+`POST /v1/coach/config/preset` applies a named starting point at a scope, which you can then tweak rule by rule. It leaves the scope's `hourly_cap` as it was. It answers `{"ok": true, "preset": "..."}`; an unknown preset returns `400 invalid_config`.
 
 ```bash
 curl -X POST https://api.saturday.fit/v1/coach/config/preset \
