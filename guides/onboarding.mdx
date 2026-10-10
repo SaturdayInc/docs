@@ -58,6 +58,7 @@ An incomplete-profile response for a request with an `athlete_id` can carry `pre
 - It asks only the questions that are missing, one per screen, mobile-first, in about two minutes.
 - Each answer commits as it is given, so a half-finished session still narrows the bands.
 - The finish screen asks the athlete's consent to show fuel for their most recent activity. If you have registered an `activity_link_template` on your partner account (`yourapp://activity/{external_id}`, for instance), it deep-links into your activity screen. Otherwise it renders the numbers itself and returns the athlete via your `return_url`.
+- When the athlete's Saturday account is connected to your platform and they are 18 or older, the finish screen also asks "Let \{your platform\} see your fueling answers?". Yes emails their Saturday address a one-tap confirmation, and sharing starts when they tap it; No turns sharing off at once. See [Reading an athlete's fueling profile](/guides/fueling-profile).
 - The link stays valid for 90 days, and every later incomplete-profile response carries a fresh one, so athletes can come back and edit their answers.
 
 ### 2. Your UI, our questions (headless)
@@ -76,7 +77,9 @@ New questions arrive as recommended rather than required, so a schema change doe
 
 ### 3. Saturday app (once, forever)
 
-If the athlete uses the Saturday app with the same email address they have on your platform, their app onboarding powers their numbers on your platform too, resolved at calculation time rather than synced. Those answers are used for computation only and are never exposed through the API. An athlete can separately choose to share their profile values with you from app settings.
+If the athlete uses the Saturday app and their Saturday account is connected to your athlete record, their app onboarding powers their numbers on your platform too, resolved at calculation time rather than synced. The connection comes from a Saturday checkout link they open from your platform, or from an exact email match they confirm from an email Saturday sends to their Saturday address.
+
+Calculations use those answers whether or not the athlete shares them. You see the answers themselves only if the athlete chooses to share them with your platform: in the Saturday app, with the switch for your platform on the Partner Sharing card in Preferences (one switch per connected partner platform), or on the hosted page's finish screen, confirmed from an email. Nothing is shared until they turn it on, sharing has no expiry, and athletes under 18 cannot share. While they share, [`GET /v1/athletes/{athlete_id}/fueling-profile`](/guides/fueling-profile) returns their sex, age, weight and fueling answers.
 
 ### 4. Pass fields inline
 

@@ -83,7 +83,7 @@ Every field is optional at create time. The athlete's fueling profile is what ma
 | `partner_plan` | string | Set to `annual` to assert bundle-offer eligibility |
 | `org_id` | string | Organization affiliation; must reference an org you created |
 
-Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`, and `subscription_status`. Writes to those are ignored.
+Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`, `subscription_status`, and `profile_sharing`. Writes to those are ignored. `subscription_status` (`full`, `trial`, or `teaser`) and `profile_sharing` (`on`, `off`, or `not_linked`) are computed when you read one athlete with `GET /v1/athletes/{id}`, and are not on lists. `profile_sharing` says whether the athlete shares their Saturday app answers with you; see [Reading an athlete's fueling profile](/guides/fueling-profile).
 
 ### Settings: the fueling profile
 

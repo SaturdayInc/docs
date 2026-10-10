@@ -48,14 +48,19 @@ On the last answer, the page asks: *"Can we show you fuel for one of your activi
 
 ## The app path, narrated
 
-Some athletes use, or will prefer, the Saturday app. When their app account email matches the email you sent on the athlete record, Saturday links them and their app onboarding feeds your calculations, resolved live rather than synced, with nothing for you to build. Their app answers are never exposed to you through the API. If they turn on "share my fueling profile with \{your platform\}" in app settings, the profile values become visible to you as well.
+Some athletes use, or will prefer, the Saturday app. When their app account email matches the email you sent on the athlete record, Saturday emails their Saturday address asking them to confirm the connection to your platform. Once they confirm, their app onboarding feeds your calculations, resolved live rather than synced, with nothing for you to build.
 
-*Tell your athletes:* "use the same email as your \{platform\} account". Matching is exact apart from case and whitespace, so a different address never links, and no error surfaces anywhere for you to catch.
+The answers themselves stay with Saturday until the athlete chooses to share them with you. In the app, Preferences shows a Partner Sharing card with one switch per connected partner platform: "Share my fueling profile with \{your platform\}". On the hosted page, the finish screen asks "Let \{your platform\} see your fueling answers?" and the athlete confirms from an email. Nothing is shared by default, under-18 athletes cannot share, and sharing stays on until they turn it off or disconnect. While it is on, you can read their sex, age, weight and fueling answers.
+
+*Tell your athletes:* "use the same email as your \{platform\} account, and confirm the email Saturday sends you". Matching is exact apart from case and whitespace, so a different address never links, and no error surfaces anywhere for you to catch.
+
+*Your code:* nothing for the numbers. To read the answers, follow [Reading an athlete's fueling profile](/guides/fueling-profile): check `profile_sharing`, handle `athlete.profile_sharing_changed` and `athlete.fueling_profile_updated`, and read `GET /v1/athletes/{athlete_id}/fueling-profile` while it is `on`.
 
 ## What to build, minimally
 
 1. Show `precision.message` and the invite button whenever `profile_complete` is false.
 2. Register `activity_link_template` and `fueling_path_copy` once.
 3. Handle `athlete.profile_completed`, if you want to mark the moment in your UI.
+4. Handle `athlete.profile_sharing_changed`, if you want the athlete's Saturday app answers.
 
 Saturday handles the questions, the hosted page, the linking, and the checkout.
