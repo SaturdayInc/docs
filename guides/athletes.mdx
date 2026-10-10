@@ -125,10 +125,10 @@ Sending any concern key marks the concerns question answered, including when you
 ## Listing athletes
 
 ```bash
-GET /v1/athletes?limit=50&cursor=1737043200
+GET /v1/athletes?limit=50&cursor=1737043200%7Cath_3Hd9
 ```
 
-Pagination is cursor-based, not offset-based. `limit` defaults to 50 and is clamped to 1-200. The response carries `pagination.next_cursor`; pass it back as `cursor` for the next page, and stop when `pagination.has_more` is false.
+Pagination is cursor-based, not offset-based. `limit` defaults to 50 and is clamped to 1-200. The response carries `pagination.next_cursor`; pass it back as `cursor` for the next page, URL-encoded and unchanged, and stop when `pagination.has_more` is false.
 
 Add `?profile_complete=false` to list only the athletes whose profiles are still short of exact numbers. That is your nudge list.
 
