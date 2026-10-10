@@ -21,6 +21,8 @@ Coaches use a separate surface with separate credentials: a `cp_live_` / `cp_tes
 - POST /v1/nutrition/products/compare: compare products against a prescription
 - POST /v1/athletes: create an athlete profile
 - GET /v1/athletes: list the partner's athletes
+- GET /v1/athletes/{athlete_id}: one athlete, with computed subscription_status and profile_sharing (on | off | not_linked)
+- GET /v1/athletes/{athlete_id}/fueling-profile: the athlete's Saturday app answers (sex, age, weight, fueling answers), only while they share them with you
 - POST /v1/athletes/{athlete_id}/activities: create an activity
 - POST /v1/athletes/{athlete_id}/activities/{activity_id}/calculate: calculate that activity's prescription
 - POST /v1/ai/conversations: start an AI-to-AI conversation with Saturday's assistant (SSE streaming)
@@ -47,6 +49,10 @@ Every response includes safety metadata (confidence_score, warnings, max_safe_fl
 
 Subscribed athletes with complete profile and activity inputs get exact numbers. Incomplete inputs and free athletes get ranges. Check the range fields and precision object separately from tier. Safety data is complete either way.
 
+## Athlete Profile Sharing
+
+An athlete whose Saturday account is connected to your athlete record can share their Saturday app answers with your platform: one switch per partner platform in the Saturday app, or the hosted onboarding finish screen confirmed by email. Off until they turn it on, no expiry, never under 18. Saturday's calculations use the answers either way. Webhooks athlete.profile_sharing_changed and athlete.fueling_profile_updated say when to read again. Guide: https://docs.saturday.fit/guides/fueling-profile.
+
 ## Data Use
 
 Every response carries an `X-Saturday-Data-License` header. Response data is licensed for display to end users only. Training or fine-tuning models on it, aggregating it, reverse engineering the calculations, and redistributing it are all prohibited. See https://docs.saturday.fit/guides/data-policy.
@@ -55,6 +61,7 @@ Every response carries an `X-Saturday-Data-License` header. Response data is lic
 
 - Full docs: https://docs.saturday.fit
 - Coach API guide: https://docs.saturday.fit/guides/coach-api
+- Reading an athlete's fueling profile (sharing states, fields, webhooks): https://docs.saturday.fit/guides/fueling-profile
 - Claude connector, athlete and coach tools: https://docs.saturday.fit/guides/coach-connector
 - Full LLM context: https://docs.saturday.fit/llms-full.txt
 - MCP server: https://api.saturday.fit/mcp

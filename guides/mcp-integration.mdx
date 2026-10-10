@@ -74,7 +74,8 @@ Every connection sees the tools below, minus those whose feature gate is closed 
 |------|--------------|------|
 | `calculate_nutrition` | Fuel, hydration, and electrolyte targets for an activity described inline, or for a stored athlete via `athlete_id` | |
 | `create_athlete` | Create an athlete under the partner account | |
-| `get_athlete` | Read an athlete's profile and fueling settings | |
+| `get_athlete` | Read an athlete's profile and fueling settings, with `profile_sharing` | |
+| `get_fueling_profile` | The answers an athlete gave in the Saturday app, while they share them with you; same response as `GET /v1/athletes/{athlete_id}/fueling-profile` | Partner connections |
 | `list_athletes` | Page through the partner's athletes | |
 | `update_athlete` | Partial update of an athlete; `settings` replaces the whole settings object | |
 | `create_activity` | Record a training activity or race for an athlete | |
@@ -94,6 +95,8 @@ Every connection sees the tools below, minus those whose feature gate is closed 
 | `record_bottling_choice` | Persist the plan the athlete committed to | `bottling` |
 
 The gate column names the feature whose stage decides visibility for your partner account; `products`, `knowledge`, and `athlete_insights` are described on the [Feature Gates](/guides/feature-gates) page, and `bottling` is raised per partner. A tool whose feature is at ALPHA appears only for partners on that feature's alpha allowlist, the same rule its REST routes apply. A gated tool is absent from `tools/list` and a call to it returns the same "unknown tool" error as a name that never existed, so absence from `tools/list` is the answer, not an error to retry. Call `tools/list` rather than hardcoding the catalog.
+
+`get_fueling_profile` is listed on partner connections, on a partner key or a partner's athlete-delegated token, and has no feature gate. The Claude connector does not list it: there the caller is the athlete, who reads their account through `get_athlete`. Its result's `sharing` is `on`, `off`, or `not_linked`, and only `on` carries answers; see [Reading an athlete's fueling profile](/guides/fueling-profile).
 
 On the Claude connector, `list_athletes` returns the signed-in athlete alone and `create_athlete` returns that same athlete rather than creating one. On any other athlete-delegated token both are rejected with `athlete_scope`. On every delegated connection an `athlete_id` argument naming a different athlete is rejected with `athlete_scope`.
 
