@@ -154,10 +154,10 @@ The activity response carries the stored prescription inline.
 ## Listing activities
 
 ```bash
-GET /v1/athletes/{athlete_id}/activities?limit=50&cursor=1737043200
+GET /v1/athletes/{athlete_id}/activities?limit=50&cursor=1737043200%7Cact_7Kq2
 ```
 
-Activities come back newest first, paginated by cursor. `limit` defaults to 50 and is clamped to 1-200; pass `pagination.next_cursor` back as `cursor` for the next page. There are no date-range or type filters; filter on your side, or track activities by `external_id`.
+Activities come back newest first, paginated by cursor. `limit` defaults to 50 and is clamped to 1-200; pass `pagination.next_cursor` back as `cursor` for the next page, URL-encoded and unchanged. There are no date-range or type filters; filter on your side, or track activities by `external_id`.
 
 ## Submitting feedback
 
