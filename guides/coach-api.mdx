@@ -103,7 +103,7 @@ curl -H "Authorization: Bearer cp_live_..." \
 }
 ```
 
-The markers come from Saturday's single shared concern definition, so they match the coach portal table and the digest exactly. An athlete who fueled well shows `flagged: false`.
+The markers come from Saturday's single shared concern definition, so they match the coach portal table and the digest exactly. An athlete who fueled well shows `flagged: false`. A row computed from sessions whose source requires credit also carries `source_attributions` (see [Data sources](#data-sources)).
 
 ### Roster digest (flagged-only)
 
@@ -190,7 +190,9 @@ A session recorded on a connected device names where it came from.
 | `device_model` | The device model that service reported (for example `ELEMNT BOLT`). Absent when none was reported. |
 | `source_attributions` | Attribution text a source requires wherever its data, or anything built from it, is shown. Show it verbatim and untranslated beside the session and beside anything you build from it. Absent when no source behind the session requires one. |
 
-The AI report and AI plan responses carry `source_attributions` too, for the sessions the narrative was written from (absent or empty when none requires one). Show them with the narrative.
+The AI report and AI plan responses carry `source_attributions` too, for the sessions the narrative was written from (absent or empty when none requires one). Show them with the narrative. So does each roster and digest row, for the sessions its markers and count are computed from.
+
+A workout recorded on a Garmin device that reached Saturday through another service, such as intervals.icu, carries that service's `source_provider` and a Garmin line in `source_attributions`: `"Garmin Edge 1040"`, or `"Garmin"` when the device model is unknown. [Brand & Attribution](/guides/attribution#data-source-credits) covers how to show these lines.
 
 Sessions from some connected services stay on Saturday and are never returned by the Coach API, so no response carries them or anything built from them. A workout recorded by Garmin or COROS alone is withheld; when the same workout also reached Saturday from another service, it comes back with only that other service's details. When an athlete has connected such a service, the fueling rollup, AI report and AI plan responses, and that athlete's roster row, carry a `withheld` object (`kind`: `connected_app_sessions`, plus a `message` to show). Treat the sessions you do get as incomplete: a short list does not mean the athlete trained less.
 
@@ -399,10 +401,13 @@ Each delivery is a `POST` carrying the event name in `X-Saturday-Event-Type` and
     "value_pct": 0.42,
     "threshold_pct": 0.6,
     "detected_at": 1749480000000,
-    "evaluation": "urgent_scanner"
+    "evaluation": "urgent_scanner",
+    "source_attributions": ["Garmin Edge 1040"]
   }
 }
 ```
+
+`source_attributions` lists the credit the session's sources require, `[]` when none does; an `athlete.needs_attention` event carries the union across its concerns. Show the lines with anything you build from the event.
 
 Each event is delivered once. A non-2xx response or a connection failure is recorded and counts toward the endpoint's `fail_count`; a 2xx resets it, and the endpoint is disabled automatically after 15 consecutive failures. Re-enabling it clears the count.
 

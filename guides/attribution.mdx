@@ -73,6 +73,32 @@ Scope it by surface:
 
 When your integration also relays a third party's data alongside Saturday's (for example a wearable's
 device data), honor that source's attribution too. Name the origin, not only the vendor.
+[Data source credits](#data-source-credits) below gives you the exact text for every activity Saturday
+sends you.
+
+## Data source credits
+
+Some of an athlete's activities reach Saturday from a connected app or device whose terms require
+credit wherever that data, or anything built from it, is shown. Saturday works out the credit for
+you: a response carrying such data has a `source_attributions` array, one line per source. A workout
+recorded on a Garmin device, for example, carries `["Garmin Edge 1040"]`, or `["Garmin"]` when the
+device model is unknown. The array is absent when no source behind the data requires credit.
+
+- **Show each line verbatim and untranslated**, beside the activity and beside anything you build from
+  it: a summary, a chart, a trend, a plan, an AI answer.
+- **Keep it visible without interaction**, the same rule as the Saturday mark: never in a tooltip,
+  footnote, or collapsed panel.
+- **Carry it downstream.** An export, a file, or another system you pass the data to keeps the lines
+  with the data.
+
+| Surface | Where `source_attributions` appears |
+|---|---|
+| The athlete's activities through the [Claude connector](/guides/coach-connector) | Each activity from `GET /v1/athletes/{athlete_id}/activities`, `GET` and `PATCH .../activities/{activity_id}`, and the `list_activities` and `get_activity` tools |
+| Insights | `GET /v1/athletes/{athlete_id}/insights` and the `get_athlete_insights` tool, for every activity analyzed |
+| [Coach API](/guides/coach-api#data-sources) and coach tools | Each rollup and session-detail session, the AI report, and each roster and digest row |
+| [Coach webhooks](/guides/coach-api#webhooks) | Each coach concern event, for the sessions it is about |
+
+Activities a partner creates through the API carry no credit lines: their data is the partner's own.
 
 ## How it should look
 
