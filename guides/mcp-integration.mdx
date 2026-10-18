@@ -33,7 +33,7 @@ There are two ways to reach Saturday's MCP server, depending on who you are:
 | A **person** (athlete or coach) | "Sign in with Saturday" OAuth via the [Saturday connector](/guides/coach-connector) | Your data (athlete) and, for coaches, your roster + config |
 
 <Note>
-  **End users connect via the Saturday connector, with no API key.** If you're an individual athlete or coach connecting your Saturday account to Claude or ChatGPT, see the [Saturday Connector guide](/guides/coach-connector): you add `https://api.saturday.fit/mcp` in the assistant and sign in. The configuration below is for **partners** integrating their platform with a partner API key.
+  **End users connect via the Saturday connector, with no API key.** If you're an individual athlete or coach connecting your Saturday account to Claude, see the [Saturday Connector guide](/guides/coach-connector): you add `https://api.saturday.fit/mcp` in Claude and sign in. The configuration below is for **partners** integrating their platform with a partner API key.
 </Note>
 
 ### Server configuration (partners)
@@ -68,7 +68,7 @@ An unauthenticated `POST /mcp` returns `401` with a `WWW-Authenticate` challenge
 
 ### Tool catalog
 
-Every connection sees the tools below, minus those whose feature gate is closed for the caller. Each tool carries a description, a `title`, a structured `inputSchema`, and MCP annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`). Tool arguments use the same snake_case names as the REST API, and a result arrives as the REST response body in `content[0].text`, with `isError` set on failure.
+Every connection sees the tools below, minus those whose feature gate is closed for the caller. Each tool carries a description, a `title`, a structured `inputSchema`, and MCP annotations (`readOnlyHint`, `destructiveHint` and `openWorldHint` on every tool, `idempotentHint` where it applies). Tool arguments use the same snake_case names as the REST API, and a result arrives as the REST response body in `content[0].text`, with `isError` set on failure.
 
 | Tool | What it does | Gate |
 |------|--------------|------|
@@ -95,13 +95,13 @@ Every connection sees the tools below, minus those whose feature gate is closed 
 
 The gate column names the feature whose stage decides visibility for your partner account; `products`, `knowledge`, and `athlete_insights` are described on the [Feature Gates](/guides/feature-gates) page, and `bottling` is raised per partner. A tool whose feature is at ALPHA appears only for partners on that feature's alpha allowlist, the same rule its REST routes apply. A gated tool is absent from `tools/list` and a call to it returns the same "unknown tool" error as a name that never existed, so absence from `tools/list` is the answer, not an error to retry. Call `tools/list` rather than hardcoding the catalog.
 
-On the Saturday connector, `list_athletes` returns the signed-in athlete alone and `create_athlete` returns that same athlete rather than creating one. On any other athlete-delegated token both are rejected with `athlete_scope`. On every delegated connection an `athlete_id` argument naming a different athlete is rejected with `athlete_scope`.
+On the Saturday connector in Claude, `list_athletes` returns the signed-in athlete alone and `create_athlete` returns that same athlete rather than creating one. On any other athlete-delegated token both are rejected with `athlete_scope`. On every delegated connection an `athlete_id` argument naming a different athlete is rejected with `athlete_scope`.
 
 <Note>
   **Product tools follow the athlete's subscription.** `search_products`,
   `list_curated_products`, and `analyze_product_fit` take an optional `athlete_id`
   and answer at that athlete's tier. A connection where the caller *is* the
-  athlete (the Saturday connector) resolves it from the signed-in account and never
+  athlete (the Saturday connector in Claude) resolves it from the signed-in account and never
   needs to pass one; a platform integration on a partner key passes the athlete's
   id, and gets the category tier until it does. See
   [Freemium Model](/guides/freemium-model#the-product-catalog).

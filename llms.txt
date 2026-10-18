@@ -55,7 +55,7 @@ Every response carries an `X-Saturday-Data-License` header. Response data is lic
 
 - Full docs: https://docs.saturday.fit
 - Coach API guide: https://docs.saturday.fit/guides/coach-api
-- Saturday connector for AI assistants (Claude, ChatGPT), athlete and coach tools: https://docs.saturday.fit/guides/coach-connector
+- Saturday connector for Claude, athlete and coach tools: https://docs.saturday.fit/guides/coach-connector
 - Full LLM context: https://docs.saturday.fit/llms-full.txt
 - MCP server: https://api.saturday.fit/mcp
 - API root discovery: https://api.saturday.fit/v1/
