@@ -12,7 +12,7 @@ Saturday has three authentication methods, one per principal type:
 |--------|----------|--------------|
 | **Partner API Key** | Server-to-server partner integration | `sk_*` Bearer token in the `Authorization` header |
 | **Coach API Key** | A coach's own scripts against their roster | `cp_*` Bearer token in the `Authorization` header |
-| **OAuth2** | Athlete- or coach-delegated access, including the Claude connector | Authorization code flow with PKCE |
+| **OAuth2** | Athlete- or coach-delegated access, including the Saturday connector for AI assistants | Authorization code flow with PKCE |
 
 Most partner integrations start with API keys. Add OAuth2 when you need athletes or coaches to connect their existing Saturday accounts. Coaches automating against their roster use a coach API key, covered in the [Coach API](/guides/coach-api).
 

@@ -259,7 +259,7 @@ A pre-registered client is granted a fixed scope allowlist at registration. Requ
 
 ### Coach scopes
 
-A coach on **Pro Coach tier or higher** (Pro Coach, Head Coach, Business, or Enterprise) can additionally request coach scopes. These unlock the [Coach API](/guides/coach-api) and the coach tools in the [Claude connector](/guides/coach-connector). A coach's OAuth token also carries the athlete-self facet: the same token reads the coach's athlete data on `/v1/athletes/*` and their roster on `/v1/coach/*`, and the route decides which applies.
+A coach on **Pro Coach tier or higher** (Pro Coach, Head Coach, Business, or Enterprise) can additionally request coach scopes. These unlock the [Coach API](/guides/coach-api) and the coach tools in the [Saturday connector](/guides/coach-connector). A coach's OAuth token also carries the athlete-self facet: the same token reads the coach's athlete data on `/v1/athletes/*` and their roster on `/v1/coach/*`, and the route decides which applies.
 
 Tier is re-checked on every request. If a coach's tier lapses, the coach scopes stop resolving and the token quietly degrades to athlete-self access rather than erroring, so handle a suddenly empty roster as a billing state, not an outage.
 
@@ -303,16 +303,16 @@ Saturday fetches, validates, and caches the document when it first sees your `cl
 - The URL must be `https`, use a hostname rather than an IP literal, contain a path, and carry no fragment, userinfo, or dot segments.
 - The document's `client_id` field must **exactly match** the document URL.
 - `redirect_uris` must be `https` URLs or loopback (`http://localhost` / `http://127.0.0.1`) URIs. Loopback URIs match on any port (RFC 8252).
-- CIMD clients are **public clients**: `token_endpoint_auth_method` must be `none` (or absent), and PKCE is mandatory. Confidential CIMD clients (`private_key_jwt`) are not supported.
+- CIMD clients are **public clients**, and PKCE is mandatory. The methods the document lists (`token_endpoint_auth_methods_supported` when present, else `token_endpoint_auth_method`, which defaults to `none`) must include `none`, and Saturday then authenticates the client by PKCE alone. When both fields are present, `token_endpoint_auth_method` must be one of the listed methods. A document is refused when its methods lack `none`, when its `token_endpoint_auth_method` is not in its list, or when either field names a shared-secret method (`client_secret_*`).
 - `grant_types`, when present, must include `authorization_code`; `response_types`, when present, must include `code`.
 - The fetch expects a `200` with a JSON content type within 5 seconds and follows no redirects, so a host that redirects to a `www.` variant fails resolution. Documents over 16 KB are rejected.
 - Documents are cached per their `Cache-Control` headers (clamped between 5 minutes and 24 hours, one hour when the header is absent), so metadata changes propagate within that window. Failed fetches and invalid documents are never cached.
 
-A metadata-document client receives the scope set the discovery documents advertise. Saturday advertises support via `"client_id_metadata_document_supported": true` in its Authorization Server Metadata, so spec-compliant MCP clients, including Claude, select CIMD automatically.
+A metadata-document client receives the scope set the discovery documents advertise. Saturday advertises support via `"client_id_metadata_document_supported": true` in its Authorization Server Metadata, so spec-compliant MCP clients, including Claude and ChatGPT, select CIMD automatically.
 
 ## Discovery (remote MCP connectors)
 
-For the [Claude connector](/guides/coach-connector), clients auto-discover the authorization server, with no manual configuration. Saturday serves the standard metadata documents, derived per-environment from the request host:
+For the [Saturday connector](/guides/coach-connector), clients auto-discover the authorization server, with no manual configuration. Saturday serves the standard metadata documents, derived per-environment from the request host:
 
 | Document | Path | Spec |
 |----------|------|------|
