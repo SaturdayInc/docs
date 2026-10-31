@@ -1,11 +1,11 @@
 ---
-title: 'Claude Connector'
+title: 'Saturday Connector'
 description: 'Connect Saturday to Claude: one connector, athlete and coach tools'
-sidebarTitle: 'Claude Connector'
+sidebarTitle: 'Saturday Connector'
 icon: 'plug'
 ---
 
-# Saturday Claude Connector
+# Saturday Connector
 
 Saturday publishes a remote MCP connector for [Claude](https://claude.ai). There is one connector and one URL; which tools appear depends on who signs in.
 
@@ -22,7 +22,9 @@ In Claude, add a custom connector pointing at:
 https://api.saturday.fit/mcp
 ```
 
-Claude auto-discovers Saturday's authorization server (RFC 9728 / RFC 8414 discovery), walks you through **"Sign in with Saturday,"** and shows a branded consent screen. A coach granting access sees an explicit disclosure that Claude will be able to read their athletes' fueling data and manage their alert settings, and will never write to an athlete's training data.
+Custom connectors work on every Claude plan and, once added, on every Claude app ([Anthropic's guide](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)).
+
+The assistant auto-discovers Saturday's authorization server (RFC 9728 / RFC 8414 discovery), walks you through **"Sign in with Saturday,"** and shows a branded consent screen. A coach granting access sees an explicit disclosure that the assistant will be able to read their athletes' fueling data and manage their alert settings, and will never write to an athlete's training data.
 
 <Note>
   **Subscriber wall.** Only an active Saturday subscriber can complete the connect flow. A non-subscriber sees a "subscription required" page carrying a **Subscribe** link to plans and a **"Use a different account"** option for re-authenticating after signing in with the wrong account. Nothing is written to their account. A lapsed subscriber loses access within about an hour, on the next token refresh (access tokens live one hour).
@@ -34,7 +36,7 @@ The connector speaks the MCP Streamable HTTP transport (`POST /mcp`) and protoco
 
 ## Athlete tools
 
-When an athlete connects, Claude can read and write that athlete's Saturday data. Athlete tools operate strictly on the signed-in athlete; there is no athlete selector. The full catalog is in [MCP Integration](/guides/mcp-integration#tool-catalog), less `get_fueling_profile`, which is for partner platforms. Highlights:
+When an athlete connects, the assistant can read and write that athlete's Saturday data. Athlete tools operate strictly on the signed-in athlete; there is no athlete selector. The full catalog is in [MCP Integration](/guides/mcp-integration#tool-catalog), less `get_fueling_profile`, which is for partner platforms. Highlights:
 
 - `get_athlete`, `update_athlete` read and update the athlete's profile.
 - `list_activities`, `get_activity`, `create_activity` manage the athlete's activities.
@@ -87,11 +89,11 @@ The rules carry `hourly_cap` (`{ enabled, per_hour }`), the limit on emails, and
 
 ## Configuring a roster in one conversation
 
-The connector writes config as well as reading data. A coach can describe their monitoring philosophy in plain English and let Claude configure the whole roster:
+The connector writes config as well as reading data. A coach can describe their monitoring philosophy in plain English and let the assistant configure the whole roster:
 
 > *"Only ping me when sodium is under 60% on long rides for my elite group; bundle everyone else into a Friday digest, and POST concern alerts to my system."*
 
-Claude translates that into:
+The assistant translates that into:
 
 1. `apply_alert_preset` `{ scope: "overall", preset: "balanced" }` sets a baseline for everyone.
 2. `set_notification_rules` `{ scope: "group", scope_id: "grp_elite", rules: { notification_rules: { under_fuel: { enabled: true, urgent_threshold: 0.6, channels: ["webhook"], cadence: "realtime" } } } }`.
