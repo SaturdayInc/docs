@@ -121,3 +121,52 @@ for index, cases in enumerate([batch_cases, [({"created": []}, [])]]):
         )
 
 print("Batch examples passed: Python and TypeScript, partial/all failures and nested athlete settings; no HTTP calls.")
+
+profile_page = (DOCS / "guides/fueling-profile.mdx").read_text()
+profile_python = re.search(r"```python[^\n]*\n(.*?)```", profile_page, re.S).group(1)
+profile_typescript = re.search(r"```typescript[^\n]*\n(.*?)```", profile_page, re.S).group(1)
+# The page's response examples are the fixtures, so the snippets run against what the page shows.
+profile_payloads = [json.loads(m) for m in re.findall(r"```json\n(\{\n  \"object\": \"fueling_profile\".*?)```", profile_page, re.S)]
+assert [p["sharing"] for p in profile_payloads] == ["on", "off", "not_linked"], [p["sharing"] for p in profile_payloads]
+
+profile_runner = r'''
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const { code, payload, expected } = JSON.parse(readFileSync(0, 'utf8'));
+const shown = [];
+const fetch = async (url, init) => {
+  assert.match(url, /\/v1\/athletes\/[^/]+\/fueling-profile$/);
+  assert.equal(init.headers.Authorization, 'Bearer mock');
+  return { ok: true, status: 200, json: async () => payload };
+};
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+await new AsyncFunction('fetch', 'console', 'process', code)(
+  fetch, { log: value => shown.push(value) }, { env: { SATURDAY_API_KEY: 'mock' } },
+);
+assert.deepEqual(shown, expected);
+'''
+
+for payload in profile_payloads:
+    if payload["sharing"] == "on":
+        expected_py = [f"{field}: {answer['value']} (calculations use {answer['calculations_use']})" for field, answer in payload["profile"].items()]
+        expected_ts = [f"{field}: {json.dumps(answer['value'], separators=(',', ':'))} (calculations use {answer['calculations_use']})" for field, answer in payload["profile"].items()]
+    else:
+        expected_py = expected_ts = [f"{payload['sharing']}: {payload['message']}"]
+    shown, urls = [], []
+
+    def get(url, **kwargs):
+        urls.append(url)
+        assert kwargs["headers"]["Authorization"] == "Bearer mock"
+        return SimpleNamespace(json=lambda: payload, raise_for_status=lambda: None)
+
+    with patch.dict(sys.modules, {"requests": SimpleNamespace(get=get)}), patch.dict(os.environ, {"SATURDAY_API_KEY": "mock"}):
+        exec(compile(profile_python, "fueling-profile.mdx", "exec"), {"print": shown.append})
+    assert shown == expected_py, (shown, expected_py)
+    assert urls[0].endswith("/fueling-profile"), urls
+    subprocess.run(
+        ["node", "--input-type=module", "-e", profile_runner],
+        input=json.dumps({"code": profile_typescript, "payload": payload, "expected": expected_ts}),
+        text=True, check=True,
+    )
+
+print("Fueling profile examples passed: Python and TypeScript, on/off/not_linked responses from the page; no HTTP calls.")

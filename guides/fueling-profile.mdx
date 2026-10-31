@@ -1,0 +1,257 @@
+---
+title: "Reading an athlete's fueling profile"
+description: "The answers an athlete gave in the Saturday app, when they choose to share them with your platform"
+sidebarTitle: 'Shared Fueling Profile'
+icon: 'share-nodes'
+---
+
+When an athlete on your platform has connected a Saturday account, Saturday's calculations for that athlete use their Saturday app answers to fill anything you have not stored. Seeing those answers yourself is a separate step, and the athlete decides it: one choice per partner platform, off until they turn it on. This page is the narrative first, written so a developer or an AI assistant building your integration knows what to do in each state, then the reference.
+
+The answers here are the athlete's Saturday app answers, held on their Saturday account. They are not the `settings` you store on your athlete record, which you read with `GET /v1/athletes/{athlete_id}/settings` (see [Athletes](/guides/athletes)).
+
+## State machine
+
+Every athlete on your platform is in exactly one sharing state. `GET /v1/athletes/{athlete_id}` carries it as `profile_sharing`, and `GET /v1/athletes/{athlete_id}/fueling-profile` carries it as `sharing`.
+
+| State | What it means | What your code does |
+|---|---|---|
+| `not_linked` | No Saturday account is connected to this athlete record | Nothing to read. Calculations use what you store. |
+| `off` | A Saturday account is connected, and the athlete has not chosen to share their answers with you | Do not call the route on a timer. Show what you store. Wait for `athlete.profile_sharing_changed`. |
+| `on` | The athlete shares their answers with you | Read `GET /v1/athletes/{athlete_id}/fueling-profile`. Read it again on `athlete.fueling_profile_updated`. |
+
+What moves an athlete between states, and the webhook each move sends:
+
+| Move | Cause | Webhook |
+|---|---|---|
+| `not_linked` → `off` | The athlete confirms the connection to their Saturday account | None from sharing. `GET /v1/athletes/{athlete_id}` shows `off`. |
+| `off` → `on` | The athlete turns sharing on in the Saturday app, or confirms the hosted page's email | `athlete.profile_sharing_changed`, record shows `profile_sharing: "on"` |
+| `on` → `off` | The athlete turns sharing off in the app or on the hosted page, or their account now reads as under 18 | `athlete.profile_sharing_changed`, record shows `profile_sharing: "off"` |
+| `on` → `not_linked` | The connection to the Saturday account goes | `athlete.profile_sharing_changed`, record shows `profile_sharing: "not_linked"` |
+| `not_linked` → `on` | A connection arrives for a Saturday account that shares with you | `athlete.profile_sharing_changed`, record shows `profile_sharing: "on"` |
+| `on`, answers change | The athlete changes a shared answer in the Saturday app | `athlete.fueling_profile_updated`, naming the fields |
+
+An athlete's account connects to your athlete record through a Saturday checkout link they open from your platform, or through an exact email match that the athlete confirms from an email Saturday sends to their Saturday address. See [Freemium Model, Automatic linking by email](/guides/freemium-model#automatic-linking-by-email).
+
+## What the athlete sees
+
+- **In the Saturday app.** Preferences shows a Partner Sharing card once their Saturday account is connected to at least one partner platform, with one switch per connected platform: "Share my fueling profile with \{your platform\}". The line under the switch lists what you see when it is on and says their numbers on your platform stay the same either way. A switch takes effect at once, on or off.
+- **On Saturday's hosted onboarding page.** The finish screen asks "Let \{your platform\} see your fueling answers?" when the athlete's Saturday account is connected to your platform, the athlete is 18 or older, and the account has a verified email address. Yes emails that address a one-tap confirmation, and sharing starts when the athlete taps it. No turns sharing off at once. An athlete who shares sees a Stop sharing button instead.
+- **Under 18.** No switch in the app and no question on the hosted page. You see `off`, with the same message as any athlete who has not shared, so a response never reveals an age.
+- **No expiry.** Sharing stays on until the athlete turns it off, the accounts are disconnected, or the Saturday account is deleted.
+
+The hosted page's Yes needs the email step because you hold the hosted page's link and send it yourself, so a tap on that page alone cannot show that the athlete made the choice. The email goes to the athlete's Saturday address, which you do not control. Its link works for 7 days. Tapping Yes again sends a new link, at most one every 10 minutes and three in all, until the request expires.
+
+## The journey, narrated
+
+**1. You create the athlete with their email.**
+They use the Saturday app under the same address. Saturday emails that address asking them to confirm the connection to your platform. Until they confirm, `profile_sharing` is `not_linked`.
+
+*Your code:* nothing. Calculations use what you store.
+
+**2. They confirm the connection.**
+Their Saturday app answers start filling the gaps in what you store, at calculation time. `profile_sharing` reads `off`: they have not chosen to share the answers themselves.
+
+*Your code:* if you want the answers, tell the athlete they can share them with you from the Saturday app or from Saturday's hosted onboarding page. Do not poll the route.
+
+**3. They turn sharing on.**
+In the app that is one switch. On the hosted page it is Yes and then the link in the email. Either way you receive `athlete.profile_sharing_changed`, carrying the athlete record with `profile_sharing: "on"`.
+
+*Your code:* call `GET /v1/athletes/{athlete_id}/fueling-profile` and store what it returns.
+
+**4. They change an answer in the app.**
+You receive `athlete.fueling_profile_updated`: the athlete record plus `changed_fields`, the names of the answers that changed, never their values.
+
+*Your code:* read the route again for the new values.
+
+**5. They stop sharing, or disconnect.**
+You receive `athlete.profile_sharing_changed` with `profile_sharing` at `off`, or at `not_linked` when the connection itself went. The route returns no answers from then on.
+
+*Your code:* stop treating the answers you hold as the athlete's current Saturday answers. How long you keep what you read is your platform's call under your privacy policy.
+
+## GET /v1/athletes/\{athlete_id\}/fueling-profile
+
+Returns the athlete's sharing state, and their Saturday app answers when it is `on`. Call it with your partner API key, or with an athlete-delegated OAuth token for that same athlete.
+
+<CodeGroup>
+
+```python Python
+import os
+import requests
+
+athlete_id = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
+response = requests.get(
+    f"https://api.saturday.fit/v1/athletes/{athlete_id}/fueling-profile",
+    headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
+)
+response.raise_for_status()
+body = response.json()
+
+if body["sharing"] == "on":
+    for field, answer in body["profile"].items():
+        print(f"{field}: {answer['value']} (calculations use {answer['calculations_use']})")
+else:
+    print(f"{body['sharing']}: {body['message']}")
+```
+
+```typescript TypeScript
+const athleteId = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d";
+const response = await fetch(
+  `https://api.saturday.fit/v1/athletes/${athleteId}/fueling-profile`,
+  { headers: { Authorization: `Bearer ${process.env.SATURDAY_API_KEY}` } }
+);
+if (!response.ok) throw new Error(`Saturday returned ${response.status}`);
+const body = await response.json();
+
+if (body.sharing === "on") {
+  for (const [field, answer] of Object.entries(body.profile)) {
+    console.log(`${field}: ${JSON.stringify(answer.value)} (calculations use ${answer.calculations_use})`);
+  }
+} else {
+  console.log(`${body.sharing}: ${body.message}`);
+}
+```
+
+</CodeGroup>
+
+Every sharing state is a `200`. Switch on `sharing`, never on the text of `message`.
+
+### Sharing on
+
+```json
+{
+  "object": "fueling_profile",
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "sharing": "on",
+  "message": null,
+  "profile": {
+    "sex": { "value": "female", "calculations_use": "saturday_app" },
+    "age": { "value": 34, "calculations_use": "partner" },
+    "athlete_weight_kg": { "value": 61.2, "calculations_use": "saturday_app" },
+    "sweat_level": { "value": 7, "calculations_use": "saturday_app" },
+    "saltiness": { "value": 9, "calculations_use": "partner" },
+    "satiety_level": { "value": null, "calculations_use": "default" },
+    "fitness_level": { "value": 5, "calculations_use": "saturday_app" },
+    "carb_experience": { "value": "range_40_60", "calculations_use": "saturday_app" },
+    "usual_carb_consumption": { "value": "range_60_80", "calculations_use": "saturday_app" },
+    "concerns": {
+      "value": {
+        "performance": true,
+        "gut_distress": false,
+        "heat_tolerance": false,
+        "muscle_cramps": false,
+        "faintness": false,
+        "hunger": false,
+        "thirst": false,
+        "drinking_resistance": false
+      },
+      "calculations_use": "saturday_app"
+    }
+  },
+  "updated_at": 1760000000000
+}
+```
+
+### Sharing off
+
+```json
+{
+  "object": "fueling_profile",
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "sharing": "off",
+  "message": "This athlete has not chosen to share their Saturday app answers with you."
+}
+```
+
+### Not linked
+
+```json
+{
+  "object": "fueling_profile",
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "sharing": "not_linked",
+  "message": "This athlete has not connected a Saturday account, so there are no Saturday app answers to share."
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|---|---|---|
+| `object` | string | Always `fueling_profile` |
+| `athlete_id` | string | The athlete you asked about |
+| `sharing` | string | `on`, `off`, or `not_linked` |
+| `message` | string or null | `null` when `sharing` is `on`; otherwise the reason there are no answers, the two sentences above |
+| `profile` | object | Only when `sharing` is `on`. One entry per shared answer, below |
+| `updated_at` | integer | Only when `sharing` is `on`. When the athlete's Saturday account record was last saved, Unix milliseconds. Any save moves it, including one that changes no shared answer, so use `athlete.fueling_profile_updated` to learn that answers changed |
+
+Each `profile` entry is an object with `value` and `calculations_use`. The names are the calculation-side names (`age` and `athlete_weight_kg`, as a calculate request takes them), and `concerns` holds the eight concern flags in one object:
+
+| Entry | `value` |
+|---|---|
+| `sex` | `male`, `female`, or `intersex`, as the athlete answered |
+| `age` | Whole years, the current year minus the athlete's birth year; `null` outside 10 to 100 |
+| `athlete_weight_kg` | Kilograms to one decimal; `null` outside 20 to 250 kg |
+| `sweat_level` | Integer 1 (light) to 9 (heavy) |
+| `saltiness` | Integer 1 (not salty) to 9 (very salty) |
+| `satiety_level` | Integer 1 (mostly whole food) to 9 (high-octane fuel) |
+| `fitness_level` | Integer 1 (beginner) to 9 (elite) |
+| `carb_experience` | A range token, as in `settings`: `range_0_30`, `range_40_60`, `range_gt_70` |
+| `usual_carb_consumption` | A range token, as in `settings`: `range_lt_60`, `range_60_80`, `range_80_100`, `range_gt_100` |
+| `concerns` | An object of eight booleans: `performance`, `gut_distress`, `heat_tolerance`, `muscle_cramps`, `faintness`, `hunger`, `thirst`, `drinking_resistance` |
+
+`value` is `null` when the athlete has not answered that question in the app, or holds an answer outside what the app writes. `concerns` is `null` when they never answered the concerns question; an object of all `false` means they answered "none of these".
+
+### calculations_use
+
+`value` is always the app answer. `calculations_use` says where the value Saturday's calculations use for this athlete comes from, field by field:
+
+| `calculations_use` | Meaning |
+|---|---|
+| `partner` | Your athlete record holds a value for this field, and calculations use yours. An inline value on a calculate call still wins for that call |
+| `saturday_app` | Your record has no value for this field, and calculations use the app answer |
+| `default` | Neither has a value. Calculations fall back to a default, the field shows up in `precision.missing_fields`, and the numbers come back as ranges |
+
+`partner` with a `value` that differs from what you store means the athlete answered differently in the two places. Calculations use yours; the app answer is there if you want to ask the athlete which is right.
+
+### Errors
+
+| Status | `type` and `code` | When |
+|---|---|---|
+| `401`, `403` | `authentication_error` | Missing, invalid, or revoked credentials. See [Authentication](/authentication) |
+| `403` | `authorization_error`, `athlete_scope` | An athlete-delegated token naming a different athlete |
+| `404` | `resource_not_found`, `athlete_not_found` | No athlete with this id under your partner account |
+| `429` | `rate_limit_error` | See [Rate Limiting](/rate-limiting) |
+| `500` | `api_error`, `storage_error` | Saturday could not read the athlete or their Saturday account; retry with backoff |
+
+Errors use the standard envelope in [Error Handling](/error-handling). An athlete who shares nothing is never an error: that is `200` with `sharing` set to `off` or `not_linked`.
+
+## profile_sharing on GET /v1/athletes/\{athlete_id\}
+
+Reading one athlete returns `profile_sharing` beside `subscription_status` (the record below is trimmed to the fields that matter here):
+
+```json
+{
+  "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "external_id": "your-user-12345",
+  "subscription_status": "full",
+  "profile_sharing": "off",
+  "profile_complete": true
+}
+```
+
+The values are the same three as `sharing`. The field is computed on each read of one athlete. It is in the athlete record the two sharing webhooks carry, and not on `GET /v1/athletes` lists or in the record that `athlete.created`, `athlete.updated` and `athlete.profile_completed` carry. It is absent when Saturday could not read the state on that request; call the fueling-profile route for the answer.
+
+## Webhooks
+
+Two events cover sharing. Subscribe to them by name when you register or update a webhook; full payloads are in [Webhooks](/guides/webhooks#profile-sharing-event-payloads).
+
+- `athlete.profile_sharing_changed`: `data` is the athlete record, as `GET /v1/athletes/{athlete_id}` returns it, with `profile_sharing` showing the new state.
+- `athlete.fueling_profile_updated`: `data` is the same record plus `changed_fields`, the names of the shared answers that changed. Sent only while sharing stays on.
+
+Like every athlete record, `data` names the athlete in `id`, not `athlete_id`.
+
+A webhook is a cue to read the route, which is the source of truth. If one Saturday account is connected to more than one of your athlete records, each record gets an event.
+
+## MCP
+
+Partner MCP connections get a `get_fueling_profile` tool taking `athlete_id`, which returns this route's response. `get_athlete` carries `profile_sharing`, so an agent knows when to call it. See [MCP Integration](/guides/mcp-integration#tool-catalog).

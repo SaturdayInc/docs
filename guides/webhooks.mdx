@@ -74,6 +74,8 @@ These event types are emitted today:
 | `athlete.created` | A new athlete is created |
 | `athlete.updated` | An athlete profile is modified |
 | `athlete.profile_completed` | An athlete's fueling profile crosses from incomplete to complete, which is the cue that this athlete is now eligible for exact prescriptions |
+| `athlete.profile_sharing_changed` | A linked athlete starts or stops sharing their Saturday app answers with you, or the link to their Saturday account goes while they shared. See [Reading an athlete's fueling profile](/guides/fueling-profile) |
+| `athlete.fueling_profile_updated` | An athlete who shares their Saturday app answers with you changes one of them in the app |
 | `athlete.deleted` | An athlete is deleted through the API, or deletes their Saturday account |
 | `activity.created` | A new activity is created |
 | `activity.updated` | An activity is modified |
@@ -124,13 +126,74 @@ Any name outside this list is rejected with `400`, and one bad name fails the en
 
 `reason` is the Stripe event type that ended access, such as `customer.subscription.deleted`, or one of `expired`, `refund`, `dispute`, `email_match_decayed` (an email-matched link that stopped matching), and `simulated` (test env only).
 
+### Profile sharing event payloads
+
+Like the other `athlete.*` events, both sharing events carry the athlete record, as `GET /v1/athletes/{athlete_id}` returns it when the event is sent. The athlete's id is `data.id`. Unlike `athlete.created` and `athlete.updated`, the record includes the two fields computed on read, `subscription_status` and `profile_sharing`.
+
+`athlete.profile_sharing_changed` says the athlete's sharing state changed; `profile_sharing` is the new state, `on`, `off`, or `not_linked`:
+
+```json
+{
+  "id": "evt_4f9a2c7e1b8d3a6f0c5e9b2d7a1f4c8e",
+  "type": "athlete.profile_sharing_changed",
+  "created_at": 1765467600000,
+  "data": {
+    "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "partner_id": "your-partner-id",
+    "external_id": "your-user-12345",
+    "email": "alex@example.com",
+    "settings": { "sweat_level": 7, "saltiness": 5 },
+    "subscription_status": "full",
+    "profile_sharing": "on",
+    "profile_complete": false,
+    "created_at": 1765400000,
+    "updated_at": 1765400000
+  }
+}
+```
+
+It fires when:
+
+- the athlete turns sharing with you on or off, in the Saturday app or on the hosted onboarding page (`on` after they confirm the hosted page's email), or their account now reads as under 18 (`off`);
+- a Saturday account that shares with you is linked to the athlete (`on`);
+- the link goes, or moves to another Saturday account, while the athlete shared with you (`not_linked`, or the new account's `on` or `off`).
+
+A link that arrives while the athlete does not share with you sends nothing; `GET /v1/athletes/{athlete_id}` then reads `off`.
+
+`athlete.fueling_profile_updated` adds `changed_fields` to the record: the names of the shared answers that changed, never their values.
+
+```json
+{
+  "id": "evt_0b7e3d9a5c1f8e2a6d4b0c9f3e7a1d5b",
+  "type": "athlete.fueling_profile_updated",
+  "created_at": 1765467600000,
+  "data": {
+    "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "partner_id": "your-partner-id",
+    "external_id": "your-user-12345",
+    "email": "alex@example.com",
+    "settings": { "sweat_level": 7, "saltiness": 5 },
+    "subscription_status": "full",
+    "profile_sharing": "on",
+    "profile_complete": false,
+    "created_at": 1765400000,
+    "updated_at": 1765400000,
+    "changed_fields": ["sweat_level", "concerns"]
+  }
+}
+```
+
+It fires only while sharing stays on. `changed_fields` uses the entry names of the fueling-profile response (`sex`, `age`, `athlete_weight_kg`, `sweat_level`, `saltiness`, `satiety_level`, `fitness_level`, `carb_experience`, `usual_carb_consumption`, `concerns`), in that order. The record's `settings` are what you store, not the Saturday app answers; read those from `GET /v1/athletes/{athlete_id}/fueling-profile`. The save that turns sharing on sends only `athlete.profile_sharing_changed`, so read the profile then.
+
+Both events go to each athlete record linked to the Saturday account, one event per record. Treat them as a cue to read the fueling-profile route, the source of truth, rather than as an ordered log: the record is read when the event is sent, so a late redelivery shows the athlete as they are then. Their ids are `evt_` and 32 hex characters, the same on a redelivery, so a repeat can be dropped by `id`.
+
 <Note>
   Don't cache tier from webhooks alone. `GET /v1/athletes/{id}` returns a computed `subscription_status` (`full` | `trial` | `teaser`) whenever you need ground truth, for example when an athlete returns from checkout.
 </Note>
 
 ## Webhook payload format
 
-Every delivery has this envelope. `id` is a UUID and `created_at` is a Unix timestamp in **milliseconds**. This one carries a full-tier prescription from `POST /v1/nutrition/calculate`:
+Every delivery has this envelope. `id` identifies the event and `created_at` is a Unix timestamp in **milliseconds**. This one carries a full-tier prescription from `POST /v1/nutrition/calculate`:
 
 ```json
 {
@@ -162,7 +225,9 @@ What `data` carries depends on the event:
 
 | Event | `data` |
 |-------|--------|
-| `athlete.created`, `athlete.updated`, `athlete.profile_completed` | The athlete record, as `GET /v1/athletes/{athlete_id}` returns it |
+| `athlete.created`, `athlete.updated`, `athlete.profile_completed` | The athlete record, as `GET /v1/athletes/{athlete_id}` returns it, without the two fields computed on read, `subscription_status` and `profile_sharing` |
+| `athlete.profile_sharing_changed` | The athlete record, as `GET /v1/athletes/{athlete_id}` returns it, `subscription_status` and `profile_sharing` included |
+| `athlete.fueling_profile_updated` | The same record, plus `changed_fields` |
 | `athlete.deleted` | `athlete_id` only |
 | `activity.created`, `activity.updated` | The activity record |
 | `activity.deleted` | `athlete_id` and `activity_id` only |
@@ -172,7 +237,7 @@ What `data` carries depends on the event:
 
 A calculation with no athlete (a `POST /v1/nutrition/calculate` without `athlete_id`) carries neither id; `tier` tells you which tier the caller received.
 
-Athlete, activity, and event identifiers are all UUIDs; they carry no prefix, so do not pattern-match on one.
+Athlete and activity identifiers are UUIDs with no prefix. Treat an event `id` as an opaque string: most are UUIDs, an `athlete.deleted` sent because the athlete deleted their Saturday account is `athlete_deleted_` and the athlete id, and the two sharing events are `evt_` and 32 hex characters. Do not pattern-match on any of them.
 
 ## Verifying webhook signatures (HMAC-SHA256)
 
