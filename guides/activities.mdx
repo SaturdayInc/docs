@@ -149,7 +149,7 @@ Returns the most recently calculated prescription for this activity, wrapped wit
 GET /v1/athletes/{athlete_id}/activities/{activity_id}
 ```
 
-The activity response carries the stored prescription inline.
+The activity response carries the stored prescription inline. An athlete's synced activity read through the [Saturday connector in Claude](/guides/coach-connector) can also carry `source_attributions`, the credit its data source requires; see [Data source credits](/guides/attribution#data-source-credits).
 
 ## Listing activities
 
