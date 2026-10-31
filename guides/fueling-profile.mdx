@@ -5,7 +5,7 @@ sidebarTitle: 'Shared Fueling Profile'
 icon: 'share-nodes'
 ---
 
-When an athlete on your platform has connected a Saturday account, Saturday's calculations for that athlete use their Saturday app answers to fill anything you have not stored. Seeing those answers yourself is a separate step, and the athlete decides it: one choice per partner platform, off until they turn it on. This page is the narrative first, written so a developer or an AI assistant building your integration knows what to do in each state, then the reference.
+When an athlete on your platform has connected a Saturday account, Saturday's calculations for that athlete use their Saturday app answers to fill anything you have not stored, unless the athlete is under 18. Seeing those answers yourself is a separate step, and the athlete decides it: one choice per partner platform, off until they turn it on. This page is the narrative first, written so a developer or an AI assistant building your integration knows what to do in each state, then the reference.
 
 The answers here are the athlete's Saturday app answers, held on their Saturday account. They are not the `settings` you store on your athlete record, which you read with `GET /v1/athletes/{athlete_id}/settings` (see [Athletes](/guides/athletes)).
 
@@ -208,7 +208,7 @@ Each `profile` entry is an object with `value` and `calculations_use`. The names
 | `calculations_use` | Meaning |
 |---|---|
 | `partner` | Your athlete record holds a value for this field, and calculations use yours. An inline value on a calculate call still wins for that call |
-| `saturday_app` | Your record has no value for this field, and calculations use the app answer |
+| `saturday_app` | Your record has no value for this field, and calculations use the app answer. The field still shows up in `precision.missing_fields`, since you have not supplied it |
 | `default` | Neither has a value. Calculations fall back to a default, the field shows up in `precision.missing_fields`, and the numbers come back as ranges |
 
 `partner` with a `value` that differs from what you store means the athlete answered differently in the two places. Calculations use yours; the app answer is there if you want to ask the athlete which is right.
