@@ -40,6 +40,7 @@ When an athlete connects, the assistant can read and write that athlete's Saturd
 
 - `get_athlete`, `update_athlete` read and update the athlete's profile.
 - `list_activities`, `get_activity`, `create_activity` manage the athlete's activities.
+- `set_up_week` creates 1 to 60 sessions for the signed-in member in one call through Claude or ChatGPT, with `activity:write`. For two or more sessions, gather each session's real start, sport, duration, effort and sweat conditions, then call it once. Reuse each session's key and original local start day on retries. Call `calculate_activity_prescription` only when you ask for numbers; Saturday plans each session when you open the app. [MCP Integration](/guides/mcp-integration#tool-catalog) covers the arguments and per-session results.
 - `calculate_activity_prescription`, `get_activity_prescription` ask Saturday's engine to compute the prescription. It is never writable by hand.
 - `build_bottling_plan`, `record_bottling_choice` turn the prescription into a bottle-by-bottle plan, returned as text and structured content, and record the plan they commit to. [Bottling plans](/guides/mcp-integration#bottling-plans) has the arguments and result shape.
 - `calculate_nutrition`, `search_products`, `analyze_product_fit`, `get_athlete_insights`, `search_knowledge`.
