@@ -115,6 +115,20 @@ The result contains `created_count` and `sessions` in input order. Each session 
   [Freemium Model](/guides/freemium-model#the-product-catalog).
 </Note>
 
+### Session links
+
+When the caller is the athlete, a member connected through Claude or ChatGPT, every session returned by `create_activity`, `get_activity` and `list_activities`, and every `created` or `already_there` session in a `set_up_week` result, carries `links`, an object with one URL per screen, each of the form `https://saturday.fit/go/<key>/<session id>`:
+
+| Key in `links` | Opens |
+|----------------|-------|
+| `activity` | The session |
+| `prepare` | Prep for the session |
+| `consume` | The session's drinking plan |
+
+Give the athlete the link that fits what they asked for. On a phone the link opens that screen in the Saturday app. On a computer it shows a QR code to scan with the phone. A link holds the session id as one path segment and no query string, and it opens the session only in an app signed in to the account that owns it. Partner connections do not receive `links`.
+
+For a linked session, a fourth path segment picks one leg by zero-based index on `consume`: `https://saturday.fit/go/consume/session-123/1` opens the second leg. `activity` and `prepare` open the whole session.
+
 ### Bottling plans
 
 `build_bottling_plan` takes `carb_g`, `sodium_mg`, `fluid_ml`, and `duration_min` from a prescription, plus optional `activity_id`, `activity_type`, `strategy`, `vessel_count`, `vessels`, and `products`, and returns the plan twice: as text in `content`, and as `structuredContent` carrying the `plan` object with a `createdAt` and `seq` election key, the `products` you passed, and the athlete's `saved` carriage context when one exists. `strategy` is `evenly`, `concentrate`, or `goldilocks` (the default, which balances the two). When the totals will not fit the vessels, the plan carries an escalation state: carry it more concentrated and top up with water, rather than a dead end. `record_bottling_choice` takes the committed `plan` object back, once, when the athlete settles on it.
@@ -160,7 +174,7 @@ How a Claude-powered agent might use Saturday's tools in a conversation:
 
 1. Gather each session's real start, sport, duration and effort. Judge sweat per session from the forecast at that hour and place, the sport, effort, and indoor or outdoor conditions. An indoor trainer with a fan in an air-conditioned room is low.
 2. Call `set_up_week` once for two or more sessions, up to 60, choosing a short key for each. A retry can contain one session.
-3. Report the per-session results and any refusal reasons. Call `calculate_activity_prescription` only when the member asks for numbers; Saturday plans each session when the member opens the app.
+3. Report the per-session results and any refusal reasons, and offer the `links` URL that fits what the member asked for. Call `calculate_activity_prescription` only when the member asks for numbers; Saturday plans each session when the member opens the app.
 
 ## Safety-aware tool descriptions
 
