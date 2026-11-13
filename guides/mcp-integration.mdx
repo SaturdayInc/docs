@@ -79,6 +79,7 @@ Every connection sees the tools below, minus those whose feature gate is closed 
 | `list_athletes` | Page through the partner's athletes | |
 | `update_athlete` | Partial update of an athlete; `settings` replaces the whole settings object | |
 | `create_activity` | Record a training activity or race for an athlete | |
+| `set_up_week` | Create 1 to 60 sessions in one call | Claude or ChatGPT member connection; `activity:write` |
 | `list_activities` | Page through an athlete's activities | |
 | `get_activity` | One activity with its stored prescription and feedback | |
 | `calculate_activity_prescription` | Calculate and store the prescription for a stored activity | |
@@ -99,6 +100,10 @@ The gate column names the feature whose stage decides visibility for your partne
 `get_fueling_profile` is listed on partner connections, on a partner key or a partner's athlete-delegated token, and has no feature gate. The Saturday connector in Claude does not list it: there the caller is the athlete, who reads their account through `get_athlete`. Its result's `sharing` is `on`, `off`, or `not_linked`, and only `on` carries answers; see [Reading an athlete's fueling profile](/guides/fueling-profile).
 
 On the Saturday connector in Claude, `list_athletes` returns the signed-in athlete alone and `create_athlete` returns that same athlete rather than creating one. On any other athlete-delegated token both are rejected with `athlete_scope`. On every delegated connection an `athlete_id` argument naming a different athlete is rejected with `athlete_scope`.
+
+`set_up_week` is available only to members connected through Claude or ChatGPT with `activity:write`. Pass `sessions`, a list of 1 to 60 objects, each with `key`, `type`, `start`, `duration_min`, `intensity_level` and `thermal_stress_level`; `is_race_event` and `name` are optional. `start` follows the same date-time formats and time-zone rules as `create_activity`. One call counts once against the member's rate limits. This tool has no REST route.
+
+The result contains `created_count` and `sessions` in input order. Each session has its `key` and `status`: `created` or `already_there` includes `id` and `start`; `refused` includes `reason`. A refused session does not block the others. Reuse the same key and original local start day on retries: an existing session is returned with its current start without writes, and a deleted session is created again. Use different keys for separate sessions on the same day. Lists outside 1 to 60 are refused before any writes.
 
 <Note>
   **Product tools follow the athlete's subscription.** `search_products`,
@@ -150,6 +155,12 @@ How a Claude-powered agent might use Saturday's tools in a conversation:
 2. `search_products` with `{query: "gel"}` (matched against product name, brand, type, and keywords, ten results at most)
 
 **Agent synthesizes:** Uses Saturday's prescription + product results + safety warnings to give a complete race-day fueling plan.
+
+**For a week of training:**
+
+1. Gather each session's real start, sport, duration and effort. Judge sweat per session from the forecast at that hour and place, the sport, effort, and indoor or outdoor conditions. An indoor trainer with a fan in an air-conditioned room is low.
+2. Call `set_up_week` once for two or more sessions, up to 60, choosing a short key for each. A retry can contain one session.
+3. Report the per-session results and any refusal reasons. Call `calculate_activity_prescription` only when the member asks for numbers; Saturday plans each session when the member opens the app.
 
 ## Safety-aware tool descriptions
 
