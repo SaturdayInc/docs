@@ -43,7 +43,6 @@ Partners may not use API response data for:
 |--------|---------|-------|
 | `X-Saturday-Data-License` | Every response, including errors and 404s | `display-only`: data may be displayed to end users and cached for that purpose, and used for nothing else |
 | `X-Saturday-Data-Training` | Every response, including errors and 404s | `prohibited`: training or fine-tuning ML or AI models on response data is prohibited |
-| `X-Saturday-Data-Attribution` | Teaser-tier responses | `required` |
 
 Both license headers are set before authentication runs, so they appear on rate-limit rejections and auth failures too. The rest of the license is listed under Prohibited uses on this page.
 
@@ -57,7 +56,7 @@ When displaying teaser/free response data, partners must show "Powered by Saturd
 - **Link**: Attribution must link to `saturday.fit` or the subscription `subscribe_url`
 - **Mark**: use the "Powered by Saturday" logo where it fits; appropriately sized plain text is a valid fallback
 
-Teaser responses carry `X-Saturday-Data-Attribution: required`. Every calculation response carries an `attribution` object with the text, logo URL, and link to display; its `required` flag is `true` on every tier.
+Every calculation response carries an `attribution` object with the text, logo URL, and link to display; its `required` flag is `true` on every tier.
 
 ### Full tier (required, lighter)
 
