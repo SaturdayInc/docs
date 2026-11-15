@@ -59,9 +59,9 @@ Three cases produce a `rate_limit_error`, and they want different handling:
 |------|-------|---------------|------------|
 | `rate_limit_exceeded` | Token bucket empty | Present | Wait it out, then continue |
 | `rate_limit_exceeded` | Daily call ceiling reached | Absent | Stop until midnight UTC. The message states the limit |
-| `rate_limited` | Request-pattern friction: a calculation sweep, or a daily budget below | Absent | After a sweep, every calculation on your account is refused for up to 15 minutes; a daily budget resets at midnight UTC. The message says which. Contact api@saturday.fit if the traffic is legitimate |
+| `rate_limited` | Request-pattern friction: a calculation sweep, or a daily budget below | Present after a sweep, absent for a daily budget | After a sweep, every calculation on your account is refused until `Retry-After` passes, up to 15 minutes; a daily budget resets at midnight UTC. The message says which. Requests refused with a `400` never count toward a sweep. Contact api@saturday.fit if the traffic is legitimate |
 
-Read `Retry-After` with a fallback rather than indexing it, since two of the three cases omit it:
+Read `Retry-After` with a fallback rather than indexing it, since the daily ceiling and the daily budgets omit it:
 
 <CodeGroup>
 

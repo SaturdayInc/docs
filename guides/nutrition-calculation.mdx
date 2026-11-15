@@ -93,6 +93,8 @@ For the highest accuracy, include an athlete reference:
 
 When you include an `athlete_id`, Saturday reads that athlete's stored profile: sex, year of birth, body weight, sweat level, saltiness, carb experience, usual carb consumption, satiety level, fitness level, and fueling concerns. Inline fields in the request body override the stored values for that one call.
 
+An `athlete_id` your account does not hold is refused with `404` and code `athlete_not_found`; leave `athlete_id` out for a range estimate.
+
 ## Understanding the response
 
 This example shows an exact full-tier response with complete inputs. Teaser responses and incomplete full-tier profiles contain range fields instead, even when the request succeeds.
@@ -189,7 +191,7 @@ Every calculation response includes a `safety` block, on every tier. See [Safety
 | Hiking | `hike` | Long-duration, variable intensity |
 | Weightlifting | `lift` | Strength training |
 
-These seven keys are the complete set. `GET /v1/activity-types` returns the same list with descriptions, and accepts an optional `?activity_type=` filter to validate a single key.
+These seven keys are the complete set, accepted in any letter case. Any other `activity_type` is refused with `400` and code `invalid_value`, on calculate, on each batch scenario and on activity create, so map your own sport names first: `POST /v1/infer/activity-type` does it from a title. `GET /v1/activity-types` returns the same list with descriptions, and accepts an optional `?activity_type=` filter to validate a single key.
 
 <Note>
 Every calculation response carries a `precision` object: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
