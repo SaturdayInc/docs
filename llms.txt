@@ -55,7 +55,7 @@ An athlete whose Saturday account is connected to your athlete record can share 
 
 ## Data Use
 
-Every response carries an `X-Saturday-Data-License` header. Response data is licensed for display to end users only. Training or fine-tuning models on it, aggregating it, reverse engineering the calculations, and redistributing it are all prohibited. See https://docs.saturday.fit/guides/data-policy.
+Every response carries the headers `X-Saturday-Data-License: display-only` and `X-Saturday-Data-Training: prohibited`. Response data is licensed for display to end users only. Training or fine-tuning models on it, aggregating it, reverse engineering the calculations, and redistributing it are all prohibited. See https://docs.saturday.fit/guides/data-policy.
 
 ## Documentation
 

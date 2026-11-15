@@ -11,7 +11,7 @@ This page covers how partners may and may not use data returned by Saturday's AP
 
 ## Data license
 
-Saturday grants partners a limited license to use API response data. This license is communicated programmatically via the `X-Saturday-Data-License` response header on every API response.
+Saturday grants partners a limited license to use API response data. This license is communicated programmatically via the `X-Saturday-Data-License` and `X-Saturday-Data-Training` response headers on every API response.
 
 ### Permitted uses
 
@@ -41,10 +41,11 @@ Partners may not use API response data for:
 
 | Header | Sent on | Value |
 |--------|---------|-------|
-| `X-Saturday-Data-License` | Every response, including errors and 404s | `Response data is licensed for display to end users only. Use for ML/AI training, model fine-tuning, data aggregation, reverse engineering, or redistribution is prohibited.` |
+| `X-Saturday-Data-License` | Every response, including errors and 404s | `display-only`: data may be displayed to end users and cached for that purpose, and used for nothing else |
+| `X-Saturday-Data-Training` | Every response, including errors and 404s | `prohibited`: training or fine-tuning ML or AI models on response data is prohibited |
 | `X-Saturday-Data-Attribution` | Teaser-tier responses | `required` |
 
-The license header is set before authentication runs, so it appears on rate-limit rejections and auth failures too. Match on the header's presence rather than parsing its text, which may be reworded.
+Both license headers are set before authentication runs, so they appear on rate-limit rejections and auth failures too. The rest of the license is listed under Prohibited uses on this page.
 
 ## Attribution requirements
 
