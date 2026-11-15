@@ -255,9 +255,9 @@ Most of the Coach API is a configuration surface. It writes the same alert-rule 
 
 ### Notification rules
 
-`GET /v1/coach/config/notification-rules?scope=overall` reads the rules set at exactly that scope, not the merged resolution. A scope with no rules returns an empty rule set.
+`GET /v1/coach/config/notification-rules?scope=overall` reads the rules set at exactly that scope, not the merged resolution. A scope with no rules returns an empty rule set. The response always carries `channel_config`, where email and push alerts go: `email` (`enabled`, `address`) and `push` (`enabled`, `devices`).
 
-`PUT /v1/coach/config/notification-rules` replaces the rule set at a scope and answers `{"ok": true, "scope": "..."}`. It is an idempotent upsert: re-running with the same body is a no-op, so no per-request idempotency key is needed. A malformed rule set (an unknown trigger, channel, or cadence, a bad combinator, quiet hours enabled without valid `HH:MM` times, or an hourly cap outside 1 to 12) returns `400 invalid_config`. Every field you leave out is cleared at that scope, `hourly_cap` included, so the broader scope's value applies.
+`PUT /v1/coach/config/notification-rules` replaces the rule set at a scope and answers `{"ok": true, "scope": "..."}`. It is an idempotent upsert: re-running with the same body is a no-op, so no per-request idempotency key is needed. A malformed rule set (an unknown trigger, channel, or cadence, a bad combinator, quiet hours enabled without valid `HH:MM` times, or an hourly cap outside 1 to 12) returns `400 invalid_config`. Every field you leave out is cleared at that scope, `hourly_cap` and `channel_config` included, so the broader scope's value applies. The overall scope has nothing broader: a set without `channel_config` there turns email and push alerts off, so send back the `channel_config` you read.
 
 ```bash
 curl -X PUT https://api.saturday.fit/v1/coach/config/notification-rules \
