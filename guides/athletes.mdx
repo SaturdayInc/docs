@@ -63,7 +63,13 @@ console.log(`Saturday ID: ${athlete.id}`);
 
 ### External IDs
 
-The `external_id` field maps the Saturday athlete to your platform's user. This is your user ID, not Saturday's. Use it to look athletes up without storing Saturday's own IDs.
+The `external_id` field maps the Saturday athlete to your platform's user. This is your user ID, not Saturday's. Use it to look athletes up without storing Saturday's own IDs:
+
+```bash
+GET /v1/athletes?external_id=your-user-12345
+```
+
+The answer lists every athlete you created with that `external_id`, newest first, in one page. Saturday does not deduplicate `external_id`, so a create that you retry after a timeout makes a second athlete. Look the id up first and create only when the list is empty.
 
 ## Profile fields
 
@@ -76,7 +82,7 @@ Every field is optional at create time. The athlete's fueling profile is what ma
 | `external_id` | string | Your platform's user ID |
 | `name` | string | Display name |
 | `email` | string | Enables [automatic linking](/guides/freemium-model#automatic-linking-by-email) to an existing Saturday subscriber |
-| `sex` | string | `male`, `female`, or `intersex` |
+| `sex` | string | `male`, `female`, or `intersex`, in any case; stored lowercase. Any other value is refused |
 | `year_of_birth` | integer | Used to derive age. The athlete must be 14 or older |
 | `weight_kg` | number | Body weight, 20 to 250 |
 | `settings` | object | The fueling profile, below |
@@ -100,6 +106,8 @@ Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`
 | `carb_upper_limit_override` | integer | 50 to 150 g/hr, default 150 | No |
 
 `carb_experience` is the most carbohydrate per hour the athlete has ever fueled with; `usual_carb_consumption` is what they typically take. Both are stored as range tokens rather than numbers, because a range is what an athlete can answer without guessing.
+
+On create, on update and on `PATCH /v1/athletes/{id}/settings`, a scale outside 1 to 9, a token outside its list, or a `sex` outside the three values is refused with a `400` of code `invalid_value`, naming the field in `param` and the accepted values in the message. Nothing in that request is saved.
 
 ### Fueling concerns
 
@@ -125,12 +133,12 @@ Sending any concern key marks the concerns question answered, including when you
 ## Listing athletes
 
 ```bash
-GET /v1/athletes?limit=50&cursor=1737043200%7Cath_3Hd9
+GET /v1/athletes?limit=50&cursor=1737043200%7Ca1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
 ```
 
 Pagination is cursor-based, not offset-based. `limit` defaults to 50 and is clamped to 1-200. The response carries `pagination.next_cursor`; pass it back as `cursor` for the next page, URL-encoded and unchanged, and stop when `pagination.has_more` is false.
 
-Add `?profile_complete=false` to list only the athletes whose profiles are still short of exact numbers. That is your nudge list.
+Add `?profile_complete=false` to list only the athletes whose profiles are still short of exact numbers. That is your nudge list. Add `?external_id=` to find the athletes you created for one of your users; see [External IDs](#external-ids).
 
 ## Updating an athlete
 

@@ -76,10 +76,10 @@ The safety block is present on every prescription response, but not every endpoi
 | `not_instructions` | `true` | `true` |
 | `requires_human_review` | `false` | `false` |
 | `confidence_score` | Derived from band width | Always `0` |
-| `warnings` | Threshold warnings, else `[]` | Always `null` |
+| `warnings` | Threshold warnings, else `[]` | Always `[]` |
 
 <Warning>
-  If your integration drives fueling from `POST /v1/athletes/{id}/activities/{id}/calculate`, you are not receiving prescription warnings. Call `POST /v1/nutrition/calculate` with the same parameters when you need them, and handle `warnings: null` rather than assuming an array.
+  If your integration drives fueling from `POST /v1/athletes/{id}/activities/{id}/calculate`, you are not receiving prescription warnings: the array is always empty there. Call `POST /v1/nutrition/calculate` with the same parameters when you need them.
 </Warning>
 
 ## Engine limits

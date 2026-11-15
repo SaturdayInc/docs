@@ -95,6 +95,8 @@ When you include an `athlete_id`, Saturday reads that athlete's stored profile: 
 
 An `athlete_id` your account does not hold is refused with `404` and code `athlete_not_found`; leave `athlete_id` out for a range estimate.
 
+A field spelled the way the athlete or activity request spells it is refused with `400` and code `unsupported_field`, with the field to send in the message: `weight_kg` (send `athlete_weight_kg`), `year_of_birth` (send `age`), `is_race_event` (send `is_race`), `type` (send `activity_type`), `duration` (send `duration_min`) and `settings` (send the profile fields at the top level, or an `athlete_id`). Any other field the request does not know is ignored.
+
 ## Understanding the response
 
 This example shows an exact full-tier response with complete inputs. Teaser responses and incomplete full-tier profiles contain range fields instead, even when the request succeeds.
