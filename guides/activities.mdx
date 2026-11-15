@@ -127,7 +127,7 @@ Returns the most recently calculated prescription for this activity, wrapped wit
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
-    "confidence_score": 0,
+    "confidence_score": 1,
     "requires_human_review": false,
     "warnings": [],
     "not_instructions": true
@@ -142,7 +142,7 @@ Returns the most recently calculated prescription for this activity, wrapped wit
 </Note>
 
 <Warning>
-  The activity-scoped endpoints populate the two ceilings and `not_instructions`, but not the rest of the block: `confidence_score` comes back as `0` and `warnings` as an empty list from both this read and `POST .../calculate`. Do not render that zero as a confidence of zero, or the empty list as a check that found nothing. When you need a confidence score or prescription warnings, call `POST /v1/nutrition/calculate` with the same parameters. See [Safety](/guides/safety#where-each-safety-field-is-populated).
+  The activity-scoped endpoints do not run the prescription warning checks: `warnings` comes back as an empty list from both this read and `POST .../calculate`, so do not read it as a check that found nothing. When you need prescription warnings, call `POST /v1/nutrition/calculate` with the same parameters. `confidence_score` is the score that calculation gave; a prescription stored before 2026-11-15 reads `0`, which is not a confidence of zero. See [Safety](/guides/safety#where-each-safety-field-is-populated).
 </Warning>
 
 ## Getting an activity with prescription
