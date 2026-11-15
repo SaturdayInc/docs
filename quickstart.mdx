@@ -102,7 +102,7 @@ pip install 'saturday>=0.6.0'
 ```
 
 ```bash TypeScript
-npm install '@saturdayinc/sdk@^0.6.0'
+npm install '@saturdayinc/sdk@>=0.6.0'
 ```
 
 </CodeGroup>
@@ -127,7 +127,7 @@ print(result)
 ```
 
 ```typescript TypeScript (SDK)
-import Saturday from "@saturdayinc/sdk";
+import { Saturday } from "@saturdayinc/sdk";
 
 const apiKey = process.env.SATURDAY_API_KEY;
 if (!apiKey) throw new Error("Set SATURDAY_API_KEY before running this example");
