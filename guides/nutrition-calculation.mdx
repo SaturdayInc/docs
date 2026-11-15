@@ -86,7 +86,7 @@ For the highest accuracy, include an athlete reference:
   "duration_min": 300,
   "intensity_level": 8,
   "is_race": true,
-  "athlete_id": "ath_abc123",
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
   "thermal_stress_level": 7
 }
 ```
@@ -109,7 +109,7 @@ This example shows an exact full-tier response with complete inputs. Teaser resp
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
-    "confidence_score": 0.85,
+    "confidence_score": 1,
     "requires_human_review": false,
     "warnings": [],
     "not_instructions": true
@@ -119,17 +119,20 @@ This example shows an exact full-tier response with complete inputs. Teaser resp
     "logo_url": "https://saturday.fit/logo.png",
     "link": "https://saturday.fit",
     "required": true
+  },
+  "precision": {
+    "profile_complete": true
   }
 }
 ```
 
 ### Confidence score
 
-The `safety.confidence_score` (0.0-1.0) reports how much of the athlete's fueling profile was answered: a complete fueling profile scores 1.0, and every unanswered field lowers the score. `precision.missing_fields` tells you which answers would raise it.
+The `safety.confidence_score` (0.0-1.0) is read from the width of the band: 1.0 when every profile field and every activity input for the call is answered (on the full tier the numbers are then exact), lower as unanswered fields widen the band. Activity inputs weigh heavily: a call that omits `intensity_level` and `thermal_stress_level` can score 0 with a complete stored profile. `precision.missing_fields` tells you which answers would raise it.
 
 | Range | Meaning |
 |-------|---------|
-| 0.8-1.0 | Complete or near-complete profile; the numbers are exact or close to it |
+| 0.8-1.0 | Complete or near-complete inputs; at 1.0 a full-tier response carries exact numbers |
 | 0.5-0.8 | Several profile fields still defaulted |
 | 0.0-0.5 | Mostly population defaults; the band is at or near its cap |
 

@@ -136,6 +136,8 @@ An athlete-scoped calculation with real profile or optional activity inputs star
 }
 ```
 
+`trial_ends_at` is a Unix timestamp in milliseconds, unlike the athlete and activity timestamps, which are in seconds.
+
 Over the daily cap, responses degrade to teaser ranges (never an error) and include `trial_cap_reached: true` plus a human-readable `trial_cap_note` you can surface directly to the athlete. It carries the apology and the reason. Batch scenarios debit the cap individually. After 30 days, responses are teaser tier until the athlete subscribes.
 
 ## Subscription flow
