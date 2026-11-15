@@ -121,7 +121,7 @@ The API root endpoint lists each feature at its stage in this environment:
 GET /v1/
 ```
 
-It needs no key, so it describes the stage everyone sees: features in STEALTH are left out, and alpha-stage ones are marked `(alpha)`. It does not reflect your key's alpha invitations or overrides. To check your own access, call the endpoint: an alpha feature you are not invited to answers `403` with code `feature_alpha`. Features in STEALTH are also omitted from the error catalog and from this documentation.
+It needs no key, so it describes the stage everyone sees: features in STEALTH are left out, and alpha-stage ones are marked `(alpha)`. It does not reflect your key's alpha invitations or overrides. To check your own access, call the endpoint: an alpha feature you are not invited to answers `403` with code `feature_alpha`. Features in STEALTH are also omitted from the error catalog.
 
 ## Response headers reference
 

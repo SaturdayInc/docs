@@ -110,7 +110,7 @@ Counts and the request ID sit at the top level. Each entry in `results` is the s
       "safety": {
         "max_safe_fluid_ml_per_hr": 1500,
         "max_safe_sodium_mg_per_hr": 3000,
-        "confidence_score": 0.65,
+        "confidence_score": 1,
         "requires_human_review": false,
         "warnings": [],
         "not_instructions": true
@@ -124,7 +124,7 @@ Counts and the request ID sit at the top level. Each entry in `results` is the s
       "safety": {
         "max_safe_fluid_ml_per_hr": 1500,
         "max_safe_sodium_mg_per_hr": 3000,
-        "confidence_score": 0.65,
+        "confidence_score": 1,
         "requires_human_review": false,
         "warnings": [],
         "not_instructions": true
@@ -277,6 +277,8 @@ An imported activity accepts these fields and no others. Unknown keys are ignore
   Imported activities are stamped with the time Saturday created them, so a backfill does not preserve the original activity dates. Keep a date mapping keyed by `external_id` if you need it.
 </Note>
 
+Import takes no `meal_before_min`, and exact numbers need it, so a calculation run at import returns ranges even for a complete profile. For exact numbers on an imported activity, set `meal_before_min` with `PATCH /v1/athletes/{athlete_id}/activities/{activity_id}`, then call its `calculate`.
+
 <CodeGroup>
 
 ```python Python
@@ -383,8 +385,8 @@ Every batch response uses the same envelope. The success array is named for the 
   "errors": [
     {
       "index": 1,
-      "code": "invalid_value",
-      "message": "weight_kg must be positive"
+      "code": "out_of_range",
+      "message": "weight_kg must be between 20 and 250 (got -5.00). See https://docs.saturday.fit/guides/athletes"
     }
   ],
   "total": 2,

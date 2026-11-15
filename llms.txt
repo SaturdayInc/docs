@@ -25,7 +25,6 @@ Coaches use a separate surface with separate credentials: a `cp_live_` / `cp_tes
 - GET /v1/athletes/{athlete_id}/fueling-profile: the athlete's Saturday app answers (sex, age, weight, fueling answers), only while they share them with you
 - POST /v1/athletes/{athlete_id}/activities: create an activity
 - POST /v1/athletes/{athlete_id}/activities/{activity_id}/calculate: calculate that activity's prescription
-- POST /v1/ai/conversations: start an AI-to-AI conversation with Saturday's assistant (SSE streaming)
 - POST /v1/webhooks: register a webhook for real-time events
 
 ## Coach Endpoints

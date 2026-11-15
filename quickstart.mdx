@@ -168,7 +168,7 @@ A successful response returns a prescription with safety metadata. The request a
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
-    "confidence_score": 0.72,
+    "confidence_score": 1,
     "requires_human_review": false,
     "warnings": [],
     "not_instructions": true
@@ -178,6 +178,9 @@ A successful response returns a prescription with safety metadata. The request a
     "logo_url": "https://saturday.fit/logo.png",
     "link": "https://saturday.fit",
     "required": true
+  },
+  "precision": {
+    "profile_complete": true
   }
 }
 ```
