@@ -75,7 +75,7 @@ The safety block is present on every prescription response, but not every endpoi
 | `max_safe_sodium_mg_per_hr` | 3000 | 3000 |
 | `not_instructions` | `true` | `true` |
 | `requires_human_review` | `false` | `false` |
-| `confidence_score` | Derived from band width | Always `0` |
+| `confidence_score` | Derived from band width | The same score for an activity calculate, and for a read of a prescription that calculate stored; `0` on a prescription stored before 2026-11-15 |
 | `warnings` | Threshold warnings, else `[]` | Always `[]` |
 
 <Warning>

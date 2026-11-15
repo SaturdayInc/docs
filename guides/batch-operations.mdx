@@ -270,6 +270,7 @@ An imported activity accepts these fields and no others. Unknown keys are ignore
 | `intensity_level` | No | 1 to 9; the calculation clamps values outside the scale. `lift` and `hike` use 1 to 3, store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | No | 1 to 9; the calculation clamps values outside the scale |
 | `is_race_event` | No | Boolean |
+| `meal_before_min` | No | Minutes between the athlete's last meal and the start |
 | `external_id` | No | Your activity ID, carried through and used by finish-screen deep links |
 | `calculate` | No | Calculate a prescription for this activity, see below |
 
@@ -277,7 +278,7 @@ An imported activity accepts these fields and no others. Unknown keys are ignore
   Imported activities are stamped with the time Saturday created them, so a backfill does not preserve the original activity dates. Keep a date mapping keyed by `external_id` if you need it.
 </Note>
 
-Import takes no `meal_before_min`, and exact numbers need it, so a calculation run at import returns ranges even for a complete profile. For exact numbers on an imported activity, set `meal_before_min` with `PATCH /v1/athletes/{athlete_id}/activities/{activity_id}`, then call its `calculate`.
+Exact numbers need `meal_before_min` and `is_race_event` on the activity, so send both on each imported activity when you ask for a calculation at import. Without them the calculation returns ranges even for a complete profile.
 
 <CodeGroup>
 
