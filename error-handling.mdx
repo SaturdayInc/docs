@@ -30,7 +30,7 @@ Saturday uses one error format across all endpoints, modeled on Stripe's error s
 | `message` | Yes | Human-readable explanation |
 | `param` | No | The request parameter that caused the error |
 | `documentation_url` | Yes | Docs link for this code |
-| `request_id` | Yes | Identifier for this request. Include it in support tickets |
+| `request_id` | Yes, except on a `not_found_error` 404 | Identifier for this request. Include it in support tickets |
 
 ## Error types
 
@@ -125,7 +125,7 @@ async function requestWithRetry(
 
 ### Request IDs
 
-Every response carries an `X-Request-ID` header, and every error body repeats it as `request_id`. Quote it when reporting an issue and we can trace that exact request.
+Every response carries an `X-Request-ID` header, and every error body repeats it as `request_id`, with one exception: a `not_found_error` 404 (a URL that matches no endpoint available to your key) carries neither. Quote the request ID when reporting an issue and we can trace that exact request.
 
 ### Error catalog
 
