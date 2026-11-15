@@ -133,7 +133,7 @@ Sending any concern key marks the concerns question answered, including when you
 ## Listing athletes
 
 ```bash
-GET /v1/athletes?limit=50&cursor=1737043200000%7Ca1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+GET /v1/athletes?limit=50&cursor=1737043200%7Ca1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
 ```
 
 Pagination is cursor-based, not offset-based. `limit` defaults to 50 and is clamped to 1-200. The response carries `pagination.next_cursor`; pass it back as `cursor` for the next page, URL-encoded and unchanged, and stop when `pagination.has_more` is false.
