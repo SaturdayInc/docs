@@ -23,7 +23,7 @@ response = requests.post(
     "https://api.saturday.fit/v1/webhooks",
     headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
-        "url": "https://your-app.com/webhooks/saturday",
+        "url": "https://example.com/webhooks/saturday",
         "events": [
             "prescription.calculated",
             "athlete.updated",
@@ -45,7 +45,7 @@ const response = await fetch("https://api.saturday.fit/v1/webhooks", {
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
-    url: "https://your-app.com/webhooks/saturday",
+    url: "https://example.com/webhooks/saturday",
     events: ["prescription.calculated", "athlete.updated", "athlete.created"],
   }),
 });
@@ -212,7 +212,7 @@ Every delivery has this envelope. `id` identifies the event and `created_at` is 
     "safety": {
       "max_safe_fluid_ml_per_hr": 1500,
       "max_safe_sodium_mg_per_hr": 3000,
-      "confidence_score": 0.65,
+      "confidence_score": 1,
       "requires_human_review": false,
       "warnings": [],
       "not_instructions": true

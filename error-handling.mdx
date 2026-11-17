@@ -17,7 +17,7 @@ Saturday uses one error format across all endpoints, modeled on Stripe's error s
     "code": "missing_field",
     "message": "activity_type is required",
     "param": "activity_type",
-    "documentation_url": "https://docs.saturday.fit/errors#missing_field",
+    "documentation_url": "https://docs.saturday.fit/error-handling",
     "request_id": "req_abc123def456"
   }
 }
@@ -29,8 +29,10 @@ Saturday uses one error format across all endpoints, modeled on Stripe's error s
 | `code` | Yes | Specific error code, machine-readable |
 | `message` | Yes | Human-readable explanation |
 | `param` | No | The request parameter that caused the error |
-| `documentation_url` | Yes | Docs link for this code |
-| `request_id` | Yes | Identifier for this request. Include it in support tickets |
+| `documentation_url` | Yes | The docs page that explains this code, the same page `GET /v1/errors` lists for it |
+| `request_id` | Yes, except on a `not_found_error` 404 | Identifier for this request. Include it in support tickets |
+
+A value of the wrong JSON type is refused with code `invalid_value` and the field in `param`, on the athlete, activity, calculate, batch, gear and integration routes: `"duration_min": "90"` answers "duration_min must be a whole number (got a string)." A nested field carries its path, such as `settings.sweat_level`. A body that is not JSON answers `invalid_json`.
 
 ## Error types
 
@@ -125,8 +127,8 @@ async function requestWithRetry(
 
 ### Request IDs
 
-Every response carries an `X-Request-ID` header, and every error body repeats it as `request_id`. Quote it when reporting an issue and we can trace that exact request.
+Every response carries an `X-Request-ID` header, and every error body repeats it as `request_id`, with one exception: a `not_found_error` 404 (a URL that matches no endpoint available to your key) carries neither. Quote the request ID when reporting an issue and we can trace that exact request.
 
 ### Error catalog
 
-`GET /v1/errors` (no auth) lists the error codes for the features exposed to your key.
+`GET /v1/errors` (no auth) lists the error codes, leaving out features in STEALTH.

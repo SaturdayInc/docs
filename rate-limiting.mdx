@@ -59,9 +59,9 @@ Three cases produce a `rate_limit_error`, and they want different handling:
 |------|-------|---------------|------------|
 | `rate_limit_exceeded` | Token bucket empty | Present | Wait it out, then continue |
 | `rate_limit_exceeded` | Daily call ceiling reached | Absent | Stop until midnight UTC. The message states the limit |
-| `rate_limited` | Request pattern flagged as a calculator-extraction sweep | Absent | Vary your inputs, or contact support if the traffic is legitimate |
+| `rate_limited` | Request-pattern friction: a calculation sweep, or a daily budget below | Present after a sweep, absent for a daily budget | After a sweep, every calculation on your account is refused until `Retry-After` passes, up to 15 minutes; a daily budget resets at midnight UTC. The message says which. Requests refused with a `400` never count toward a sweep. Contact api@saturday.fit if the traffic is legitimate |
 
-Read `Retry-After` with a fallback rather than indexing it, since two of the three cases omit it:
+Read `Retry-After` with a fallback rather than indexing it, since the daily ceiling and the daily budgets omit it:
 
 <CodeGroup>
 
@@ -102,11 +102,11 @@ Alongside the token bucket, every account carries daily call ceilings:
 
 Intelligence endpoints (nutrition, products, inference, knowledge, AI) also carry a separate daily ceiling, apart from the total. Data endpoints (your athletes, activities, organizations, webhooks) are not counted against it, so hitting the intelligence ceiling never blocks syncing your data.
 
-Without an agreed intelligence ceiling, your budget grows with your day: a base allowance plus a per-athlete allowance for every athlete you compute for that day. Integrations serving real athletes scale automatically; if your traffic pattern needs more than the budget provides, contact support@saturday.fit.
+Without an agreed intelligence ceiling, your budget grows with your day: a base allowance plus a per-athlete allowance for every athlete you compute for that day. Integrations serving real athletes scale automatically; if your traffic pattern needs more than the budget provides, contact api@saturday.fit.
 
-Request-pattern friction (`rate_limited`) also bounds daily variety on a few surfaces: distinct product lookups, distinct search queries, and calculations that carry no athlete. Repeats always serve, so a real workload (your athletes' usual products, revisited) never feels these; enumeration does. These 429s carry no `Retry-After`; novel inputs resume at midnight UTC.
+Request-pattern friction (`rate_limited`) also bounds a few surfaces by day. Distinct product lookups and distinct search queries are capped, and repeats always serve, so a real workload (your athletes' usual products, revisited) never feels these; enumeration does. Calculations that carry no `athlete_id` have their own budget, 50 a day by default, and every one counts, repeats included; calculations for your athletes are unaffected. These 429s carry no `Retry-After`, and the budgets reset at midnight UTC.
 
-Reaching a ceiling returns `429 Too Many Requests` without a `Retry-After` header; the message names the limit, and counters reset at midnight UTC. `GET /v1/partner` reports the ceilings that apply to your account (`rate_limits.requests_per_day` and `rate_limits.ip_requests_per_day`, `null` when none applies). To raise yours, contact support@saturday.fit.
+Reaching a ceiling returns `429 Too Many Requests` without a `Retry-After` header; the message names the limit, and counters reset at midnight UTC. `GET /v1/partner` reports the ceilings that apply to your account (`rate_limits.requests_per_day` and `rate_limits.ip_requests_per_day`, `null` when none applies). To raise yours, contact api@saturday.fit.
 
 ## Staying under the ceilings
 
@@ -141,4 +141,4 @@ curl https://api.saturday.fit/v1/partner/usage \
 
 ## Requesting higher limits
 
-Outgrowing the ceilings is the point at which we want to hear from you. Send your account or partner ID and expected volume to [support@saturday.fit](mailto:support@saturday.fit). Raising a limit costs nothing.
+Outgrowing the ceilings is the point at which we want to hear from you. Send your account or partner ID and expected volume to [api@saturday.fit](mailto:api@saturday.fit). Raising a limit costs nothing.

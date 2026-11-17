@@ -102,7 +102,7 @@ pip install 'saturday>=0.6.0'
 ```
 
 ```bash TypeScript
-npm install '@saturdayinc/sdk@^0.6.0'
+npm install '@saturdayinc/sdk@>=0.6.0'
 ```
 
 </CodeGroup>
@@ -127,7 +127,7 @@ print(result)
 ```
 
 ```typescript TypeScript (SDK)
-import Saturday from "@saturdayinc/sdk";
+import { Saturday } from "@saturdayinc/sdk";
 
 const apiKey = process.env.SATURDAY_API_KEY;
 if (!apiKey) throw new Error("Set SATURDAY_API_KEY before running this example");
@@ -168,7 +168,7 @@ A successful response returns a prescription with safety metadata. The request a
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
-    "confidence_score": 0.72,
+    "confidence_score": 1,
     "requires_human_review": false,
     "warnings": [],
     "not_instructions": true
@@ -178,6 +178,9 @@ A successful response returns a prescription with safety metadata. The request a
     "logo_url": "https://saturday.fit/logo.png",
     "link": "https://saturday.fit",
     "required": true
+  },
+  "precision": {
+    "profile_complete": true
   }
 }
 ```

@@ -25,7 +25,6 @@ Coaches use a separate surface with separate credentials: a `cp_live_` / `cp_tes
 - GET /v1/athletes/{athlete_id}/fueling-profile: the athlete's Saturday app answers (sex, age, weight, fueling answers), only while they share them with you
 - POST /v1/athletes/{athlete_id}/activities: create an activity
 - POST /v1/athletes/{athlete_id}/activities/{activity_id}/calculate: calculate that activity's prescription
-- POST /v1/ai/conversations: start an AI-to-AI conversation with Saturday's assistant (SSE streaming)
 - POST /v1/webhooks: register a webhook for real-time events
 
 ## Coach Endpoints
@@ -55,7 +54,7 @@ An athlete whose Saturday account is connected to your athlete record can share 
 
 ## Data Use
 
-Every response carries an `X-Saturday-Data-License` header. Response data is licensed for display to end users only. Training or fine-tuning models on it, aggregating it, reverse engineering the calculations, and redistributing it are all prohibited. See https://docs.saturday.fit/guides/data-policy.
+Every response carries the headers `X-Saturday-Data-License: display-only` and `X-Saturday-Data-Training: prohibited`. Response data is licensed for display to end users only. Training or fine-tuning models on it, aggregating it, reverse engineering the calculations, and redistributing it are all prohibited. See https://docs.saturday.fit/guides/data-policy.
 
 ## Documentation
 

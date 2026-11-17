@@ -144,10 +144,9 @@ Saturday data. Both can appear on one screen doing different jobs.
 ## Data license
 
 Attribution rides alongside the data-use terms every response carries in its
-`X-Saturday-Data-License` header, with `X-Saturday-Data-Attribution` added on teaser responses.
-Every calculation response also carries an `attribution` object with the text, logo URL, and link to
-display. Its `required` flag is `true` on teaser responses and `false` on full responses, where the
-compact mark is a term of use rather than a per-response flag.
+`X-Saturday-Data-License` header. Every calculation response also carries an `attribution` object
+with the text, logo URL, and link to display. Its `required` flag is `true` on every tier: the full
+mark on teaser responses, the compact mark on full ones.
 Saturday's prescriptions, product database, and knowledge base are proprietary: no training or
 fine-tuning of models on response data, no reverse-engineering the calculations, no reselling or
 building a derived database. Full terms: [Data Policy](/guides/data-policy).

@@ -26,7 +26,7 @@ import os
 import requests
 
 response = requests.post(
-    "https://api.saturday.fit/v1/athletes/ath_abc123/activities",
+    "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities",
     headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
         "type": "run",
@@ -43,7 +43,7 @@ print(f"Activity ID: {activity['id']}")
 
 ```typescript TypeScript
 const response = await fetch(
-  "https://api.saturday.fit/v1/athletes/ath_abc123/activities",
+  "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities",
   {
     method: "POST",
     headers: {
@@ -74,9 +74,11 @@ console.log(`Activity ID: ${activity.id}`);
 | `duration_min` | integer | Yes | Expected duration in minutes |
 | `intensity_level` | integer | No | 1-9 scale; `lift` and `hike` use 1-3 (low, medium, high), store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | integer | No | 1-9 scale |
-| `is_race_event` | boolean | No | Whether this is a race |
+| `is_race_event` | boolean | No | Whether this is a race. The calculate request spells it `is_race`; here that name is refused |
 | `meal_before_min` | integer | No | Minutes between the athlete's last meal and the start |
 | `external_id` | string | No | Your platform's activity ID |
+
+Three names that belong to other requests are refused with `400` and code `unsupported_field`, with the field to send in the message: `activity_type` (send `type`), `is_race` (send `is_race_event`) and `duration` (send `duration_min`). Any other field the request does not know is ignored.
 
 Create accepts these fields and no others. There is no field for a display name or a scheduled start time; keep those on your side and join on `external_id`.
 
@@ -125,9 +127,9 @@ Returns the most recently calculated prescription for this activity, wrapped wit
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
-    "confidence_score": 0,
+    "confidence_score": 1,
     "requires_human_review": false,
-    "warnings": null,
+    "warnings": [],
     "not_instructions": true
   }
 }
@@ -140,7 +142,7 @@ Returns the most recently calculated prescription for this activity, wrapped wit
 </Note>
 
 <Warning>
-  The activity-scoped endpoints populate the two ceilings and `not_instructions`, but not the rest of the block: `confidence_score` comes back as `0` and `warnings` as `null` from both this read and `POST .../calculate`. Handle the null, and do not render that zero as a confidence of zero. When you need a confidence score or prescription warnings, call `POST /v1/nutrition/calculate` with the same parameters. See [Safety](/guides/safety#where-each-safety-field-is-populated).
+  The activity-scoped endpoints do not run the prescription warning checks: `warnings` comes back as an empty list from both this read and `POST .../calculate`, so do not read it as a check that found nothing. When you need prescription warnings, call `POST /v1/nutrition/calculate` with the same parameters. `confidence_score` is the score that calculation gave; a prescription stored before 2026-11-15 reads `0`, which is not a confidence of zero. See [Safety](/guides/safety#where-each-safety-field-is-populated).
 </Warning>
 
 ## Getting an activity with prescription
@@ -154,7 +156,7 @@ The activity response carries the stored prescription inline. An athlete's synce
 ## Listing activities
 
 ```bash
-GET /v1/athletes/{athlete_id}/activities?limit=50&cursor=1737043200%7Cact_7Kq2
+GET /v1/athletes/{athlete_id}/activities?limit=50&cursor=1737043200%7C3f6c2b1e-8d4a-4e7b-9c2f-1a5d7e9b0c43
 ```
 
 Activities come back newest first, paginated by cursor. `limit` defaults to 50 and is clamped to 1-200; pass `pagination.next_cursor` back as `cursor` for the next page, URL-encoded and unchanged. There are no date-range or type filters; filter on your side, or track activities by `external_id`.
@@ -170,7 +172,7 @@ import os
 import requests
 
 response = requests.post(
-    "https://api.saturday.fit/v1/athletes/ath_abc123/activities/act_xyz789/feedback",
+    "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities/3f6c2b1e-8d4a-4e7b-9c2f-1a5d7e9b0c43/feedback",
     headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
         "rating": 4,
@@ -181,7 +183,7 @@ response = requests.post(
 
 ```typescript TypeScript
 const response = await fetch(
-  "https://api.saturday.fit/v1/athletes/ath_abc123/activities/act_xyz789/feedback",
+  "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities/3f6c2b1e-8d4a-4e7b-9c2f-1a5d7e9b0c43/feedback",
   {
     method: "POST",
     headers: {

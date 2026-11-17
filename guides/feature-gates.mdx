@@ -34,7 +34,7 @@ Alpha features are available to partners who have been invited. Reaching an alph
   "error": {
     "type": "authorization_error",
     "code": "feature_alpha",
-    "message": "The products feature is in alpha. Contact api-support@saturday.fit for early access.",
+    "message": "The products feature is in alpha. Contact api@saturday.fit for early access.",
     "documentation_url": "https://docs.saturday.fit/errors#feature_alpha",
     "request_id": "req_a1b2c3d4e5f6"
   }
@@ -45,7 +45,7 @@ The response carries `X-Saturday-Feature-Stage: ALPHA` whether or not you are on
 
 ```http
 X-Saturday-Feature-Stage: ALPHA
-X-Saturday-Alpha-Notice: This feature is in alpha. Behavior may change without notice. Report issues to api-support@saturday.fit.
+X-Saturday-Alpha-Notice: This feature is in alpha. Behavior may change without notice. Report issues to api@saturday.fit.
 ```
 
 ### BETA
@@ -88,7 +88,7 @@ Six keys gate REST routes. Each covers the routes listed beside it.
 `products`, `knowledge` and `athlete_insights` gate their MCP tools as well as their REST routes, with the same rule: at ALPHA a tool appears only for partners on the feature's alpha allowlist (see [MCP Integration](/guides/mcp-integration#tool-catalog)). Two more keys gate MCP tools rather than REST routes: `coach` (the coach tools, which also require a coach principal on the request) and `bottling` (`build_bottling_plan` and `record_bottling_choice`). Neither has a shipped default, so each is STEALTH until set in configuration.
 
 <Warning>
-  The right-hand column is the default the gateway falls back to, not a statement about production. Each environment stores stages in configuration, and a per-partner override can raise a single partner above the global stage. Read `GET /v1/` for what your key can reach today.
+  The right-hand column is the default the gateway falls back to, not a statement about production. Each environment stores stages in configuration, and a per-partner override can raise a single partner above the global stage. `GET /v1/` shows each feature's current stage in this environment.
 </Warning>
 
 Stage changes are made in configuration rather than by deploying, and propagate within 5 minutes.
@@ -115,13 +115,13 @@ Alpha partners get early access to new features before public beta, a direct sup
 
 ## Checking feature availability
 
-The API root endpoint shows what your key can reach:
+The API root endpoint lists each feature at its stage in this environment:
 
 ```bash
 GET /v1/
 ```
 
-The response lists the reachable endpoints, marking alpha-stage ones. Features in STEALTH are omitted from discovery, from the error catalog, and from this documentation.
+It needs no key, so it describes the stage everyone sees: features in STEALTH are left out, and alpha-stage ones are marked `(alpha)`. It does not reflect your key's alpha invitations or overrides. To check your own access, call the endpoint: an alpha feature you are not invited to answers `403` with code `feature_alpha`. Features in STEALTH are also omitted from the error catalog.
 
 ## Response headers reference
 

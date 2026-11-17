@@ -32,10 +32,12 @@ Calculation responses carry a `precision` object on every tier:
 ```
 
 - **`profile_complete: true`** means the inputs are complete. Full-tier responses carry exact numbers (`carb_g_per_hr` and friends); teaser responses still carry ranges.
-- **`profile_complete: false`** puts bands there instead (`carb_range_g_per_hr` and friends). `missing_fields` arrives sorted most-impactful-first, so it is your collection roadmap: the top entry is the question that buys the most precision.
+- **`profile_complete: false`** puts bands there instead (`carb_range_g_per_hr` and friends). With a partner API key, `missing_fields` arrives sorted most-impactful-first, so it is your collection roadmap: the top entry is the question that buys the most precision.
 - The trial clock starts at the athlete's first calculation carrying any real data. Zero-data calls never start it. Collect the profile first and the 30-day window delivers exact numbers rather than wide bands. See [Freemium Model](/guides/freemium-model#30-day-full-precision-trial).
 
-Each missing field carries a `display_label`, the plain-English name of the question ("how much you sweat"), so you can build the prompt without exposing an internal key. `precision.message` is written for an athlete to read and is safe to surface directly. `band_impact` is in per-hour units, rounded to the same increments the bands use, and says roughly how much narrower the band gets once that field is answered. Take `missing_fields` in the order it arrives rather than re-sorting on these numbers, since rounding can leave two fields tied.
+Each missing field carries a `display_label`, the plain-English name of the question ("how much you sweat"), so you can build the prompt without exposing an internal key. `precision.message` is written for an athlete to read and is safe to surface directly. With a partner API key each field also carries `band_impact`, in per-hour units, rounded to the same increments the bands use, saying roughly how much narrower the band gets once that field is answered. Take `missing_fields` in the order it arrives rather than re-sorting on these numbers, since rounding can leave two fields tied.
+
+An app signed in on an athlete's behalf through [OAuth2](/guides/oauth2) gets `missing_fields` without `band_impact`, in a fixed order.
 
 ### What "complete" means, twice
 

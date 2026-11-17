@@ -86,12 +86,16 @@ For the highest accuracy, include an athlete reference:
   "duration_min": 300,
   "intensity_level": 8,
   "is_race": true,
-  "athlete_id": "ath_abc123",
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
   "thermal_stress_level": 7
 }
 ```
 
 When you include an `athlete_id`, Saturday reads that athlete's stored profile: sex, year of birth, body weight, sweat level, saltiness, carb experience, usual carb consumption, satiety level, fitness level, and fueling concerns. Inline fields in the request body override the stored values for that one call.
+
+An `athlete_id` your account does not hold is refused with `404` and code `athlete_not_found`; leave `athlete_id` out for a range estimate.
+
+A field spelled the way the athlete or activity request spells it is refused with `400` and code `unsupported_field`, with the field to send in the message: `weight_kg` (send `athlete_weight_kg`), `year_of_birth` (send `age`), `is_race_event` (send `is_race`), `type` (send `activity_type`), `duration` (send `duration_min`) and `settings` (send the profile fields at the top level, or an `athlete_id`). Any other field the request does not know is ignored.
 
 ## Understanding the response
 
@@ -109,7 +113,7 @@ This example shows an exact full-tier response with complete inputs. Teaser resp
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
-    "confidence_score": 0.85,
+    "confidence_score": 1,
     "requires_human_review": false,
     "warnings": [],
     "not_instructions": true
@@ -119,17 +123,20 @@ This example shows an exact full-tier response with complete inputs. Teaser resp
     "logo_url": "https://saturday.fit/logo.png",
     "link": "https://saturday.fit",
     "required": true
+  },
+  "precision": {
+    "profile_complete": true
   }
 }
 ```
 
 ### Confidence score
 
-The `safety.confidence_score` (0.0-1.0) reports how much of the athlete's fueling profile was answered: a complete fueling profile scores 1.0, and every unanswered field lowers the score. `precision.missing_fields` tells you which answers would raise it.
+The `safety.confidence_score` (0.0-1.0) is read from the width of the band: 1.0 when every profile field and every activity input for the call is answered (on the full tier the numbers are then exact), lower as unanswered fields widen the band. Activity inputs weigh heavily: a call that omits `intensity_level` and `thermal_stress_level` can score 0 with a complete stored profile. `precision.missing_fields` tells you which answers would raise it.
 
 | Range | Meaning |
 |-------|---------|
-| 0.8-1.0 | Complete or near-complete profile; the numbers are exact or close to it |
+| 0.8-1.0 | Complete or near-complete inputs; at 1.0 a full-tier response carries exact numbers |
 | 0.5-0.8 | Several profile fields still defaulted |
 | 0.0-0.5 | Mostly population defaults; the band is at or near its cap |
 
@@ -186,8 +193,8 @@ Every calculation response includes a `safety` block, on every tier. See [Safety
 | Hiking | `hike` | Long-duration, variable intensity |
 | Weightlifting | `lift` | Strength training |
 
-These seven keys are the complete set. `GET /v1/activity-types` returns the same list with descriptions, and accepts an optional `?activity_type=` filter to validate a single key.
+These seven keys are the complete set, accepted in any letter case. Any other `activity_type` is refused with `400` and code `invalid_value`, on calculate, on each batch scenario and on activity create, so map your own sport names first: `POST /v1/infer/activity-type` does it from a title. `GET /v1/activity-types` returns the same list with descriptions, and accepts an optional `?activity_type=` filter to validate a single key.
 
 <Note>
-Every calculation response carries a `precision` object: `profile_complete`, impact-sorted `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
+Every calculation response carries a `precision` object: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
 </Note>
