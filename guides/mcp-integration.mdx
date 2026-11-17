@@ -117,7 +117,7 @@ The result contains `created_count` and `sessions` in input order. Each session 
 
 ### Session links
 
-When the caller is the athlete, a member connected through Claude or ChatGPT, every session returned by `create_activity`, `get_activity` and `list_activities`, and every `created` or `already_there` session in a `set_up_week` result, carries `links`, an object with one URL per screen, each of the form `https://saturday.fit/go/<key>/<session id>`:
+When the caller is the athlete, a member connected through Claude or ChatGPT, every session returned by `create_activity`, `get_activity` and `list_activities`, and every `created` or `already_there` session in a `set_up_week` result, carries `links`, an object with one URL per screen, each of the form `https://saturday.fit/go/<key>/<handle>`:
 
 | Key in `links` | Opens |
 |----------------|-------|
@@ -125,9 +125,9 @@ When the caller is the athlete, a member connected through Claude or ChatGPT, ev
 | `prepare` | Prep for the session |
 | `consume` | The session's drinking plan |
 
-Give the athlete the link that fits what they asked for. On a phone the link opens that screen in the Saturday app. On a computer it shows a QR code to scan with the phone. A link holds the session id as one path segment and no query string, and it opens the session only in an app signed in to the account that owns it. Partner connections do not receive `links`.
+Give the athlete the link that fits what they asked for. On a phone with Saturday installed the link opens that screen in the app; on a phone without it, a page offers the app; on a computer, a QR code to scan with the phone. A link signs nobody in, and it opens the session only in an app signed in to the account that owns it.
 
-For a linked session, a fourth path segment picks one leg by zero-based index on `consume`: `https://saturday.fit/go/consume/session-123/1` opens the second leg. `activity` and `prepare` open the whole session.
+The handle is the session's `id` for a session Saturday made. For a session a connected app imported, it is a random handle Saturday stores on the session the first time a link is made for it, the same from then on; the connected app's id never appears in a link. Treat the URLs as opaque and pass them on as they are. A session for which no handle could be made comes back without `links`. Partner connections do not receive `links`.
 
 ### Bottling plans
 
