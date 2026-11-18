@@ -96,14 +96,26 @@ When you include an `athlete_id`, Saturday reads that athlete's stored profile: 
 
 ### Session inputs
 
-| Field | Values | What it changes |
-|-------|--------|-----------------|
-| `intensity_level` | 1 to 9 (1 easy, 5 moderate, 9 intervals). `lift` and `hike` use 1 to 3 | Odd levels are the Saturday app's effort bands. An even level computes halfway between the levels on either side. An omitted level computes as 5 (2 for `lift` and `hike`) |
-| `thermal_stress_level` | 1 (cold, dry) to 9 (hot, humid) | Fluid and sodium most of all |
-| `meal_before_min` | Minutes since the athlete's last carb-rich meal | More than 180 plans a fasted start: a 20-minute pre-load before the session and more during it. 180 or fewer plans a fed start |
-| `is_race` | `true` or `false` | A race is planned at a higher tolerance for eating, which raises carbohydrate for most athletes |
+| Field | Values | Notes |
+|-------|--------|-------|
+| `intensity_level` | 1 to 9 (1 easy, 5 moderate, 9 intervals). `lift` and `hike` use 1 to 3 | Odd levels are the Saturday app's effort bands; an even level is an effort in between. An omitted level computes as 5 (2 for `lift` and `hike`) |
+| `thermal_stress_level` | 1 (cold, dry) to 9 (hot, humid) | The session's heat and humidity |
+| `meal_before_min` | Minutes since the athlete's last carb-rich meal | More than 180 plans a fasted start; 180 or fewer plans a fed start |
+| `is_race` | `true` or `false` | Whether the session is a race |
 
-All four belong on every call. An omitted one is an unanswered input: the session still computes (at effort 5, or 2 for `lift` and `hike`; heat 5; fed; training), but the answer comes back as ranges even for a complete profile, with the input named in `precision.missing_fields`. `precision.message` names the athlete's missing profile answers apart from the session inputs your request left out, and `precision.onboarding` appears only when profile answers are missing, since a session input is yours to send.
+All four belong on every call. An omitted one is an unanswered input: the session still computes (at effort 5, or 2 for `lift` and `hike`; heat 5; fed; training), but the answer comes back as ranges even for a complete profile, with the input named in `precision.missing_fields`.
+
+`precision` tells you what to do next, on every tier:
+
+| Field | What it holds |
+|-------|---------------|
+| `missing_fields` | Every field the calculation still needs, profile answers and session inputs alike, most impactful first, each with `band_impact`. `required: true` marks the safety core (sex, age, weight, sweat, saltiness, carb experience, usual carbs, effort and heat); `false` does not mean optional, since the answer stays ranges while any listed field is missing |
+| `missing_profile_fields` | The athlete's profile answers still missing, by the same names. The onboarding link collects them, or your own questions ([Onboarding](/guides/onboarding)) |
+| `missing_session_inputs` | The session inputs your request left out. Send them |
+| `message` | Names both, and where each goes |
+| `onboarding` | Present only when profile answers are missing, since a session input is yours to send |
+
+The two lists name inputs only and come with a partner API key on every tier, teaser included. Both empty is one condition of exact numbers; the other is the athlete's access: a Saturday subscription, a seat license or the partner trial ([Freemium Model](/guides/freemium-model)).
 
 An `athlete_id` your account does not hold is refused with `404` and code `athlete_not_found`; leave `athlete_id` out for a range estimate.
 
@@ -144,14 +156,7 @@ This example shows an exact full-tier response with complete inputs. Teaser resp
 
 ### Per-hour figures
 
-The per-hour figures are the ones the Saturday app shows on its fueling card, so your athletes see the same numbers in both places:
-
-- Whole numbers. Sodium and fluid round to 10.
-- Carbohydrate per hour stops at the athlete's carb ceiling.
-- A fasted start spreads the totals over the session plus its 20-minute pre-load. A 60-minute fasted run with `total_carb_g: 45` shows `carb_g_per_hr: 34` (45 over 80 minutes).
-- A session of 20 minutes or less shows at most 600 mL of fluid per hour.
-
-The `total_*` fields are the amounts for the whole session, the pre-load included.
+The per-hour figures are the ones the Saturday app shows on its Fuel card, so your athletes see the same numbers in both places. They are whole numbers, sodium and fluid in steps of 10, and they are not always the total divided by the session's hours: show them as they come, and read the `total_*` fields for the amounts over the whole session.
 
 ### Confidence score
 
@@ -220,7 +225,7 @@ These seven sports, with `brick` and `triathlon` ([below](#bricks-and-triathlons
 
 ## Bricks and triathlons
 
-A brick (two or more sports back to back) or a triathlon is one session made of legs. Send it as one request with `activity_type` `brick` or `triathlon` and `legs`, never as one request per leg: Saturday computes it as the Saturday app does, as one continuous effort, so its totals are larger than its legs calculated separately.
+A brick (two or more sports back to back) or a triathlon is one session made of legs. Send it as one request with `activity_type` `brick` or `triathlon` and `legs`, never as one request per leg.
 
 ```json
 {
@@ -251,22 +256,22 @@ An answer with exact numbers carries `legs`: each leg's share, in the order sent
 {
   "tier": "full",
   "carb_g_per_hr": 70,
-  "sodium_mg_per_hr": 400,
-  "fluid_ml_per_hr": 600,
+  "sodium_mg_per_hr": 550,
+  "fluid_ml_per_hr": 700,
   "total_carb_g": 140,
-  "total_sodium_mg": 800,
-  "total_fluid_ml": 1200,
+  "total_sodium_mg": 1100,
+  "total_fluid_ml": 1400,
   "legs": [
-    {"duration_min": 90, "total_carb_g": 110, "total_sodium_mg": 600, "total_fluid_ml": 900, "carb_g_per_hr": 73, "sodium_mg_per_hr": 400, "fluid_ml_per_hr": 600},
-    {"duration_min": 30, "total_carb_g": 30, "total_sodium_mg": 200, "total_fluid_ml": 250, "carb_g_per_hr": 60, "sodium_mg_per_hr": 400, "fluid_ml_per_hr": 500}
+    {"duration_min": 90, "total_carb_g": 110, "total_sodium_mg": 850, "total_fluid_ml": 1100, "carb_g_per_hr": 73, "sodium_mg_per_hr": 570, "fluid_ml_per_hr": 730},
+    {"duration_min": 30, "total_carb_g": 30, "total_sodium_mg": 250, "total_fluid_ml": 300, "carb_g_per_hr": 60, "sodium_mg_per_hr": 500, "fluid_ml_per_hr": 600}
   ],
   "precision": {"profile_complete": true}
 }
 ```
 
-The session's per-hour figures are over the legs' total minutes. A leg's per-hour figures are over its own minutes, and the first leg of a fasted start adds the 20-minute pre-load. The legs' totals add up to the session's totals before the session's own rounding. An answer with ranges carries no leg figures.
+Each leg's figures are as the app's leg card shows them, per hour as the [per-hour figures](#per-hour-figures) above. The legs' totals add up to the session's totals before the session's own rounding. An answer with ranges carries no leg figures.
 
-Bricks and triathlons work the same way in [batches](/guides/batch-operations), on [stored activities](/guides/activities#bricks-and-triathlons) and in [prep](/guides/prep-and-products). Product fit and compare size a product for a single sport. Bricks and triathlons are for requests made with a partner API key; an athlete's own assistant connected through the Saturday connector plans single sports.
+Bricks and triathlons work the same way in [batches](/guides/batch-operations), on [stored activities](/guides/activities#bricks-and-triathlons), in [prep, product fit and compare](/guides/prep-and-products#bricks-and-triathlons), each of which answers leg by leg. Bricks and triathlons are for requests made with a partner API key; an athlete's own assistant connected through the Saturday connector plans single sports.
 
 <Note>
 Every calculation response carries a `precision` object: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).

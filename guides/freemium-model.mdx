@@ -130,13 +130,13 @@ An athlete-scoped calculation with real profile or optional activity inputs star
 {
   "tier": "full",
   "tier_source": "trial",
-  "trial_ends_at": 1768063200000,
+  "trial_ends_at": 1768063200,
   "trial_calls_remaining_today": 3,
   "carb_g_per_hr": 62
 }
 ```
 
-`trial_ends_at` is a Unix timestamp in milliseconds, unlike the athlete and activity timestamps, which are in seconds.
+`trial_ends_at` is a Unix timestamp in seconds, like every other time a partner key receives.
 
 Over the daily cap, responses degrade to teaser ranges (never an error) and include `trial_cap_reached: true` plus a human-readable `trial_cap_note` you can surface directly to the athlete. It carries the apology and the reason. Batch scenarios debit the cap individually. After 30 days, responses are teaser tier until the athlete subscribes.
 

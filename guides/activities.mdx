@@ -76,7 +76,7 @@ console.log(`Activity ID: ${activity.id}`);
 | `intensity_level` | integer | No | 1-9 scale; `lift` and `hike` use 1-3 (low, medium, high), store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | integer | No | 1-9 scale |
 | `is_race_event` | boolean | No | Whether this is a race. The calculate request spells it `is_race`; here that name is refused. Exact numbers need it |
-| `meal_before_min` | integer | No | Minutes since the athlete's last carb-rich meal at the start. More than 180 plans a fasted start, with a 20-minute pre-load. Exact numbers need it |
+| `meal_before_min` | integer | No | Minutes since the athlete's last carb-rich meal at the start. More than 180 plans a fasted start. Exact numbers need it |
 | `external_id` | string | No | Your platform's activity ID |
 
 Create takes these fields. It also accepts `name` and `scheduled_at` and ignores them: there is no stored display name or scheduled start time, so keep those on your side and join on `external_id`. Any other field is refused with `400` and code `unsupported_field`, `param` naming it and the message naming the field to send: `activity_type` (send `type`), `is_race` (send `is_race_event`), `duration` (send `duration_min`), or the closest field for a misspelling. See [Error Handling](/error-handling#a-field-the-request-does-not-take).
@@ -85,7 +85,7 @@ Create takes these fields. It also accepts `name` and `scheduled_at` and ignores
 
 ### Bricks and triathlons
 
-A brick or a triathlon is one activity with `type` `brick` or `triathlon` and its `legs`, never one activity per leg: Saturday prescribes for it as the Saturday app does, as one continuous effort, so its totals are larger than its legs prescribed separately.
+A brick or a triathlon is one activity with `type` `brick` or `triathlon` and its `legs`, never one activity per leg.
 
 ```json
 {
@@ -166,7 +166,7 @@ Per-hour figures are whole numbers, as the Saturday app shows them; see [Per-hou
 
 To size the athlete's products against a stored prescription, see [Prep and Products](/guides/prep-and-products).
 
-`calculated_at` is a Unix timestamp in seconds, not an ISO 8601 string. Timestamps across the athlete and activity objects (`created_at`, `updated_at`) use the same encoding.
+`calculated_at` is a Unix timestamp in seconds, not an ISO 8601 string, like every time a partner key receives ([What the API returns](/introduction#what-the-api-returns)).
 
 <Note>
   On this stored-prescription endpoint, read `prescription.*` for values and `safety.*` for guardrails. `POST /v1/nutrition/calculate` instead returns flat nutrition fields. The activity calculation uses the tier-aware envelope described above. The `not_instructions: true` flag marks these as recommendations for a person to consider, not commands to execute.
@@ -271,7 +271,7 @@ Response:
 
 Sending more than a title sharpens the result. The endpoint also reads `pre_activity_comment`, `workout_type` (your provider's own coarse type), `tss_calculation_method`, `structure_summary`, `velocity` in m/s, `has_power`, and `cadence`, and those structured signals resolve many cases before the model is consulted. The API reference names two of these differently, and both spellings work: `activity_name` is `title`, and `source_type` is `workout_type`. You can also send `device`, the recording device's name.
 
-A strength session also carries `intensity`: `1` light, `2` medium, `3` heavy. Lift uses levels 1-3 of `intensity_level`, so pass the value unchanged as `intensity_level` when you create the lift activity; rescaling it onto 1-9 raises the carbohydrate ceiling. An entry that marks a day with no training, such as "Rest day", comes back with `"rest_day": true` and type `"unknown"`; it is not a workout to create.
+A strength session also carries `intensity`: `1` light, `2` medium, `3` heavy. Lift uses levels 1-3 of `intensity_level`, so pass the value unchanged as `intensity_level` when you create the lift activity, without rescaling it onto 1-9. An entry that marks a day with no training, such as "Rest day", comes back with `"rest_day": true` and type `"unknown"`; it is not a workout to create.
 
 For multi-sport titles like "Bike/run brick", use `POST /v1/infer/brick-types`. It takes the same fields plus an optional `segments` list of the legs you already know, in order, and returns every leg in order:
 
