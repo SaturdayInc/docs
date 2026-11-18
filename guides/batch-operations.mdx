@@ -363,7 +363,7 @@ Each calculation runs the same tier-aware path as the single calculate endpoint:
 
 Per-item outcomes ride a `prescriptions` array in the response, each with `index`, `activity_id`, and the tier-aware `result`. A failed calculation never fails the import: the activity is still created, and the failure appears on that item's `code` and `message`.
 
-Imports count against rate limits per item, like batch calculate.
+Imports count against rate limits per item, like batch calculate. Each prescription you ask for counts as one activity calculation besides its import: it needs the nutrition feature (`403` with `feature_alpha` without it) and counts against your daily intelligence limit as well as your daily call limit. An import runs only when both limits have room for all of it, and returns `429` otherwise, with nothing imported.
 
 ## Error handling in batch operations
 
