@@ -128,6 +128,8 @@ The list returns every member under `members`, newest first, with `total`. Remov
 
 A seat subscription is a block of **paid seats** the organization holds; assigning a license to an athlete grants them full-precision API responses while the subscription is active and in its date window. This is the lane for orgs that pay for their athletes' access directly (vs. athletes paying at personal checkout).
 
+Seats are set up with Saturday. Once you have agreed seats with us at api@saturday.fit, we set the number of seats your account may hold, and you create and manage seat blocks for your organizations within it. Until then, creating a seat block returns `403` with code `organization_subscription_restricted`.
+
 ### Create a seat block
 
 ```bash
@@ -144,6 +146,8 @@ POST /v1/organizations/{org_id}/subscriptions
 ```
 
 `type` is `"team"` or `"enterprise"`; `seats` must be positive; `start_date` and `end_date` are both required, in Unix seconds, with `end_date` after `start_date`. The response is `201` with the subscription, including `used_seats` (starts at 0) and `status` (`active`). Manage with `GET /v1/organizations/{org_id}/subscriptions`, which returns them under `subscriptions`, and `PATCH /v1/organizations/{org_id}/subscriptions/{sub_id}`, which updates `seats` (positive), `status` (`active`, `expired`, or `cancelled`), and `end_date`.
+
+Your active seat blocks together stay within the seats agreed for your account. Each block counts its `seats`, or its licenses in use when more athletes hold licenses than that, until it is cancelled, expired or past its `end_date`. Creating a block, raising its seats, extending its dates or setting it back to `active` returns `403` with code `organization_subscription_restricted` when the total would pass the agreed seats. Lowering seats, shortening dates, and cancelling or expiring a block always work.
 
 ### Assign licenses to athletes
 
