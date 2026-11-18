@@ -109,7 +109,7 @@ curl -X POST https://api.saturday.fit/v1/nutrition/calculate \
     "profile_complete": true
   },
   "tier_source": "trial",
-  "trial_ends_at": 1797559527407,
+  "trial_ends_at": 1797582989,
   "trial_calls_remaining_today": 14
 }
 ```
@@ -163,19 +163,20 @@ An athlete whose profile is missing answers gets ranges and a list of what to as
         "display_label": "how much carb your gut is trained for"
       }
     ],
-    "message": "For exact numbers, fill in what is missing. This athlete's profile is missing carb_experience: the onboarding link collects them.",
+    "missing_profile_fields": ["carb_experience"],
+    "message": "For exact numbers, fill in what is missing. This athlete's profile is missing carb_experience: the onboarding link collects it.",
     "onboarding": {
       "url": "https://saturday.fit/onboard?ot=...",
-      "message": "Answer the missing questions once and this athlete gets exact numbers on every future call..."
+      "message": "Answer the missing questions once, or have the athlete onboard in the Saturday app, to get exact numbers for this athlete."
     }
   },
   "tier_source": "trial",
-  "trial_ends_at": 1797568815359,
+  "trial_ends_at": 1797582993,
   "trial_calls_remaining_today": 14
 }
 ```
 
-`missing_fields` arrives most impactful first. Ask those questions in your app, or send the athlete to `precision.onboarding.url`. A session input your request left out (`meal_before_min`, say) is listed there too, and `precision.message` names it apart from the profile answers: it is yours to send. Check `precision.profile_complete`, not `tier`, to tell exact numbers from ranges.
+`missing_fields` arrives most impactful first. `missing_profile_fields` names the athlete's answers to collect: ask those questions in your app, or send the athlete to `precision.onboarding.url`. A session input your request left out (`meal_before_min`, say) is listed in `missing_fields` too and in `missing_session_inputs`: it is yours to send. Check `precision.profile_complete`, not `tier`, to tell exact numbers from ranges. `trial_ends_at`, like every time the API gives you, is in Unix seconds.
 
 After the trial, an athlete without a Saturday subscription gets `"tier": "teaser"`: ranges and a `subscription_cta` with their subscribe link. See [Freemium Model](/guides/freemium-model) for how the tiers are decided and how the subscribe loop pays you.
 

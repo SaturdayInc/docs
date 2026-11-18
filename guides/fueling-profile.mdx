@@ -147,7 +147,7 @@ Every sharing state is a `200`. Switch on `sharing`, never on the text of `messa
       "calculations_use": "saturday_app"
     }
   },
-  "updated_at": 1760000000000
+  "updated_at": 1760000000
 }
 ```
 
@@ -182,7 +182,7 @@ Every sharing state is a `200`. Switch on `sharing`, never on the text of `messa
 | `sharing` | string | `on`, `off`, or `not_linked` |
 | `message` | string or null | `null` when `sharing` is `on`; otherwise the reason there are no answers, the two sentences above |
 | `profile` | object | Only when `sharing` is `on`. One entry per shared answer, below |
-| `updated_at` | integer | Only when `sharing` is `on`. When the athlete's Saturday account record was last saved, Unix milliseconds. Any save moves it, including one that changes no shared answer, so use `athlete.fueling_profile_updated` to learn that answers changed |
+| `updated_at` | integer | Only when `sharing` is `on`. When the athlete's Saturday account record was last saved, Unix seconds. Any save moves it, including one that changes no shared answer, so use `athlete.fueling_profile_updated` to learn that answers changed |
 
 Each `profile` entry is an object with `value` and `calculations_use`. The names are the calculation-side names (`age` and `athlete_weight_kg`, as a calculate request takes them), and `concerns` holds the eight concern flags in one object:
 
