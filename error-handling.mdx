@@ -34,6 +34,29 @@ Saturday uses one error format across all endpoints, modeled on Stripe's error s
 
 A value of the wrong JSON type is refused with code `invalid_value` and the field in `param`, on the athlete, activity, calculate, batch, gear and integration routes: `"duration_min": "90"` answers "duration_min must be a whole number (got a string)." A nested field carries its path, such as `settings.sweat_level`. A body that is not JSON answers `invalid_json`.
 
+### A field the request does not take
+
+A request made with a partner API key to calculate, batch, activity create, import, prep, product fit or compare may carry only the fields that request takes. Any other field, at any depth, is refused with `400` and code `unsupported_field`, so a misspelled field never computes silently on a default. `param` is the field's path in your body, and the message names the field it was probably meant to be:
+
+```json
+{
+  "error": {
+    "type": "invalid_request",
+    "code": "unsupported_field",
+    "message": "\"legs[1].duration_mins\" is not a field of this request, so its value would not be used. Did you mean \"duration_min\"? See https://docs.saturday.fit/guides/nutrition-calculation",
+    "param": "legs[1].duration_mins",
+    "documentation_url": "https://docs.saturday.fit/error-handling",
+    "request_id": "req_4f2a9c1e7b30"
+  }
+}
+```
+
+A field another request spells differently gets that spelling: `weight_kg` on calculate answers `Send "athlete_weight_kg".`, and `activity_type` on activity create answers `Send "type".` Activity create and import accept and ignore `name` and `scheduled_at`. The update routes (`PATCH` on athletes, activities, organizations and seat subscriptions) and webhook create also refuse fields they do not take with `unsupported_field`. Both SDKs raise a validation error carrying `param`, and `suggestion` with the field to send when the message names one.
+
+### A prescription Saturday could not compute
+
+When Saturday cannot compute a prescription for a request it accepted, calculate, activity calculate, prep, product fit and compare answer `500` with code `internal_error` and the message "Failed to calculate the prescription. Retry, and contact support if it persists." The answer never carries zeros in place of numbers. Retry it as any `500`, and quote the `request_id` if it repeats.
+
 ## Error types
 
 Branch on `type` for handling class, and on `code` for the specific case. A type can span more than one status.
@@ -49,7 +72,7 @@ Branch on `type` for handling class, and on `code` for the specific case. A type
 | `api_error` | 500, 502, 503 | Saturday-side failure (500), upstream service (502), transient dependency (503) |
 
 <Note>
-  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `prescription_not_found`, `product_not_found`, `key_not_found`, `webhook_not_found`, `conversation_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"` with `code: "rate_limit_exceeded"` or `code: "rate_limited"`. Switching on `type` means using the values in the table above.
+  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `prescription_not_found`, `product_not_found`, `key_not_found`, `webhook_not_found`, `conversation_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"`, and its `code` says which limit was reached ([Rate Limiting](/rate-limiting)). Switching on `type` means using the values in the table above.
 </Note>
 
 Safety ceilings do not surface as an error status. A prescription that runs into a guardrail returns `200` with the clamped values plus `safety.warnings` and `safety.requires_human_review` set. See [Safety](/guides/safety).

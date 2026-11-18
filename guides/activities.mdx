@@ -13,7 +13,7 @@ Whatever your platform calls these (workouts, sessions, events), the Saturday ob
 
 ## Activity lifecycle
 
-1. **Create** the activity with type and duration, plus intensity and thermal stress if you have them.
+1. **Create** the activity with type and duration, plus intensity, thermal stress, the last meal and whether it is a race.
 2. **Calculate** a nutrition prescription for it.
 3. **Submit feedback** afterward, if you collect it.
 
@@ -70,25 +70,52 @@ console.log(`Activity ID: ${activity.id}`);
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | string | Yes | Activity type (see [supported types](/guides/nutrition-calculation#supported-activity-types)) |
-| `duration_min` | integer | Yes | Expected duration in minutes |
+| `type` | string | Yes | Activity type (see [supported types](/guides/nutrition-calculation#supported-activity-types)), or `brick` or `triathlon` with `legs` |
+| `duration_min` | integer | For a single sport | Expected duration in minutes. For a brick or triathlon, the legs' total: leave it out or send that total |
+| `legs` | array | For a brick or triathlon | Its legs in order ([below](#bricks-and-triathlons)) |
 | `intensity_level` | integer | No | 1-9 scale; `lift` and `hike` use 1-3 (low, medium, high), store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | integer | No | 1-9 scale |
 | `is_race_event` | boolean | No | Whether this is a race. The calculate request spells it `is_race`; here that name is refused. Exact numbers need it |
 | `meal_before_min` | integer | No | Minutes since the athlete's last carb-rich meal at the start. More than 180 plans a fasted start, with a 20-minute pre-load. Exact numbers need it |
 | `external_id` | string | No | Your platform's activity ID |
 
-Three names that belong to other requests are refused with `400` and code `unsupported_field`, with the field to send in the message: `activity_type` (send `type`), `is_race` (send `is_race_event`) and `duration` (send `duration_min`). Any other field the request does not know is ignored.
-
-Create accepts these fields and no others. There is no field for a display name or a scheduled start time; keep those on your side and join on `external_id`.
+Create takes these fields. It also accepts `name` and `scheduled_at` and ignores them: there is no stored display name or scheduled start time, so keep those on your side and join on `external_id`. Any other field is refused with `400` and code `unsupported_field`, `param` naming it and the message naming the field to send: `activity_type` (send `type`), `is_race` (send `is_race_event`), `duration` (send `duration_min`), or the closest field for a misspelling. See [Error Handling](/error-handling#a-field-the-request-does-not-take).
 
 `external_id` is worth sending. Saturday's hosted onboarding finish screen uses it to deep-link the athlete back into the matching activity in your app.
 
-### Multi-sport activities
+### Bricks and triathlons
 
-Each activity carries one `type`, and Saturday prescribes for that type: an athlete fuels differently on the bike than on the run. For a triathlon or a brick, create one activity per leg.
+A brick or a triathlon is one activity with `type` `brick` or `triathlon` and its `legs`, never one activity per leg: Saturday prescribes for it as the Saturday app does, as one continuous effort, so its totals are larger than its legs prescribed separately.
 
-To work out which legs a multi-sport title implies, use `POST /v1/infer/brick-types`.
+```json
+{
+  "type": "brick",
+  "meal_before_min": 120,
+  "is_race_event": false,
+  "external_id": "your-activity-88214",
+  "legs": [
+    {"type": "bike", "duration_min": 90, "intensity_level": 6, "thermal_stress_level": 6},
+    {"type": "run", "duration_min": 30, "intensity_level": 7, "thermal_stress_level": 6}
+  ]
+}
+```
+
+A leg here names its sport `type`, as an activity does (on calculate a leg's sport is `activity_type`). The legs follow the rules on [Bricks and triathlons](/guides/nutrition-calculation#bricks-and-triathlons): 2 to 10 legs, each with its sport, `duration_min` (5 to 2160), `intensity_level` and `thermal_stress_level`, at most 2160 minutes together. Effort and heat belong on the legs, so `intensity_level` and `thermal_stress_level` are refused at the top level; `meal_before_min` and `is_race_event` stay there. The stored activity carries `legs` and `duration_min`, their total, and no top-level effort or heat. Its calculated prescription carries `legs`, each leg's share, when the numbers are exact.
+
+To work out which legs a multi-sport title implies, use `POST /v1/infer/brick-types` ([below](#activity-type-inference)).
+
+## Updating an activity
+
+```bash
+PATCH /v1/athletes/{athlete_id}/activities/{activity_id}
+```
+
+Send only the fields that change: `type`, `duration_min`, `legs`, `intensity_level`, `thermal_stress_level`, `is_race_event`, `meal_before_min` or `external_id`. Any other field is refused with `400` and code `unsupported_field`. A change does not recalculate the stored prescription; call calculate again.
+
+- `legs` replaces a brick's or triathlon's legs and sets `duration_min` to their total.
+- A brick or triathlon refuses `intensity_level`, `thermal_stress_level` and a `duration_min` other than its legs' total with `400` `invalid_value`: change its legs instead.
+- Changing `type` to `brick` or `triathlon` needs `legs` in the same request, unless the activity holds legs already, and drops the stored single effort and heat.
+- Changing `type` to a single sport removes the legs; send `duration_min` and the effort and heat with it.
 
 ## Calculating a prescription
 
@@ -260,4 +287,4 @@ For multi-sport titles like "Bike/run brick", use `POST /v1/infer/brick-types`. 
 }
 ```
 
-`sub_types` is the same list without the order numbers. Create one activity per leg.
+`sub_types` is the same list without the order numbers. Create one `brick` or `triathlon` activity with those legs, adding each leg's minutes, effort and heat.

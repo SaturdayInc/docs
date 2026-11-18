@@ -33,7 +33,7 @@ Products come from Saturday's curated catalog. Name one by text or by id:
 
 ## Prep for a stored session
 
-Create the session, calculate it, then send the products. Products with `servings` count first; each product without `servings` is sized to what the plan still needs after the products before it, in list order.
+Create the session, calculate it, then send the products. A stored [brick or triathlon](/guides/activities#bricks-and-triathlons) preps as one session: the prescription is the whole session's, across its legs. Products with `servings` count first; each product without `servings` is sized to what the plan still needs after the products before it, in list order.
 
 ```bash
 curl -X POST https://api.saturday.fit/v1/athletes/ATHLETE_ID/activities/ACTIVITY_ID/prep \
@@ -81,13 +81,13 @@ All amounts are for the whole session.
 | `warnings` | Present when the products overshoot the prescription. Show them |
 | `note` | Present when a gap remains, saying what the base mix covers |
 | `gear` | The athlete's bottles and flasks, when they have any |
-| `plan_basis` | Present when the plan uses the middle of the athlete's ranges ([below](#incomplete-profiles)) |
+| `plan_basis` | Present when the plan uses the middle of the athlete's ranges, naming what is missing ([below](#plans-from-ranges)) |
 
 Send no `products` (or an empty list) to get the prescription alone. Prep answers `404` `prescription_not_found` for a session that has no prescription yet and whose athlete has no Saturday subscription: calculate it first.
 
 ## Product fit
 
-Fit sizes one product against the athlete's prescription for a session you describe, without storing anything. The session fields are the ones calculate takes.
+Fit sizes one product against the athlete's prescription for a session you describe, without storing anything. The session fields are the ones calculate takes for a single sport; a brick or triathlon is sized through prep on a stored activity. Any other field is refused with `400` `unsupported_field`.
 
 ```bash
 curl -X POST https://api.saturday.fit/v1/nutrition/products/fit \
@@ -122,7 +122,7 @@ curl -X POST https://api.saturday.fit/v1/nutrition/products/fit \
     "fluid_coverage_pct": 5,
     "limiting_factor": "carbs",
     "remaining_gap": { "carb_g": 0, "sodium_mg": 440, "fluid_ml": 620 },
-    "verdict": "At 3 servings, maxes out carbs but only provides 12% of sodium. The remaining sodium comes from sodium citrate or salt in the base mix."
+    "verdict": "At 3 servings, maxes out carbs but only provides 12% of sodium. The remaining sodium comes from salt in the base mix."
   },
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
@@ -145,6 +145,8 @@ curl -X POST https://api.saturday.fit/v1/nutrition/products/fit \
 | `product_too_large` | One step already overshoots; `max_servings` is 0 |
 | `negligible_per_serving` | A serving carries almost nothing, so the figures are for one step |
 | `no_nutrients` | The product carries no carbohydrate, sodium or fluid |
+
+`verdict` names the sodium source of the athlete's base mix: their own choice in the Saturday app while they share their answers with you, otherwise salt.
 
 `caffeine_mg` is absent when Saturday has no caffeine figure for the product; that does not mean it has none.
 
@@ -178,15 +180,40 @@ The response carries `prescription`, `product_a` and `product_b` (each shaped li
 
 A `404` names the product it could not find in `param` (`product_a` or `product_b`).
 
-## Incomplete profiles
+## Plans from ranges
 
-When the athlete's profile is missing answers, calculate gives them per-hour ranges. Prep, fit and compare then plan from the middle of those ranges over the session and say so in `plan_basis`:
+A plan uses the athlete's exact numbers only when calculate would give them exact numbers: their profile answered, and every session input sent (`intensity_level`, `thermal_stress_level`, `meal_before_min`, `is_race`; on prep, set on the activity). When either is missing, calculate gives per-hour ranges, and prep, fit and compare plan from the middle of those ranges over the session (a fasted start adds its 20-minute pre-load). `plan_basis` then says so and names what is missing.
+
+| `source` | What is missing |
+|----------|-----------------|
+| `profile_incomplete` | The athlete's profile answers, listed in `missing_profile_fields` by the names `precision.missing_fields` uses. `onboarding` carries the link that collects them |
+| `session_incomplete` | Session inputs, listed in `missing_session_inputs`. Send them in the request (fit, compare) or set them on the activity (prep) |
+| `profile_and_session_incomplete` | Both lists |
+| `stored_ranges` | Prep on an activity whose stored prescription is ranges, with nothing missing now (the athlete has answered since): calculate the activity again |
+
+A fully onboarded athlete and a session missing `meal_before_min` and `is_race`:
 
 ```json
 {
   "plan_basis": {
-    "source": "range_midpoint",
-    "message": "Planned from the middle of this athlete's ranges, because their profile is missing answers. Once they answer the rest, this plan uses their exact numbers.",
+    "source": "session_incomplete",
+    "message": "Planned from the middle of this athlete's ranges. This session is missing meal_before_min, is_race. Send them in the request body. With all of them in, this plan uses the athlete's exact numbers.",
+    "missing_session_inputs": ["meal_before_min", "is_race"],
+    "carb_range_g_per_hr": "40-50",
+    "sodium_range_mg_per_hr": "200-400",
+    "fluid_range_ml_per_hr": "300-500"
+  }
+}
+```
+
+An athlete whose profile is missing answers:
+
+```json
+{
+  "plan_basis": {
+    "source": "profile_incomplete",
+    "message": "Planned from the middle of this athlete's ranges. Their profile is missing sex, age, sweat_level, saltiness, carb_experience, usual_carb_consumption, satiety_level, fitness_level, concerns: the onboarding link collects them. With all of them in, this plan uses the athlete's exact numbers.",
+    "missing_profile_fields": ["sex", "age", "sweat_level", "saltiness", "carb_experience", "usual_carb_consumption", "satiety_level", "fitness_level", "concerns"],
     "carb_range_g_per_hr": "50-80",
     "sodium_range_mg_per_hr": "200-600",
     "fluid_range_ml_per_hr": "300-800",
@@ -198,9 +225,7 @@ When the athlete's profile is missing answers, calculate gives them per-hour ran
 }
 ```
 
-When `plan_basis` is present, show its `message` with the plan, and offer the athlete `onboarding.url` or your own questions ([Onboarding](/guides/onboarding)). Once the profile is complete, `plan_basis` is absent and the plan uses the athlete's exact numbers.
-
-Fit and compare treat a missing `meal_before_min` or `is_race` the way calculate does: as an unanswered input, which plans from ranges even for a complete profile. Send both on every call.
+When `plan_basis` is present, show its `message` with the plan. Offer the athlete `onboarding.url`, or your own questions ([Onboarding](/guides/onboarding)), only when it is there: a missing session input is yours to send. With everything in, `plan_basis` is absent and the plan uses the athlete's exact numbers.
 
 ## Who gets an answer
 

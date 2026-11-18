@@ -131,33 +131,51 @@ That is a first prescription. To store the session and size the athlete's gels a
 
 ## 5. Ranges and what they ask for
 
-An athlete whose profile is missing answers gets ranges and a list of what to ask:
+An athlete whose profile is missing answers gets ranges and a list of what to ask. The same session for an athlete stored without `carb_experience`:
 
 ```json
 {
   "tier": "full",
-  "carb_range_g_per_hr": "30-50",
-  "sodium_range_mg_per_hr": "200-600",
-  "fluid_range_ml_per_hr": "300-600",
+  "carb_range_g_per_hr": "30-40",
+  "sodium_range_mg_per_hr": "200-400",
+  "fluid_range_ml_per_hr": "300-500",
+  "safety": {
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.69,
+    "requires_human_review": false,
+    "warnings": [],
+    "not_instructions": true
+  },
+  "attribution": {
+    "text": "Powered by Saturday",
+    "logo_url": "https://saturday.fit/logo.png",
+    "link": "https://saturday.fit",
+    "required": true
+  },
   "precision": {
     "profile_complete": false,
     "missing_fields": [
       {
         "field": "carb_experience",
         "required": true,
-        "band_impact": { "carb_g_per_hr": 10, "sodium_mg_per_hr": 200, "fluid_ml_per_hr": 100 },
+        "band_impact": { "carb_g_per_hr": 0, "sodium_mg_per_hr": 100, "fluid_ml_per_hr": 100 },
         "display_label": "how much carb your gut is trained for"
       }
     ],
+    "message": "For exact numbers, fill in what is missing. This athlete's profile is missing carb_experience: the onboarding link collects them.",
     "onboarding": {
       "url": "https://saturday.fit/onboard?ot=...",
       "message": "Answer the missing questions once and this athlete gets exact numbers on every future call..."
     }
-  }
+  },
+  "tier_source": "trial",
+  "trial_ends_at": 1797568815359,
+  "trial_calls_remaining_today": 14
 }
 ```
 
-`missing_fields` arrives most impactful first. Ask those questions in your app, or send the athlete to `precision.onboarding.url`. Check `precision.profile_complete`, not `tier`, to tell exact numbers from ranges.
+`missing_fields` arrives most impactful first. Ask those questions in your app, or send the athlete to `precision.onboarding.url`. A session input your request left out (`meal_before_min`, say) is listed there too, and `precision.message` names it apart from the profile answers: it is yours to send. Check `precision.profile_complete`, not `tier`, to tell exact numbers from ranges.
 
 After the trial, an athlete without a Saturday subscription gets `"tier": "teaser"`: ranges and a `subscription_cta` with their subscribe link. See [Freemium Model](/guides/freemium-model) for how the tiers are decided and how the subscribe loop pays you.
 

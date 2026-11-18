@@ -57,7 +57,7 @@ console.log(`Webhook secret: ${webhook.secret}`);
 
 </CodeGroup>
 
-The response is `201` with the new webhook under `webhook` and a `request_id` beside it. The webhook carries `id`, `url`, `events`, `active`, `fail_count`, `created_at` and `updated_at` in milliseconds, and `secret`, a 64-character hex string.
+The body takes `url` and `events`; any other field (a `description`, say) is refused with `400` and code `unsupported_field`. The response is `201` with the new webhook under `webhook` and a `request_id` beside it. The webhook carries `id`, `url`, `events`, `active`, `fail_count`, `created_at` and `updated_at` in milliseconds, and `secret`, a 64-character hex string.
 
 <Warning>
   **Save the webhook secret immediately.** It is returned once, at creation time, and never again. You need it to verify that incoming webhooks came from Saturday.

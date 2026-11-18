@@ -103,11 +103,11 @@ When you include an `athlete_id`, Saturday reads that athlete's stored profile: 
 | `meal_before_min` | Minutes since the athlete's last carb-rich meal | More than 180 plans a fasted start: a 20-minute pre-load before the session and more during it. 180 or fewer plans a fed start |
 | `is_race` | `true` or `false` | A race is planned at a higher tolerance for eating, which raises carbohydrate for most athletes |
 
-All four belong on every call. An omitted one is an unanswered input, so the answer comes back as ranges even for a complete profile, with the input named in `precision.missing_fields`.
+All four belong on every call. An omitted one is an unanswered input: the session still computes (at effort 5, or 2 for `lift` and `hike`; heat 5; fed; training), but the answer comes back as ranges even for a complete profile, with the input named in `precision.missing_fields`. `precision.message` names the athlete's missing profile answers apart from the session inputs your request left out, and `precision.onboarding` appears only when profile answers are missing, since a session input is yours to send.
 
 An `athlete_id` your account does not hold is refused with `404` and code `athlete_not_found`; leave `athlete_id` out for a range estimate.
 
-A field spelled the way the athlete or activity request spells it is refused with `400` and code `unsupported_field`, with the field to send in the message: `weight_kg` (send `athlete_weight_kg`), `year_of_birth` (send `age`), `is_race_event` (send `is_race`), `type` (send `activity_type`), `duration` (send `duration_min`) and `settings` (send the profile fields at the top level, or an `athlete_id`). Any other field the request does not know is ignored.
+The request may carry only the fields on this page. Any other field, at any depth, is refused with `400` and code `unsupported_field`, `param` naming it, and the message naming the field it was probably meant to be: `meal_before_mins` answers `Did you mean "meal_before_min"?`. A field spelled the way the athlete or activity request spells it gets that request's spelling: `weight_kg` (send `athlete_weight_kg`), `year_of_birth` (send `age`), `is_race_event` (send `is_race`), `type` (send `activity_type`), `duration` (send `duration_min`) and `settings` (send the profile fields at the top level, or an `athlete_id`). See [Error Handling](/error-handling#a-field-the-request-does-not-take).
 
 ## Understanding the response
 
@@ -216,7 +216,57 @@ Every calculation response includes a `safety` block, on every tier. See [Safety
 | Hiking | `hike` | Long-duration, variable intensity |
 | Weightlifting | `lift` | Strength training |
 
-These seven keys are the complete set, accepted in any letter case. Any other `activity_type` is refused with `400` and code `invalid_value`, on calculate, on each batch scenario and on activity create, so map your own sport names first: `POST /v1/infer/activity-type` does it from a title. `GET /v1/activity-types` returns the same list with descriptions, and accepts an optional `?activity_type=` filter to validate a single key.
+These seven sports, with `brick` and `triathlon` ([below](#bricks-and-triathlons)), are the complete set, accepted in any letter case. Any other `activity_type` is refused with `400` and code `invalid_value`, on calculate, on each batch scenario and on activity create, so map your own sport names first: `POST /v1/infer/activity-type` does it from a title. `GET /v1/activity-types` returns the seven sports with descriptions in `activity_types`, and `brick` and `triathlon` with the rules for their legs in `linked_session_types`. An optional `?activity_type=` narrows both lists to the one type named, so you can validate a single key.
+
+## Bricks and triathlons
+
+A brick (two or more sports back to back) or a triathlon is one session made of legs. Send it as one request with `activity_type` `brick` or `triathlon` and `legs`, never as one request per leg: Saturday computes it as the Saturday app does, as one continuous effort, so its totals are larger than its legs calculated separately.
+
+```json
+{
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "activity_type": "brick",
+  "meal_before_min": 120,
+  "is_race": false,
+  "legs": [
+    {"activity_type": "bike", "duration_min": 90, "intensity_level": 6, "thermal_stress_level": 6},
+    {"activity_type": "run", "duration_min": 30, "intensity_level": 7, "thermal_stress_level": 6}
+  ]
+}
+```
+
+| Rule | Detail |
+|------|--------|
+| Legs | 2 to 10, in the order they are done |
+| Each leg | `activity_type` (one of the seven sports), `duration_min` (5 to 2160), `intensity_level` (1 to 9; `lift` and `hike` 1 to 3, a higher value computing as 3) and `thermal_stress_level` (1 to 9), all four required |
+| `duration_min` | The legs' total, at most 2160. Leave it out, or send that total |
+| `intensity_level`, `thermal_stress_level` | On the legs only. At the top level they are refused with `400` `invalid_value` |
+| `meal_before_min`, `is_race` and profile fields | At the top level, for the whole session |
+
+A brick or triathlon without `legs` is refused with `400` `missing_field` on `legs`, and `legs` on a single sport with `400` `invalid_value`. A leg's own error names its path, such as `legs[1].duration_min`.
+
+An answer with exact numbers carries `legs`: each leg's share, in the order sent, as the Saturday app's leg cards show it.
+
+```json
+{
+  "tier": "full",
+  "carb_g_per_hr": 70,
+  "sodium_mg_per_hr": 400,
+  "fluid_ml_per_hr": 600,
+  "total_carb_g": 140,
+  "total_sodium_mg": 800,
+  "total_fluid_ml": 1200,
+  "legs": [
+    {"duration_min": 90, "total_carb_g": 110, "total_sodium_mg": 600, "total_fluid_ml": 900, "carb_g_per_hr": 73, "sodium_mg_per_hr": 400, "fluid_ml_per_hr": 600},
+    {"duration_min": 30, "total_carb_g": 30, "total_sodium_mg": 200, "total_fluid_ml": 250, "carb_g_per_hr": 60, "sodium_mg_per_hr": 400, "fluid_ml_per_hr": 500}
+  ],
+  "precision": {"profile_complete": true}
+}
+```
+
+The session's per-hour figures are over the legs' total minutes. A leg's per-hour figures are over its own minutes, and the first leg of a fasted start adds the 20-minute pre-load. The legs' totals add up to the session's totals before the session's own rounding. An answer with ranges carries no leg figures.
+
+Bricks and triathlons work the same way in [batches](/guides/batch-operations), on [stored activities](/guides/activities#bricks-and-triathlons) and in [prep](/guides/prep-and-products). Product fit and compare size a product for a single sport. Bricks and triathlons are for requests made with a partner API key; an athlete's own assistant connected through the Saturday connector plans single sports.
 
 <Note>
 Every calculation response carries a `precision` object: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
