@@ -1,0 +1,213 @@
+---
+title: 'Prep and Products'
+description: 'Size the products an athlete carries against their prescription'
+sidebarTitle: 'Prep and Products'
+icon: 'bottle-water'
+---
+
+# Prep and Products
+
+A prescription says how much carbohydrate, sodium and fluid a session needs. These three routes turn it into products: how many servings of a gel or drink mix fit, what they cover, and what is left for water and the base mix.
+
+| Route | Use it for |
+|-------|------------|
+| `POST /v1/athletes/{athlete_id}/activities/{activity_id}/prep` | A stored session and the list of products the athlete plans to carry |
+| `POST /v1/nutrition/products/fit` | One product against a session you describe |
+| `POST /v1/nutrition/products/compare` | Two products against the same session |
+
+All three size against the athlete's own prescription, the one `POST /v1/nutrition/calculate` gives that athlete for that session, and count servings the way the Saturday app's Prep screen does. All three need the `nutrition` feature and count as calculation calls against your [daily limits](/rate-limiting).
+
+## Naming a product
+
+Products come from Saturday's curated catalog. Name one by text or by id:
+
+```json
+{ "product_query": "maurten gel 100" }
+```
+
+```json
+{ "product_id": "mau-100-gel" }
+```
+
+`product_query` is matched against product names, brands and keywords; an exact name wins over a partial one. `product_id` wins when both are sent. A product that matches nothing is `404` `product_not_found` on fit and compare, and is left out of a prep answer.
+
+## Prep for a stored session
+
+Create the session, calculate it, then send the products. Products with `servings` count first; each product without `servings` is sized to what the plan still needs after the products before it, in list order.
+
+```bash
+curl -X POST https://api.saturday.fit/v1/athletes/ATHLETE_ID/activities/ACTIVITY_ID/prep \
+  -H "Authorization: Bearer $SATURDAY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "products": [
+      { "product_query": "maurten gel 100", "servings": 2 },
+      { "product_query": "tailwind endurance fuel" }
+    ]
+  }'
+```
+
+```json
+{
+  "prescription": { "carb_g": 190, "sodium_mg": 2100, "fluid_ml": 2000 },
+  "products": [
+    { "product_id": "mau-100-gel", "product_name": "Maurten Gel 100", "servings": 2, "carb_g": 50, "sodium_mg": 40, "fluid_ml": 20 },
+    { "product_id": "twind-endfuel-powd", "product_name": "Tailwind Endurance Fuel", "servings": 6, "carb_g": 150, "sodium_mg": 1860, "fluid_ml": 0 }
+  ],
+  "totals_from_products": { "carb_g": 200, "sodium_mg": 1900, "fluid_ml": 20 },
+  "remaining_gap": { "carb_g": 0, "sodium_mg": 200, "fluid_ml": 1980 },
+  "coverage_pct": { "carb": 100, "sodium": 90, "fluid": 1 },
+  "note": "Base mix covers the rest: ...",
+  "safety": {
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.7,
+    "requires_human_review": false,
+    "warnings": [],
+    "not_instructions": true
+  }
+}
+```
+
+All amounts are for the whole session.
+
+| Field | What it means |
+|-------|---------------|
+| `prescription` | The session's prescription: the stored one, or for a session never calculated, what calculate would give an athlete with a Saturday subscription |
+| `products` | Each product found, at its servings and what those servings deliver |
+| `totals_from_products` | What the products deliver together |
+| `remaining_gap` | What the prescription still needs after the products, never below 0 |
+| `coverage_pct` | Percent of the prescription the products cover, 0 to 100 |
+| `warnings` | Present when the products overshoot the prescription. Show them |
+| `note` | Present when a gap remains, saying what the base mix covers |
+| `gear` | The athlete's bottles and flasks, when they have any |
+| `plan_basis` | Present when the plan uses the middle of the athlete's ranges ([below](#incomplete-profiles)) |
+
+Send no `products` (or an empty list) to get the prescription alone. Prep answers `404` `prescription_not_found` for a session that has no prescription yet and whose athlete has no Saturday subscription: calculate it first.
+
+## Product fit
+
+Fit sizes one product against the athlete's prescription for a session you describe, without storing anything. The session fields are the ones calculate takes.
+
+```bash
+curl -X POST https://api.saturday.fit/v1/nutrition/products/fit \
+  -H "Authorization: Bearer $SATURDAY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "athlete_id": "ATHLETE_ID",
+    "product_query": "maurten gel 100",
+    "activity_type": "run",
+    "duration_min": 90,
+    "intensity_level": 5,
+    "thermal_stress_level": 5,
+    "meal_before_min": 120,
+    "is_race": false
+  }'
+```
+
+```json
+{
+  "tier": "full",
+  "prescription": { "carb_g": 65, "sodium_mg": 500, "fluid_ml": 650 },
+  "fit": {
+    "product_id": "mau-100-gel",
+    "product_name": "Maurten Gel 100",
+    "product_type": "gel",
+    "brand": "Maurten",
+    "per_serving": { "carb_g": 25, "sodium_mg": 20, "fluid_ml": 10, "caffeine_mg": 0 },
+    "max_servings": 3,
+    "at_max_servings": { "carb_g": 75, "sodium_mg": 60, "fluid_ml": 30 },
+    "carb_coverage_pct": 100,
+    "sodium_coverage_pct": 12,
+    "fluid_coverage_pct": 5,
+    "limiting_factor": "carbs",
+    "remaining_gap": { "carb_g": 0, "sodium_mg": 440, "fluid_ml": 620 },
+    "verdict": "At 3 servings, maxes out carbs but only provides 12% of sodium. The remaining sodium comes from sodium citrate or salt in the base mix."
+  },
+  "safety": {
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 0.7,
+    "requires_human_review": false,
+    "warnings": [],
+    "not_instructions": true
+  }
+}
+```
+
+`max_servings` is the most servings before a nutrient would overshoot the prescription by more than Prep's allowance: a quarter of the product's serving or a fixed margin for that nutrient, whichever is larger. Servings count in the steps Prep uses for the product, such as a quarter scoop, half a gel or a whole packet, so `max_servings` can be `3.75`. `remaining_gap` shows a remainder smaller than a quarter serving as 0.
+
+`limiting_factor` names what stops the servings rising:
+
+| Value | Meaning |
+|-------|---------|
+| `carbs`, `sodium`, `fluid` | The nutrient that reaches the prescription first |
+| `product_too_large` | One step already overshoots; `max_servings` is 0 |
+| `negligible_per_serving` | A serving carries almost nothing, so the figures are for one step |
+| `no_nutrients` | The product carries no carbohydrate, sodium or fluid |
+
+`caffeine_mg` is absent when Saturday has no caffeine figure for the product; that does not mean it has none.
+
+A body carrying `carb_g`, `sodium_mg` or `fluid_ml` is refused with `400` `unsupported_field`: the prescription is always Saturday's.
+
+## Compare
+
+Compare runs fit on two products against one session and names the product that covers more of each nutrient at its `max_servings`. `overall` is the higher average coverage; a tie goes to `product_a`.
+
+```json
+{
+  "athlete_id": "ATHLETE_ID",
+  "product_a": { "product_query": "maurten gel 100" },
+  "product_b": { "product_query": "tailwind endurance fuel" },
+  "activity_type": "bike",
+  "duration_min": 180,
+  "intensity_level": 5,
+  "thermal_stress_level": 5,
+  "meal_before_min": 120,
+  "is_race": false
+}
+```
+
+The response carries `prescription`, `product_a` and `product_b` (each shaped like `fit` above) and:
+
+```json
+{
+  "winner": { "carb": "product_b", "sodium": "product_b", "fluid": "product_a", "overall": "product_b" }
+}
+```
+
+A `404` names the product it could not find in `param` (`product_a` or `product_b`).
+
+## Incomplete profiles
+
+When the athlete's profile is missing answers, calculate gives them per-hour ranges. Prep, fit and compare then plan from the middle of those ranges over the session and say so in `plan_basis`:
+
+```json
+{
+  "plan_basis": {
+    "source": "range_midpoint",
+    "message": "Planned from the middle of this athlete's ranges, because their profile is missing answers. Once they answer the rest, this plan uses their exact numbers.",
+    "carb_range_g_per_hr": "50-80",
+    "sodium_range_mg_per_hr": "200-600",
+    "fluid_range_ml_per_hr": "300-800",
+    "onboarding": {
+      "url": "https://saturday.fit/onboard?ot=...",
+      "message": "Answer the missing questions once and this athlete gets exact numbers on every future call..."
+    }
+  }
+}
+```
+
+When `plan_basis` is present, show its `message` with the plan, and offer the athlete `onboarding.url` or your own questions ([Onboarding](/guides/onboarding)). Once the profile is complete, `plan_basis` is absent and the plan uses the athlete's exact numbers.
+
+Fit and compare treat a missing `meal_before_min` or `is_race` the way calculate does: as an unanswered input, which plans from ranges even for a complete profile. Send both on every call.
+
+## Who gets an answer
+
+Product answers open on the athlete's Saturday subscription, partner trial, or a seat license from their organization. For any other athlete, fit and compare answer `200` with `"tier": "teaser"`: the product categories (`categories`), a subscribe link (`cta`) and `request_id`, in place of `prescription` and `fit`. Prep still returns the prescription and gear for them, with `products` empty.
+
+A key that receives a large share of the catalog within 24 hours is paced: a new product is refused with `429` `rate_limited` and a `Retry-After` of some minutes, while products already received keep working. See [Rate Limiting](/rate-limiting).
+
+## Safety
+
+Every answer carries the same `safety` block as a calculation. A prep answer whose products overshoot the prescription carries `warnings`; show each one with the plan. See [Safety](/guides/safety).

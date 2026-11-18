@@ -60,8 +60,9 @@ Three cases produce a `rate_limit_error`, and they want different handling:
 | `rate_limit_exceeded` | Token bucket empty | Present | Wait it out, then continue |
 | `rate_limit_exceeded` | Daily call ceiling reached | Absent | Stop until midnight UTC. The message states the limit |
 | `rate_limited` | Request-pattern friction: a calculation sweep, or a daily budget below | Present after a sweep, absent for a daily budget | After a sweep, every calculation on your account is refused until `Retry-After` passes, up to 15 minutes; a daily budget resets at midnight UTC. The message says which. Requests refused with a `400` never count toward a sweep. Contact api@saturday.fit if the traffic is legitimate |
+| `rate_limited` | Catalog pacing: product answers for your account have covered a large share of the product catalog in 24 hours | Present, in minutes | Products already answered keep working; a new product waits until `Retry-After` passes |
 
-Read `Retry-After` with a fallback rather than indexing it, since the daily ceiling and the daily budgets omit it:
+Both SDKs handle this for you: they wait out a `Retry-After` of 60 seconds or less and retry, and raise anything else as a rate-limit error that says whether it is a daily limit (`dailyLimit` in TypeScript, `daily_limit` in Python) and, when there is one, how long to wait (`retryAfter`, `retry_after`). Without an SDK, read `Retry-After` with a fallback rather than indexing it, since the daily ceiling and the daily budgets omit it:
 
 <CodeGroup>
 
@@ -100,7 +101,7 @@ Alongside the token bucket, every account carries daily call ceilings:
 | Partner, no agreed ceiling | Platform default, 2,000 calls/day |
 | Contracted integration | Per agreement, up to no ceiling at all |
 
-Intelligence endpoints (nutrition, products, inference, knowledge, AI) also carry a separate daily ceiling, apart from the total. Data endpoints (your athletes, activities, organizations, webhooks) are not counted against it, so hitting the intelligence ceiling never blocks syncing your data.
+Intelligence endpoints (nutrition calculations, prescriptions and prep, product fit and compare, inference, knowledge, AI) also carry a separate daily ceiling, apart from the total. Data endpoints (your athletes, activities, organizations, webhooks) are not counted against it, so hitting the intelligence ceiling never blocks syncing your data.
 
 Without an agreed intelligence ceiling, your budget grows with your day: a base allowance plus a per-athlete allowance for every athlete you compute for that day. Integrations serving real athletes scale automatically; if your traffic pattern needs more than the budget provides, contact api@saturday.fit.
 

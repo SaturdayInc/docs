@@ -270,7 +270,7 @@ An imported activity accepts these fields and no others. Unknown keys are ignore
 | `intensity_level` | No | 1 to 9; the calculation clamps values outside the scale. `lift` and `hike` use 1 to 3, store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | No | 1 to 9; the calculation clamps values outside the scale |
 | `is_race_event` | No | Boolean |
-| `meal_before_min` | No | Minutes between the athlete's last meal and the start |
+| `meal_before_min` | No | Minutes since the athlete's last carb-rich meal; more than 180 plans a fasted start |
 | `external_id` | No | Your activity ID, carried through and used by finish-screen deep links |
 | `calculate` | No | Calculate a prescription for this activity, see below |
 

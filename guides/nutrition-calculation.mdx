@@ -78,20 +78,32 @@ Thermal stress drives the fluid and sodium targets. A 3-hour ride at high therma
 
 ### Comprehensive inputs
 
-For the highest accuracy, include an athlete reference:
+For exact numbers, include an athlete reference and every session input:
 
 ```json
 {
   "activity_type": "bike",
   "duration_min": 300,
   "intensity_level": 8,
+  "thermal_stress_level": 7,
+  "meal_before_min": 120,
   "is_race": true,
-  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
-  "thermal_stress_level": 7
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
 }
 ```
 
-When you include an `athlete_id`, Saturday reads that athlete's stored profile: sex, year of birth, body weight, sweat level, saltiness, carb experience, usual carb consumption, satiety level, fitness level, and fueling concerns. Inline fields in the request body override the stored values for that one call.
+When you include an `athlete_id`, Saturday reads that athlete's stored profile: sex, year of birth, body weight, sweat level, saltiness, carb experience, usual carb consumption, satiety level, fitness level, and fueling concerns. For an athlete linked to a Saturday account, any answer your record lacks comes from their Saturday app answers. Inline fields in the request body override the stored values for that one call.
+
+### Session inputs
+
+| Field | Values | What it changes |
+|-------|--------|-----------------|
+| `intensity_level` | 1 to 9 (1 easy, 5 moderate, 9 intervals). `lift` and `hike` use 1 to 3 | Odd levels are the Saturday app's effort bands. An even level computes halfway between the levels on either side. An omitted level computes as 5 (2 for `lift` and `hike`) |
+| `thermal_stress_level` | 1 (cold, dry) to 9 (hot, humid) | Fluid and sodium most of all |
+| `meal_before_min` | Minutes since the athlete's last carb-rich meal | More than 180 plans a fasted start: a 20-minute pre-load before the session and more during it. 180 or fewer plans a fed start |
+| `is_race` | `true` or `false` | A race is planned at a higher tolerance for eating, which raises carbohydrate for most athletes |
+
+All four belong on every call. An omitted one is an unanswered input, so the answer comes back as ranges even for a complete profile, with the input named in `precision.missing_fields`.
 
 An `athlete_id` your account does not hold is refused with `404` and code `athlete_not_found`; leave `athlete_id` out for a range estimate.
 
@@ -129,6 +141,17 @@ This example shows an exact full-tier response with complete inputs. Teaser resp
   }
 }
 ```
+
+### Per-hour figures
+
+The per-hour figures are the ones the Saturday app shows on its fueling card, so your athletes see the same numbers in both places:
+
+- Whole numbers. Sodium and fluid round to 10.
+- Carbohydrate per hour stops at the athlete's carb ceiling.
+- A fasted start spreads the totals over the session plus its 20-minute pre-load. A 60-minute fasted run with `total_carb_g: 45` shows `carb_g_per_hr: 34` (45 over 80 minutes).
+- A session of 20 minutes or less shows at most 600 mL of fluid per hour.
+
+The `total_*` fields are the amounts for the whole session, the pre-load included.
 
 ### Confidence score
 

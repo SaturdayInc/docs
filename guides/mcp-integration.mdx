@@ -78,7 +78,7 @@ Every connection sees the tools below, minus those whose feature gate is closed 
 | `get_fueling_profile` | The answers an athlete gave in the Saturday app, while they share them with you; same response as `GET /v1/athletes/{athlete_id}/fueling-profile` | Partner connections |
 | `list_athletes` | Page through the partner's athletes | |
 | `update_athlete` | Partial update of an athlete; `settings` replaces the whole settings object | |
-| `create_activity` | Record a training activity or race for an athlete | |
+| `create_activity` | Record a training activity or race for an athlete, with `is_race_event` and `meal_before_min` as on the REST route | |
 | `set_up_week` | Create 1 to 60 sessions in one call | Claude or ChatGPT member connection; `activity:write` |
 | `list_activities` | Page through an athlete's activities | |
 | `get_activity` | One activity with its stored prescription and feedback | |
@@ -87,7 +87,7 @@ Every connection sees the tools below, minus those whose feature gate is closed 
 | `search_products` | Search the curated catalog by name, brand, type, or keyword | `products` |
 | `list_curated_products` | Page through the curated catalog, ten products per page | `products` |
 | `list_product_categories` | The product taxonomy, optionally filtered by keyword | `products` |
-| `analyze_product_fit` | Servings of a product needed to cover an athlete's prescription for an activity | `products`; also `nutrition` on a partner key |
+| `analyze_product_fit` | Servings of a product that fit the athlete's own prescription for a session; takes `meal_before_min` and `is_race` as `calculate_nutrition` does, and carries `plan_basis` when it plans from an incomplete profile's ranges ([Prep and Products](/guides/prep-and-products)) | `products`; also `nutrition` on a partner key |
 | `search_knowledge` | Search Saturday's sports nutrition knowledge base | `knowledge` |
 | `get_athlete_insights` | AI-generated insights from an athlete's history | `athlete_insights` |
 | `list_activity_types` | The supported sports and their algorithms | |
@@ -151,7 +151,7 @@ How a Claude-powered agent might use Saturday's tools in a conversation:
 **Athlete asks:** "I have a 3-hour bike race on Saturday. It's going to be 30C and humid. What should I eat?"
 
 **Agent's tool calls:**
-1. `calculate_nutrition` with `{activity_type: "bike", duration_min: 180, intensity_level: 8, is_race: true, thermal_stress_level: 8}`
+1. `calculate_nutrition` with `{activity_type: "bike", duration_min: 180, intensity_level: 8, is_race: true, thermal_stress_level: 8, meal_before_min: 120}`
 2. `search_products` with `{query: "gel"}` (matched against product name, brand, type, and keywords, ten results at most)
 
 **Agent synthesizes:** Uses Saturday's prescription + product results + safety warnings to give a complete race-day fueling plan.
