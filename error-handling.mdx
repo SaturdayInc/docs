@@ -45,7 +45,7 @@ Branch on `type` for handling class, and on `code` for the specific case. A type
 | `authorization_error` | 403 | Valid credentials, insufficient permission, scope, tier, or feature access |
 | `not_found_error` | 404 | The URL does not match an endpoint available to your key |
 | `resource_not_found` | 404 | The endpoint exists, but the referenced resource doesn't, or belongs to another partner |
-| `rate_limit_error` | 429 | Rate limit, daily call ceiling, or request-pattern friction |
+| `rate_limit_error` | 429 | A throttle, catalog pacing, a request-pattern block, or a daily ceiling; `code` says which |
 | `api_error` | 500, 502, 503 | Saturday-side failure (500), upstream service (502), transient dependency (503) |
 
 <Note>
@@ -63,67 +63,76 @@ Safety ceilings do not surface as an error status. A prescription that runs into
 | `invalid_request` | No | Fix the request |
 | `not_found_error` | No | Check the URL and your key's feature access |
 | `resource_not_found` | No | Fix the resource ID |
-| `rate_limit_error` | Yes | Honor `Retry-After` when present, otherwise back off. See [Rate Limiting](/rate-limiting) |
-| `api_error` | Yes | Exponential backoff. A 503 from key verification is transient: retry, don't rotate the key |
+| `rate_limit_error` | Depends on `code` | Retry `rate_limit_exceeded` after `Retry-After`, and `catalog_paced` when the wait is short; the daily codes reset at midnight UTC. See [Rate Limiting](/rate-limiting) |
+| `api_error` | Yes | Honor `Retry-After` on a `503` (usually 5 seconds), otherwise exponential backoff. Don't repeat a `POST` that creates a record without checking whether it was created. A 503 from key verification is transient: retry, don't rotate the key |
 
-### Exponential backoff
+### Retrying
 
-`Retry-After` is absent on some 429s, notably the daily call ceiling, so read it with a fallback rather than indexing it directly.
+Every `429`, and every `503` with code `service_unavailable`, carries `Retry-After` in seconds. A `429` whose `code` is a daily ceiling waits until midnight UTC, so leave those out of a retry loop; [Rate Limiting](/rate-limiting) lists the codes.
 
 <CodeGroup>
 
 ```python Python
-import time
 import random
+import time
+
+RETRY_429 = {"rate_limit_exceeded", "catalog_paced"}
 
 def request_with_retry(make_request, max_retries=3):
     for attempt in range(max_retries + 1):
         response = make_request()
+        if attempt == max_retries:
+            return response
 
         if response.status_code == 429:
-            retry_after = int(response.headers.get("Retry-After", 60))
-            time.sleep(retry_after)
-            continue
+            wait = int(response.headers["Retry-After"])
+            if response.json()["error"]["code"] in RETRY_429 and wait <= 30:
+                time.sleep(wait)
+                continue
+            return response
 
         if response.status_code >= 500:
-            if attempt < max_retries:
-                delay = (2 ** attempt) + random.uniform(0, 1)
-                time.sleep(delay)
-                continue
+            wait = response.headers.get("Retry-After")
+            time.sleep(int(wait) if wait else (2 ** attempt) + random.uniform(0, 1))
+            continue
 
         return response
-
-    return response
 ```
 
 ```typescript TypeScript
+const RETRY_429 = new Set(["rate_limit_exceeded", "catalog_paced"]);
+
 async function requestWithRetry(
   makeRequest: () => Promise<Response>,
   maxRetries = 3
 ): Promise<Response> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; ; attempt++) {
     const response = await makeRequest();
+    if (attempt === maxRetries) return response;
 
     if (response.status === 429) {
-      const retryAfter = parseInt(response.headers.get("Retry-After") ?? "60");
-      await new Promise((r) => setTimeout(r, retryAfter * 1000));
+      const wait = Number(response.headers.get("Retry-After"));
+      const { error } = await response.clone().json();
+      if (!RETRY_429.has(error.code) || wait > 30) return response;
+      await new Promise((r) => setTimeout(r, wait * 1000));
       continue;
     }
 
-    if (response.status >= 500 && attempt < maxRetries) {
-      const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+    if (response.status >= 500) {
+      const header = response.headers.get("Retry-After");
+      const delay = header ? Number(header) * 1000 : Math.pow(2, attempt) * 1000 + Math.random() * 1000;
       await new Promise((r) => setTimeout(r, delay));
       continue;
     }
 
     return response;
   }
-
-  throw new Error("Max retries exceeded");
 }
 ```
 
 </CodeGroup>
+
+Use these for reads and calculations. A `POST` that creates a record (an athlete, an activity, a webhook) may have succeeded before a `5xx`: look the record up (for an athlete, by `external_id`) before sending it again.
 
 ### Request IDs
 

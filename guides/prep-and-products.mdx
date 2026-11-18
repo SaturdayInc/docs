@@ -206,7 +206,7 @@ Fit and compare treat a missing `meal_before_min` or `is_race` the way calculate
 
 Product answers open on the athlete's Saturday subscription, partner trial, or a seat license from their organization. For any other athlete, fit and compare answer `200` with `"tier": "teaser"`: the product categories (`categories`), a subscribe link (`cta`) and `request_id`, in place of `prescription` and `fit`. Prep still returns the prescription and gear for them, with `products` empty.
 
-A key that receives a large share of the catalog within 24 hours is paced: a new product is refused with `429` `rate_limited` and a `Retry-After` of some minutes, while products already received keep working. See [Rate Limiting](/rate-limiting).
+A key that receives a large share of the catalog within 24 hours is paced: a new product is refused with `429` `catalog_paced` and a `Retry-After` of the seconds until new products resume, while products already received keep working. See [Rate Limiting](/rate-limiting).
 
 ## Safety
 
