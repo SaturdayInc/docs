@@ -64,6 +64,7 @@ Every `429` carries a `Retry-After` header, in seconds, and a `code` that says w
 | `intelligence_daily_limit_reached` | Your daily ceiling on intelligence endpoints | Seconds until midnight UTC | Your data endpoints keep working; calculations wait until midnight UTC |
 | `athlete_free_daily_limit_reached` | Your daily budget of calculations sent without an `athlete_id` | Seconds until midnight UTC | Send an `athlete_id`, or wait until midnight UTC |
 | `distinct_lookup_daily_limit_reached` | Your daily budget of distinct product lookups | Seconds until midnight UTC | Repeat lookups keep working; new ones wait until midnight UTC |
+| `simulated_subscriber_daily_limit_reached` | Sandbox only: your key has marked its day's athletes as subscribed with `simulate-subscription` | Seconds until midnight UTC | Athletes already marked keep their simulated subscription; mark more after midnight UTC |
 
 Retry `rate_limit_exceeded`, and `catalog_paced` when the wait is short. Never sleep on the four daily codes: their `Retry-After` runs to midnight UTC, so stop that work and resume after the reset.
 
