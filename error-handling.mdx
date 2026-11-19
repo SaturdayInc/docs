@@ -31,6 +31,7 @@ Saturday uses one error format across all endpoints, modeled on Stripe's error s
 | `param` | No | The request parameter that caused the error |
 | `documentation_url` | Yes | The docs page that explains this code, the same page `GET /v1/errors` lists for it |
 | `request_id` | Yes, except on a `not_found_error` 404 | Identifier for this request. Include it in support tickets |
+| `athlete_id` | No | On `athlete_exists`: the athlete that holds the `external_id` you sent |
 
 A value of the wrong JSON type is refused with code `invalid_value` and the field in `param`, on the athlete, activity, calculate, batch, gear and integration routes: `"duration_min": "90"` answers "duration_min must be a whole number (got a string)." A nested field carries its path, such as `settings.sweat_level`. A body that is not JSON answers `invalid_json`.
 
@@ -155,7 +156,7 @@ async function requestWithRetry(
 
 </CodeGroup>
 
-Use these for reads and calculations. A `POST` that creates a record (an athlete, an activity, a webhook) may have succeeded before a `5xx`: look the record up (for an athlete, by `external_id`) before sending it again.
+Use these for reads and calculations. A `POST` that creates a record (an athlete, an activity, a webhook) may have succeeded before a `5xx`: look the record up before sending it again. An athlete create that carries an `external_id` is safe to resend: if the first one went through, the retry answers `409` `athlete_exists` with the athlete's id in `athlete_id`.
 
 ### Request IDs
 

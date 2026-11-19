@@ -171,7 +171,7 @@ Some paying Saturday athletes never touch your subscribe CTA: they subscribed **
 - **You get the same webhook.** When a match links an actively paying account, `subscription.created` fires with `source: "email_match"`. Handle it like a checkout unlock.
 - **Ambiguity never auto-links.** Multiple athletes sharing an email, or a conflict with an existing link, goes to Saturday-side human review instead.
 - **No revenue share on matched links.** These subscriptions were not driven through your platform (many predate it), so they do not appear on your revenue statement.
-- **Only entitlement is released.** The match tells your platform the athlete's subscription tier, and an expiry when one applies, never payment details, purchase history, or Saturday profile data. The athlete's Saturday app answers reach you only if they choose to share them; see [Reading an athlete's fueling profile](/guides/fueling-profile).
+- **What the match tells you.** The athlete's subscription tier, and an expiry when one applies, never payment details or purchase history. From then on the athlete's numbers are calculated from their Saturday app answers, unless their account reads as under 18; the answers themselves are returned to you only while the athlete shares them. See [Reading an athlete's fueling profile](/guides/fueling-profile).
 
 If you have a partner-negotiated offer with Saturday (e.g. member pricing for your annual subscribers), assert eligibility by setting `partner_plan: "annual"` on the athlete (`PATCH /v1/athletes/{id}`). Eligible athletes' CTAs carry the offer claim and checkout prices accordingly. You may advertise the offer anywhere; only asserted athletes can redeem it.
 

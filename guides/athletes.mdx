@@ -69,7 +69,9 @@ The `external_id` field maps the Saturday athlete to your platform's user. This 
 GET /v1/athletes?external_id=your-user-12345
 ```
 
-The answer lists every athlete you created with that `external_id`, newest first, in one page. Saturday does not deduplicate `external_id`, so a create that you retry after a timeout makes a second athlete. Look the id up first and create only when the list is empty.
+The answer lists every athlete you created with that `external_id`, newest first, in one page.
+
+An `external_id` belongs to one athlete in your account. A create with an `external_id` one of your athletes holds creates nothing and answers `409` with code `athlete_exists`, and `athlete_id` in the error names that athlete, so a create you retry after a timeout is safe. Athletes created before this rule may share an `external_id`; the lookup returns all of them.
 
 ## Profile fields
 
