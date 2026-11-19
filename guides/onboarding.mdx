@@ -62,7 +62,7 @@ An incomplete-profile response for a request with an `athlete_id` can carry `pre
 
 - It asks only the questions that are missing, one per screen, mobile-first, in about two minutes.
 - Each answer commits as it is given, so a half-finished session still narrows the bands.
-- The finish screen asks the athlete's consent to show fuel for their most recent activity. If you have registered an `activity_link_template` on your partner account (`yourapp://activity/{external_id}`, for instance), it deep-links into your activity screen. Otherwise it renders the numbers itself and returns the athlete via your `return_url`.
+- The finish screen asks the athlete's consent to show fuel for their most recent activity. An athlete with a complete profile whom your API calls would answer exactly (a subscription, a license, or a trial call left) gets that fuel: if you have registered an `activity_link_template` on your partner account (`yourapp://activity/{external_id}`, for instance), it deep-links into your activity screen; otherwise it renders the numbers itself and returns the athlete via your `return_url`. Any other athlete sees no numbers: the finish says their answers are saved and sends them back to you for their fueling numbers.
 - When the athlete's Saturday account is connected to your platform and they are 18 or older, the finish screen also asks "Let \{your platform\} see your fueling answers?". Yes emails their Saturday address a one-tap confirmation, and sharing starts when they tap it; No turns sharing off at once. See [Reading an athlete's fueling profile](/guides/fueling-profile).
 - The link stays valid for 90 days, and every later incomplete-profile response carries a fresh one, so athletes can come back and edit their answers.
 
