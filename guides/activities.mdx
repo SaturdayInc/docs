@@ -192,6 +192,38 @@ GET /v1/athletes/{athlete_id}/activities?limit=50&cursor=1737043200%7C3f6c2b1e-8
 
 Activities come back newest first, paginated by cursor. `limit` defaults to 50 and is clamped to 1-200; pass `pagination.next_cursor` back as `cursor` for the next page, URL-encoded and unchanged. There are no date-range or type filters; filter on your side, or track activities by `external_id`.
 
+## Syncing activities from intervals.icu
+
+When an athlete connected intervals.icu to your platform, send us your intervals.icu OAuth access token for them and we store their intervals.icu activities as activities of your athlete.
+
+```bash
+POST /v1/integrations/{provider}/sync
+```
+
+`provider` is `intervals_icu`.
+
+```json
+{
+  "athlete_id": "3f6c2b1e-8d4a-4e7b-9c2f-1a5d7e9b0c43",
+  "access_token": "the athlete's intervals.icu access token",
+  "sync_types": ["activities"],
+  "date_range": { "start": "2026-11-01", "end": "2026-11-19" }
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `athlete_id` | Yes | Your athlete the activities are stored under |
+| `access_token` | Yes | The intervals.icu OAuth access token your app holds for that athlete |
+| `sync_types` | Yes | `["activities"]` |
+| `date_range` | No | `start` and `end`, both `YYYY-MM-DD`. Without it, the last 7 days |
+
+The answer is `result` and `request_id`. `result` holds `status` (`completed`, `partial` when some activities could not be stored, `failed` when none could or intervals.icu refused the token, with `errors` saying why), `activities_found`, `activities_synced`, `activities_skipped` (activities whose type names no sport the API supports, such as yoga) and `prescription_tier` (`full` or `teaser`, the athlete's tier). A synced activity's id is `icu_` followed by its intervals.icu id, so syncing the same days again updates those activities and adds no copies.
+
+Each sync calls intervals.icu with your token, so it counts against your intervals.icu app's limit: for an OAuth app, 100 calls a day per user.
+
+The route takes no Strava or TrainingPeaks token. `strava` answers `400` with code `invalid_provider`. For TrainingPeaks workouts, send them with [activity import](/guides/batch-operations#activity-import) once the athlete agrees to share them with Saturday; `training_peaks` on this route answers `400` `invalid_provider` and names that route.
+
 ## Submitting feedback
 
 Record how the fueling went:
