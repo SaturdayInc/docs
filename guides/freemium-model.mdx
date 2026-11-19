@@ -145,7 +145,7 @@ Over the daily cap, responses degrade to teaser ranges (never an error) and incl
 Two more bounds keep the trial to real athletes. Neither is an error: the answer comes back in teaser ranges with a flag and a `trial_note` you can show the athlete as it stands.
 
 - **New trials per day.** A key starts at most 50 new trials per UTC day (5 for a self-serve key). An athlete past that gets ranges with `trial_start_deferred: true`, and their trial starts on a later day. Athletes already in their trial are not affected. Rolling out to a large roster? Email api@saturday.fit and we raise it for your key.
-- **Profiles per trial athlete.** One trial athlete's exact numbers cover up to 3 distinct profiles over the trial: their first, plus two changes. Weight changes under about 2 kg and the carbohydrate ceiling do not count as changes. A fourth profile gets ranges with `trial_profile_limit_reached: true`; the earlier profiles stay exact. Subscribed athletes have no such bound.
+- **Profiles per trial athlete.** One trial athlete's exact numbers cover up to 3 distinct profiles over the trial: their first, plus two changes. Small day-to-day weight changes do not count as changes. A fourth profile gets ranges with `trial_profile_limit_reached: true`; the earlier profiles stay exact. Subscribed athletes have no such bound.
 
 `GET /v1/partner` shows your key's numbers under `rate_limits`.
 
