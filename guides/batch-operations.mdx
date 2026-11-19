@@ -19,7 +19,7 @@ Calculate prescriptions for multiple scenarios at once. Ideal for building "trai
 POST /v1/nutrition/calculate/batch
 ```
 
-Each scenario is a full calculate request, so `athlete_id` goes on the scenario, not at the top level. Successful results come back in request order, with failures omitted. Use the failed indexes in `errors` to match each result to its original scenario.
+Each scenario is a full calculate request, so `athlete_id` goes on the scenario, not at the top level, and a brick or triathlon is one scenario with `legs` ([Bricks and triathlons](/guides/nutrition-calculation#bricks-and-triathlons)); its result carries the leg shares as calculate's does. A field a scenario does not take refuses the whole batch with `400` and code `unsupported_field`, its `param` carrying the scenario's index (`scenarios[1].is_races`), before any scenario runs. Successful results come back in request order, with failures omitted. Use the failed indexes in `errors` to match each result to its original scenario.
 
 <CodeGroup>
 
@@ -249,9 +249,9 @@ Each athlete is also validated on `weight_kg` (20 to 250, as on single create), 
 
 The batch is also checked against your account's total athlete quota before processing. If you are at the cap the whole request returns `403` with the code `resource_limit_exceeded`, rather than partially filling.
 
-<Warning>
-  **`external_id` is not deduplicated.** Saturday does not reject or merge an athlete whose `external_id` you used before; every create mints a new athlete with a new UUID. Retrying a batch that partially succeeded will therefore create duplicates of the athletes that succeeded the first time. Track the returned IDs against your `external_id` values and retry only the items that failed.
-</Warning>
+<Note>
+  **`external_id` is unique within your account.** An item whose `external_id` one of your athletes holds, an earlier item of the same batch included, is not created: it fails with code `athlete_exists`, and `athlete_id` on that error names the athlete that holds it. Retrying a batch that partially succeeded is therefore safe for items that carry an `external_id`. Items without one are created again on a retry.
+</Note>
 
 ## Activity import
 
@@ -261,16 +261,17 @@ Import multiple activities for an athlete at once. Useful for backfilling histor
 POST /v1/athletes/{athlete_id}/activities/import
 ```
 
-An imported activity accepts these fields and no others. Unknown keys are ignored silently, so check this list rather than assuming a field was stored:
+An imported activity accepts these fields, and `name` and `scheduled_at`, which are accepted and ignored. Any other field is refused with `400` and code `unsupported_field` ([Error Handling](/error-handling#a-field-the-request-does-not-take)):
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `type` | Yes | One of `bike`, `run`, `swim`, `row`, `ski`, `lift`, `hike` |
-| `duration_min` | Yes | Positive integer |
+| `type` | Yes | One of `bike`, `run`, `swim`, `row`, `ski`, `lift`, `hike`, or `brick` or `triathlon` with `legs` |
+| `duration_min` | For a single sport | Positive integer. For a brick or triathlon, the legs' total: leave it out or send that total |
+| `legs` | For a brick or triathlon | 2 to 10 legs, each `type`, `duration_min`, `intensity_level` and `thermal_stress_level`, as on [activity create](/guides/activities#bricks-and-triathlons) |
 | `intensity_level` | No | 1 to 9; the calculation clamps values outside the scale. `lift` and `hike` use 1 to 3, store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | No | 1 to 9; the calculation clamps values outside the scale |
 | `is_race_event` | No | Boolean |
-| `meal_before_min` | No | Minutes between the athlete's last meal and the start |
+| `meal_before_min` | No | Minutes since the athlete's last carb-rich meal; more than 180 plans a fasted start |
 | `external_id` | No | Your activity ID, carried through and used by finish-screen deep links |
 | `calculate` | No | Calculate a prescription for this activity, see below |
 
@@ -363,7 +364,7 @@ Each calculation runs the same tier-aware path as the single calculate endpoint:
 
 Per-item outcomes ride a `prescriptions` array in the response, each with `index`, `activity_id`, and the tier-aware `result`. A failed calculation never fails the import: the activity is still created, and the failure appears on that item's `code` and `message`.
 
-Imports count against rate limits per item, like batch calculate.
+Imports count against rate limits per item, like batch calculate. Each prescription you ask for counts as one activity calculation besides its import: it needs the nutrition feature (`403` with `feature_alpha` without it) and counts against your daily intelligence limit as well as your daily call limit. An import runs only when both limits have room for all of it, and returns `429` otherwise, with nothing imported.
 
 ## Error handling in batch operations
 

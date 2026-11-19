@@ -22,6 +22,8 @@ Training platforms build the workout. Saturday fuels it.
 
 Safety metadata is present on every response at every tier, including free ones. See [Safety](/guides/safety).
 
+Every time a partner key receives is a whole number of Unix seconds: on athletes, activities and stored prescriptions, webhooks and their deliveries, each event's `created_at`, API keys, your partner account, `trial_ends_at`, the fueling profile's `updated_at`, the export's `exported_at` and every time in its records, over REST, webhooks and MCP alike. The webhook signature header's `t` is Unix seconds too ([Webhooks](/guides/webhooks#verifying-webhook-signatures-hmac-sha256)). Usage dates are `YYYY-MM-DD` in UTC, and `GET /v1/health` gives its `timestamp` as an RFC 3339 string. The [Coach API](/guides/coach-api) answers in Unix milliseconds.
+
 Product matching against Saturday's curated endurance-nutrition catalog and conversations with Saturday's assistant are gated. [Feature Gates](/guides/feature-gates) covers the launch stages and how to request access.
 
 ## The problem

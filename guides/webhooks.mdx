@@ -57,7 +57,7 @@ console.log(`Webhook secret: ${webhook.secret}`);
 
 </CodeGroup>
 
-The response is `201` with the new webhook under `webhook` and a `request_id` beside it. The webhook carries `id`, `url`, `events`, `active`, `fail_count`, `created_at` and `updated_at` in milliseconds, and `secret`, a 64-character hex string.
+The body takes `url` and `events`; any other field is refused with `400`, code `unsupported_field` and the field in `param`: a `description` answers `"description" is not a webhook field. A webhook takes url and events.` The response is `201` with the new webhook under `webhook` and a `request_id` beside it. The webhook carries `id`, `url`, `events`, `active`, `fail_count`, `created_at` and `updated_at` in Unix seconds, and `secret`, a 64-character hex string.
 
 <Warning>
   **Save the webhook secret immediately.** It is returned once, at creation time, and never again. You need it to verify that incoming webhooks came from Saturday.
@@ -76,7 +76,7 @@ These event types are emitted today:
 | `athlete.profile_completed` | An athlete's fueling profile crosses from incomplete to complete, which is the cue that this athlete is now eligible for exact prescriptions |
 | `athlete.profile_sharing_changed` | A linked athlete starts or stops sharing their Saturday app answers with you, or the link to their Saturday account goes while they shared. See [Reading an athlete's fueling profile](/guides/fueling-profile) |
 | `athlete.fueling_profile_updated` | An athlete who shares their Saturday app answers with you changes one of them in the app |
-| `athlete.deleted` | An athlete is deleted through the API, or deletes their Saturday account |
+| `athlete.deleted` | An athlete is deleted through the API, or an athlete whose `athlete_id` is their Saturday account id deletes that account (see [When a Saturday account is deleted](#when-a-saturday-account-is-deleted)) |
 | `activity.created` | A new activity is created |
 | `activity.updated` | An activity is modified |
 | `activity.deleted` | An activity is deleted |
@@ -97,17 +97,17 @@ Any name outside this list is rejected with `400`, and one bad name fails the en
 {
   "id": "6f1c9a02-4d3b-4c1e-9f77-2b8a5d0e1c34",
   "type": "subscription.created",
-  "created_at": 1765467600000,
+  "created_at": 1765467600,
   "data": {
     "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "tier": "full",
-    "expires_at": 1797003600000,
+    "expires_at": 1797003600,
     "source": "checkout_subscription"
   }
 }
 ```
 
-`source` values: `checkout_subscription`, `checkout_lifetime` (no `expires_at`), `existing_subscription_linked` (a subscribed Saturday account tapped your CTA and was linked without being charged), `email_match` (a paying Saturday account was linked to your athlete automatically by email, see [Freemium Model, Automatic linking by email](/guides/freemium-model#automatic-linking-by-email)), `simulated` (test env only). `expires_at` is in milliseconds.
+`source` values: `checkout_subscription`, `checkout_lifetime` (no `expires_at`), `existing_subscription_linked` (a subscribed Saturday account tapped your CTA and was linked without being charged), `email_match` (a paying Saturday account was linked to your athlete automatically by email, see [Freemium Model, Automatic linking by email](/guides/freemium-model#automatic-linking-by-email)), `simulated` (test env only). `expires_at` is in Unix seconds.
 
 `subscription.cancelled` means the athlete's next calculate returns teaser ranges:
 
@@ -115,7 +115,7 @@ Any name outside this list is rejected with `400`, and one bad name fails the en
 {
   "id": "8a2d7e14-9b60-4f33-a1c5-7d4e6b90f218",
   "type": "subscription.cancelled",
-  "created_at": 1765467600000,
+  "created_at": 1765467600,
   "data": {
     "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "tier": "teaser",
@@ -124,8 +124,14 @@ Any name outside this list is rejected with `400`, and one bad name fails the en
 }
 ```
 
-`reason` is the Stripe event type that ended access, such as `customer.subscription.deleted`, or one of `expired`, `refund`, `dispute`, `email_match_decayed` (an email-matched link that stopped matching), and `simulated` (test env only).
+`reason` is the Stripe event type that ended access, such as `customer.subscription.deleted`, or one of `expired`, `refund`, `dispute`, `email_match_decayed` (an email-matched link that stopped matching), `account_deleted` (the athlete's linked Saturday account was deleted), and `simulated` (test env only).
 
+### When a Saturday account is deleted
+
+What you receive when an athlete deletes their Saturday account depends on how your athlete record relates to that account.
+
+- **The record's `athlete_id` is the Saturday account id.** Saturday deletes the record and sends `athlete.deleted`, with `data` holding `athlete_id` only and the event `id` set to `athlete_deleted_` followed by the athlete id, the same on every send.
+- **You created the record, and the athlete connected it to their Saturday account** (a checkout from your subscribe link, or a confirmed email match). The record is yours and stays; no `athlete.deleted` is sent. Saturday removes the connection to the account. If you had received `subscription.created` for that connection, you receive `subscription.cancelled` with `"tier": "teaser"` and `"reason": "account_deleted"`, and the athlete's next calculation returns teaser ranges. If the athlete was sharing their Saturday app answers with you, you also receive `athlete.profile_sharing_changed`, whose record shows `profile_sharing: "not_linked"`.
 ### Profile sharing event payloads
 
 Like the other `athlete.*` events, both sharing events carry the athlete record, as `GET /v1/athletes/{athlete_id}` returns it when the event is sent. The athlete's id is `data.id`. Unlike `athlete.created` and `athlete.updated`, the record includes the two fields computed on read, `subscription_status` and `profile_sharing`.
@@ -136,7 +142,7 @@ Like the other `athlete.*` events, both sharing events carry the athlete record,
 {
   "id": "evt_4f9a2c7e1b8d3a6f0c5e9b2d7a1f4c8e",
   "type": "athlete.profile_sharing_changed",
-  "created_at": 1765467600000,
+  "created_at": 1765467600,
   "data": {
     "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "partner_id": "your-partner-id",
@@ -166,7 +172,7 @@ A link that arrives while the athlete does not share with you sends nothing; `GE
 {
   "id": "evt_0b7e3d9a5c1f8e2a6d4b0c9f3e7a1d5b",
   "type": "athlete.fueling_profile_updated",
-  "created_at": 1765467600000,
+  "created_at": 1765467600,
   "data": {
     "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "partner_id": "your-partner-id",
@@ -193,13 +199,13 @@ Both events go to each athlete record linked to the Saturday account, one event 
 
 ## Webhook payload format
 
-Every delivery has this envelope. `id` identifies the event and `created_at` is a Unix timestamp in **milliseconds**. This one carries a full-tier prescription from `POST /v1/nutrition/calculate`:
+Every delivery has this envelope. `id` identifies the event and `created_at` is when it happened, in Unix seconds, like every time in the payload and the `t` of the signature header. This one carries a full-tier prescription from `POST /v1/nutrition/calculate`:
 
 ```json
 {
   "id": "3e9b1f27-5c84-4a19-b2d6-8f70c3a51e4b",
   "type": "prescription.calculated",
-  "created_at": 1765467600000,
+  "created_at": 1765467600,
   "data": {
     "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     "tier": "full",
@@ -428,4 +434,4 @@ GET    /v1/webhooks/{webhook_id}/deliveries # recent delivery attempts
 
 `POST /v1/webhooks/{webhook_id}/test` delivers synchronously and returns the delivery record under `delivery`, including the status code your endpoint returned. Use it to confirm signature verification works before you depend on live events. The test event has type `webhook.test` and a `data` object holding a single `message` string. Subscribing to it is valid but unnecessary: the test delivery reaches your endpoint regardless. Your handler should still ignore event types it does not recognize rather than erroring on them.
 
-`GET /v1/webhooks/{webhook_id}/deliveries` returns the 50 most recent attempts for that webhook, newest first, under `deliveries`. Each carries `status` (`pending`, `delivered`, `failed`, or `exhausted`), `status_code`, `attempts`, `next_retry_at`, `completed_at`, and `response_body`, the first kilobyte of your endpoint's response body, which is usually enough to see why a delivery failed.
+`GET /v1/webhooks/{webhook_id}/deliveries` returns the 50 most recent attempts for that webhook, newest first, under `deliveries`. Each carries `status` (`pending`, `delivered`, `failed`, or `exhausted`), `status_code`, `attempts`, `created_at`, `next_retry_at` and `completed_at` (Unix seconds), and `response_body`, the first kilobyte of your endpoint's response body, which is usually enough to see why a delivery failed.

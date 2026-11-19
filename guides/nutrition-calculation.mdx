@@ -78,24 +78,50 @@ Thermal stress drives the fluid and sodium targets. A 3-hour ride at high therma
 
 ### Comprehensive inputs
 
-For the highest accuracy, include an athlete reference:
+For exact numbers, include an athlete reference and every session input:
 
 ```json
 {
   "activity_type": "bike",
   "duration_min": 300,
   "intensity_level": 8,
+  "thermal_stress_level": 7,
+  "meal_before_min": 120,
   "is_race": true,
-  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
-  "thermal_stress_level": 7
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
 }
 ```
 
-When you include an `athlete_id`, Saturday reads that athlete's stored profile: sex, year of birth, body weight, sweat level, saltiness, carb experience, usual carb consumption, satiety level, fitness level, and fueling concerns. Inline fields in the request body override the stored values for that one call.
+When you include an `athlete_id`, Saturday reads that athlete's stored profile: sex, year of birth, body weight, sweat level, saltiness, carb experience, usual carb consumption, satiety level, fitness level, and fueling concerns. For an athlete linked to a Saturday account, any answer your record lacks comes from their Saturday app answers. Inline fields in the request body override the stored values for that one call.
+
+### Session inputs
+
+| Field | Values | Notes |
+|-------|--------|-------|
+| `intensity_level` | 1 to 9 (1 easy, 5 moderate, 9 intervals). `lift` and `hike` use 1 to 3 | Odd levels are the Saturday app's effort bands; an even level is an effort in between. An omitted level computes as 5 (2 for `lift` and `hike`) |
+| `thermal_stress_level` | 1 (cold, dry) to 9 (hot, humid) | The session's heat and humidity |
+| `meal_before_min` | Minutes since the athlete's last carb-rich meal | More than 180 plans a fasted start; 180 or fewer plans a fed start |
+| `is_race` | `true` or `false` | Whether the session is a race |
+
+All four belong on every call. An omitted one is an unanswered input: the session still computes (at effort 5, or 2 for `lift` and `hike`; heat 5; fed; training), but the answer comes back as ranges even for a complete profile, with the input named in `precision.missing_fields`.
+
+`precision` tells you what to do next, on every tier:
+
+| Field | What it holds |
+|-------|---------------|
+| `missing_fields` | Every field the calculation still needs, profile answers and session inputs alike, most impactful first, each with `band_impact`. `required: true` marks the safety core (sex, age, weight, sweat, saltiness, carb experience, usual carbs, effort and heat); `false` does not mean optional, since the answer stays ranges while any listed field is missing |
+| `missing_profile_fields` | The athlete's profile answers still missing, by the same names. The onboarding link collects them, or your own questions ([Onboarding](/guides/onboarding)) |
+| `missing_session_inputs` | The session inputs your request left out. Send them |
+| `message` | Names both, and where each goes |
+| `onboarding` | Present only when profile answers are missing, since a session input is yours to send |
+
+The two lists name inputs only and come with a partner API key on every tier, teaser included. Both empty is one condition of exact numbers; the other is the athlete's access: a Saturday subscription, a seat license or the partner trial ([Freemium Model](/guides/freemium-model)).
 
 An `athlete_id` your account does not hold is refused with `404` and code `athlete_not_found`; leave `athlete_id` out for a range estimate.
 
-A field spelled the way the athlete or activity request spells it is refused with `400` and code `unsupported_field`, with the field to send in the message: `weight_kg` (send `athlete_weight_kg`), `year_of_birth` (send `age`), `is_race_event` (send `is_race`), `type` (send `activity_type`), `duration` (send `duration_min`) and `settings` (send the profile fields at the top level, or an `athlete_id`). Any other field the request does not know is ignored.
+Profile fields, at the top level of the request, stand in for a stored athlete or override one stored answer for that call: `sex` (`male`, `female` or `intersex`), `age` (years), `athlete_weight_kg` (20 to 250), `sweat_level`, `saltiness`, `satiety_level` and `fitness_level` (1, 3, 5, 7 or 9), `carb_experience` and `usual_carb_consumption` (the values in [Settings: the fueling profile](/guides/athletes#settings-the-fueling-profile)), `carb_upper_limit_override` (50 to 150 g/hr), and `concerns`, one object of the eight flags `performance`, `gut_distress`, `heat_tolerance`, `muscle_cramps`, `faintness`, `hunger`, `thirst` and `drinking_resistance`.
+
+The request may carry only the fields on this page. Any other field, at any depth, is refused with `400` and code `unsupported_field`, `param` naming it, and the message naming the field it was probably meant to be: `meal_before_mins` answers `Did you mean "meal_before_min"?`. A field spelled the way the athlete or activity request spells it gets that request's spelling: `weight_kg` (send `athlete_weight_kg`), `year_of_birth` (send `age`), `is_race_event` (send `is_race`), `type` (send `activity_type`), `duration` (send `duration_min`) and `settings` (send the profile fields at the top level, or an `athlete_id`). See [Error Handling](/error-handling#a-field-the-request-does-not-take).
 
 ## Understanding the response
 
@@ -129,6 +155,10 @@ This example shows an exact full-tier response with complete inputs. Teaser resp
   }
 }
 ```
+
+### Per-hour figures
+
+The per-hour figures are the ones the Saturday app shows on its Fuel card, so your athletes see the same numbers in both places. They are whole numbers, sodium and fluid in steps of 10, and they are not always the total divided by the session's hours: show them as they come, and read the `total_*` fields for the amounts over the whole session.
 
 ### Confidence score
 
@@ -193,7 +223,57 @@ Every calculation response includes a `safety` block, on every tier. See [Safety
 | Hiking | `hike` | Long-duration, variable intensity |
 | Weightlifting | `lift` | Strength training |
 
-These seven keys are the complete set, accepted in any letter case. Any other `activity_type` is refused with `400` and code `invalid_value`, on calculate, on each batch scenario and on activity create, so map your own sport names first: `POST /v1/infer/activity-type` does it from a title. `GET /v1/activity-types` returns the same list with descriptions, and accepts an optional `?activity_type=` filter to validate a single key.
+These seven sports, with `brick` and `triathlon` ([below](#bricks-and-triathlons)), are the complete set, accepted in any letter case. Any other `activity_type` is refused with `400` and code `invalid_value`, on calculate, on each batch scenario and on activity create, so map your own sport names first: `POST /v1/infer/activity-type` does it from a title. `GET /v1/activity-types` returns the seven sports with descriptions in `activity_types`, and `brick` and `triathlon` with the rules for their legs in `linked_session_types`. An optional `?activity_type=` narrows both lists to the one type named, so you can validate a single key.
+
+## Bricks and triathlons
+
+A brick (two or more sports back to back) or a triathlon is one session made of legs. Send it as one request with `activity_type` `brick` or `triathlon` and `legs`, never as one request per leg.
+
+```json
+{
+  "athlete_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "activity_type": "brick",
+  "meal_before_min": 120,
+  "is_race": false,
+  "legs": [
+    {"activity_type": "bike", "duration_min": 90, "intensity_level": 6, "thermal_stress_level": 6},
+    {"activity_type": "run", "duration_min": 30, "intensity_level": 7, "thermal_stress_level": 6}
+  ]
+}
+```
+
+| Rule | Detail |
+|------|--------|
+| Legs | 2 to 10, in the order they are done |
+| Each leg | `activity_type` (one of the seven sports), `duration_min` (5 to 2160), `intensity_level` (1 to 9; `lift` and `hike` 1 to 3, a higher value computing as 3) and `thermal_stress_level` (1 to 9), all four required |
+| `duration_min` | The legs' total, at most 2160. Leave it out, or send that total |
+| `intensity_level`, `thermal_stress_level` | On the legs only. At the top level they are refused with `400` `invalid_value` |
+| `meal_before_min`, `is_race` and profile fields | At the top level, for the whole session |
+
+A brick or triathlon without `legs` is refused with `400` `missing_field` on `legs`, and `legs` on a single sport with `400` `invalid_value`. A leg's own error names its path, such as `legs[1].duration_min`.
+
+An answer with exact numbers carries `legs`: each leg's share, in the order sent, as the Saturday app's leg cards show it.
+
+```json
+{
+  "tier": "full",
+  "carb_g_per_hr": 70,
+  "sodium_mg_per_hr": 550,
+  "fluid_ml_per_hr": 700,
+  "total_carb_g": 140,
+  "total_sodium_mg": 1100,
+  "total_fluid_ml": 1400,
+  "legs": [
+    {"duration_min": 90, "total_carb_g": 110, "total_sodium_mg": 850, "total_fluid_ml": 1100, "carb_g_per_hr": 73, "sodium_mg_per_hr": 570, "fluid_ml_per_hr": 730},
+    {"duration_min": 30, "total_carb_g": 30, "total_sodium_mg": 250, "total_fluid_ml": 300, "carb_g_per_hr": 60, "sodium_mg_per_hr": 500, "fluid_ml_per_hr": 600}
+  ],
+  "precision": {"profile_complete": true}
+}
+```
+
+Each leg's figures are as the app's leg card shows them, per hour as the [per-hour figures](#per-hour-figures) above. The legs' totals add up to the session's totals before the session's own rounding. An answer with ranges carries no leg figures.
+
+Bricks and triathlons work the same way in [batches](/guides/batch-operations), on [stored activities](/guides/activities#bricks-and-triathlons), in [prep, product fit and compare](/guides/prep-and-products#bricks-and-triathlons), each of which answers leg by leg. Bricks and triathlons are for requests made with a partner API key; an athlete's own assistant connected through the Saturday connector plans single sports.
 
 <Note>
 Every calculation response carries a `precision` object: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
