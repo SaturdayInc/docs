@@ -39,7 +39,7 @@ Content-Type: application/json
 
 ## When you're rate limited
 
-Exceeding a ceiling returns `429 Too Many Requests`:
+Exceeding a limit returns `429 Too Many Requests`:
 
 ```json
 {
@@ -53,36 +53,65 @@ Exceeding a ceiling returns `429 Too Many Requests`:
 }
 ```
 
-Three cases produce a `rate_limit_error`, and they want different handling:
+Every `429` carries a `Retry-After` header, in seconds, and a `code` that says which limit you reached. Branch on the code:
 
 | Code | Cause | `Retry-After` | What to do |
 |------|-------|---------------|------------|
-| `rate_limit_exceeded` | Token bucket empty | Present | Wait it out, then continue |
-| `rate_limit_exceeded` | Daily call ceiling reached | Absent | Stop until midnight UTC. The message states the limit |
-| `rate_limited` | Request pattern flagged as a calculator-extraction sweep | Absent | Vary your inputs, or contact support if the traffic is legitimate |
+| `rate_limit_exceeded` | Token bucket empty | Seconds until a token is free | Wait it out, then continue |
+| `catalog_paced` | Product answers for your account have covered a large share of the product catalog in 24 hours | Seconds until new products resume | Products already answered keep working; a new product waits until `Retry-After` passes |
+| `rate_limited` | An unusual request pattern, such as a sweep of calculation inputs | Seconds until the cooldown ends, up to 15 minutes | Every calculation on your account is refused until then. Requests refused with a `400` never count toward it. Contact api@saturday.fit if the traffic is legitimate |
+| `daily_call_limit_reached` | Your daily call ceiling | Seconds until midnight UTC | Stop until midnight UTC |
+| `intelligence_daily_limit_reached` | Your daily ceiling on intelligence endpoints | Seconds until midnight UTC | Your data endpoints keep working; calculations wait until midnight UTC |
+| `athlete_free_daily_limit_reached` | Your daily budget of calculations sent without an `athlete_id` | Seconds until midnight UTC | Send an `athlete_id`, or wait until midnight UTC |
+| `distinct_lookup_daily_limit_reached` | Your daily budget of distinct product lookups | Seconds until midnight UTC | Repeat lookups keep working; new ones wait until midnight UTC |
 
-Read `Retry-After` with a fallback rather than indexing it, since two of the three cases omit it:
+Retry `rate_limit_exceeded`, and `catalog_paced` when the wait is short. Never sleep on the four daily codes: their `Retry-After` runs to midnight UTC, so stop that work and resume after the reset.
+
+Both SDKs do this for you. They wait out a throttle, and a pacing wait of 30 seconds or less, and retry. Everything else is raised as a rate-limit error that carries the `code`, the wait (`retryAfter` in TypeScript, `retry_after` in Python) and, for the daily codes, the reset time (`resetsAt`, `resets_at`).
 
 <CodeGroup>
 
 ```python Python
 import time
 
+DAILY = {
+    "daily_call_limit_reached",
+    "intelligence_daily_limit_reached",
+    "athlete_free_daily_limit_reached",
+    "distinct_lookup_daily_limit_reached",
+}
+
 response = make_api_request()
 
 if response.status_code == 429:
-    retry_after = int(response.headers.get("Retry-After", 60))
-    time.sleep(retry_after)
-    response = make_api_request()
+    code = response.json()["error"]["code"]
+    wait = int(response.headers["Retry-After"])
+    if code == "rate_limit_exceeded" or (code == "catalog_paced" and wait <= 30):
+        time.sleep(wait)
+        response = make_api_request()
+    elif code in DAILY:
+        schedule_after_reset(wait)  # resumes after midnight UTC
 ```
 
 ```typescript TypeScript
-const response = await makeApiRequest();
+const DAILY = new Set([
+  "daily_call_limit_reached",
+  "intelligence_daily_limit_reached",
+  "athlete_free_daily_limit_reached",
+  "distinct_lookup_daily_limit_reached",
+]);
+
+let response = await makeApiRequest();
 
 if (response.status === 429) {
-  const retryAfter = parseInt(response.headers.get("Retry-After") ?? "60");
-  await new Promise((r) => setTimeout(r, retryAfter * 1000));
-  return makeApiRequest();
+  const { error } = await response.json();
+  const wait = Number(response.headers.get("Retry-After"));
+  if (error.code === "rate_limit_exceeded" || (error.code === "catalog_paced" && wait <= 30)) {
+    await new Promise((r) => setTimeout(r, wait * 1000));
+    response = await makeApiRequest();
+  } else if (DAILY.has(error.code)) {
+    scheduleAfterReset(wait); // resumes after midnight UTC
+  }
 }
 ```
 
@@ -100,13 +129,13 @@ Alongside the token bucket, every account carries daily call ceilings:
 | Partner, no agreed ceiling | Platform default, 2,000 calls/day |
 | Contracted integration | Per agreement, up to no ceiling at all |
 
-Intelligence endpoints (nutrition, products, inference, knowledge, AI) also carry a separate daily ceiling, apart from the total. Data endpoints (your athletes, activities, organizations, webhooks) are not counted against it, so hitting the intelligence ceiling never blocks syncing your data.
+Intelligence endpoints (nutrition calculations, prescriptions and prep, product fit and compare, calculations asked for at import, inference, knowledge, AI) also carry a separate daily ceiling, apart from the total. Data endpoints (your athletes, activities, organizations, webhooks) are not counted against it, so hitting the intelligence ceiling never blocks syncing your data.
 
-Without an agreed intelligence ceiling, your budget grows with your day: a base allowance plus a per-athlete allowance for every athlete you compute for that day. Integrations serving real athletes scale automatically; if your traffic pattern needs more than the budget provides, contact support@saturday.fit.
+Without an agreed intelligence ceiling, your budget grows with your day: a base allowance plus a per-athlete allowance for every athlete you compute for that day. Integrations serving real athletes scale automatically; if your traffic pattern needs more than the budget provides, contact api@saturday.fit.
 
-Request-pattern friction (`rate_limited`) also bounds daily variety on a few surfaces: distinct product lookups, distinct search queries, and calculations that carry no athlete. Repeats always serve, so a real workload (your athletes' usual products, revisited) never feels these; enumeration does. These 429s carry no `Retry-After`; novel inputs resume at midnight UTC.
+Two daily budgets bound a few surfaces. Distinct product lookups and distinct search queries are capped (`distinct_lookup_daily_limit_reached`), and repeats always serve, so a real workload (your athletes' usual products, revisited) never feels it; enumeration does. Calculations that carry no `athlete_id` have their own budget, 50 a day by default (`athlete_free_daily_limit_reached`), and every one counts, repeats included; calculations for your athletes are unaffected.
 
-Reaching a ceiling returns `429 Too Many Requests` without a `Retry-After` header; the message names the limit, and counters reset at midnight UTC. `GET /v1/partner` reports the ceilings that apply to your account (`rate_limits.requests_per_day` and `rate_limits.ip_requests_per_day`, `null` when none applies). To raise yours, contact support@saturday.fit.
+Reaching any daily ceiling or budget returns `429` with the code from the table above and a `Retry-After` of the seconds until midnight UTC, when the counters reset; the message names the limit. `GET /v1/partner` reports the ceilings that apply to your account (`rate_limits.requests_per_day` and `rate_limits.ip_requests_per_day`, `null` when none applies). To raise yours, contact api@saturday.fit.
 
 ## Staying under the ceilings
 
@@ -141,4 +170,4 @@ curl https://api.saturday.fit/v1/partner/usage \
 
 ## Requesting higher limits
 
-Outgrowing the ceilings is the point at which we want to hear from you. Send your account or partner ID and expected volume to [support@saturday.fit](mailto:support@saturday.fit). Raising a limit costs nothing.
+Outgrowing the ceilings is the point at which we want to hear from you. Send your account or partner ID and expected volume to [api@saturday.fit](mailto:api@saturday.fit). Raising a limit costs nothing.

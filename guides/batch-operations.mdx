@@ -19,7 +19,7 @@ Calculate prescriptions for multiple scenarios at once. Ideal for building "trai
 POST /v1/nutrition/calculate/batch
 ```
 
-Each scenario is a full calculate request, so `athlete_id` goes on the scenario, not at the top level. Successful results come back in request order, with failures omitted. Use the failed indexes in `errors` to match each result to its original scenario.
+Each scenario is a full calculate request, so `athlete_id` goes on the scenario, not at the top level, and a brick or triathlon is one scenario with `legs` ([Bricks and triathlons](/guides/nutrition-calculation#bricks-and-triathlons)); its result carries the leg shares as calculate's does. A field a scenario does not take refuses the whole batch with `400` and code `unsupported_field`, its `param` carrying the scenario's index (`scenarios[1].is_races`), before any scenario runs. Successful results come back in request order, with failures omitted. Use the failed indexes in `errors` to match each result to its original scenario.
 
 <CodeGroup>
 
@@ -110,7 +110,7 @@ Counts and the request ID sit at the top level. Each entry in `results` is the s
       "safety": {
         "max_safe_fluid_ml_per_hr": 1500,
         "max_safe_sodium_mg_per_hr": 3000,
-        "confidence_score": 0.65,
+        "confidence_score": 1,
         "requires_human_review": false,
         "warnings": [],
         "not_instructions": true
@@ -124,7 +124,7 @@ Counts and the request ID sit at the top level. Each entry in `results` is the s
       "safety": {
         "max_safe_fluid_ml_per_hr": 1500,
         "max_safe_sodium_mg_per_hr": 3000,
-        "confidence_score": 0.65,
+        "confidence_score": 1,
         "requires_human_review": false,
         "warnings": [],
         "not_instructions": true
@@ -261,21 +261,25 @@ Import multiple activities for an athlete at once. Useful for backfilling histor
 POST /v1/athletes/{athlete_id}/activities/import
 ```
 
-An imported activity accepts these fields and no others. Unknown keys are ignored silently, so check this list rather than assuming a field was stored:
+An imported activity accepts these fields, and `name` and `scheduled_at`, which are accepted and ignored. Any other field is refused with `400` and code `unsupported_field` ([Error Handling](/error-handling#a-field-the-request-does-not-take)):
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `type` | Yes | One of `bike`, `run`, `swim`, `row`, `ski`, `lift`, `hike` |
-| `duration_min` | Yes | Positive integer |
+| `type` | Yes | One of `bike`, `run`, `swim`, `row`, `ski`, `lift`, `hike`, or `brick` or `triathlon` with `legs` |
+| `duration_min` | For a single sport | Positive integer. For a brick or triathlon, the legs' total: leave it out or send that total |
+| `legs` | For a brick or triathlon | 2 to 10 legs, each `type`, `duration_min`, `intensity_level` and `thermal_stress_level`, as on [activity create](/guides/activities#bricks-and-triathlons) |
 | `intensity_level` | No | 1 to 9; the calculation clamps values outside the scale. `lift` and `hike` use 1 to 3, store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | No | 1 to 9; the calculation clamps values outside the scale |
 | `is_race_event` | No | Boolean |
+| `meal_before_min` | No | Minutes since the athlete's last carb-rich meal; more than 180 plans a fasted start |
 | `external_id` | No | Your activity ID, carried through and used by finish-screen deep links |
 | `calculate` | No | Calculate a prescription for this activity, see below |
 
 <Note>
   Imported activities are stamped with the time Saturday created them, so a backfill does not preserve the original activity dates. Keep a date mapping keyed by `external_id` if you need it.
 </Note>
+
+Exact numbers need `meal_before_min` and `is_race_event` on the activity, so send both on each imported activity when you ask for a calculation at import. Without them the calculation returns ranges even for a complete profile.
 
 <CodeGroup>
 
@@ -360,7 +364,7 @@ Each calculation runs the same tier-aware path as the single calculate endpoint:
 
 Per-item outcomes ride a `prescriptions` array in the response, each with `index`, `activity_id`, and the tier-aware `result`. A failed calculation never fails the import: the activity is still created, and the failure appears on that item's `code` and `message`.
 
-Imports count against rate limits per item, like batch calculate.
+Imports count against rate limits per item, like batch calculate. Each prescription you ask for counts as one activity calculation besides its import: it needs the nutrition feature (`403` with `feature_alpha` without it) and counts against your daily intelligence limit as well as your daily call limit. An import runs only when both limits have room for all of it, and returns `429` otherwise, with nothing imported.
 
 ## Error handling in batch operations
 
@@ -383,8 +387,8 @@ Every batch response uses the same envelope. The success array is named for the 
   "errors": [
     {
       "index": 1,
-      "code": "invalid_value",
-      "message": "weight_kg must be positive"
+      "code": "out_of_range",
+      "message": "weight_kg must be between 20 and 250 (got -5.00). See https://docs.saturday.fit/guides/athletes"
     }
   ],
   "total": 2,

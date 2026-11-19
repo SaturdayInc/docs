@@ -13,7 +13,7 @@ Whatever your platform calls these (workouts, sessions, events), the Saturday ob
 
 ## Activity lifecycle
 
-1. **Create** the activity with type and duration, plus intensity and thermal stress if you have them.
+1. **Create** the activity with type and duration, plus intensity, thermal stress, the last meal and whether it is a race.
 2. **Calculate** a nutrition prescription for it.
 3. **Submit feedback** afterward, if you collect it.
 
@@ -26,7 +26,7 @@ import os
 import requests
 
 response = requests.post(
-    "https://api.saturday.fit/v1/athletes/ath_abc123/activities",
+    "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities",
     headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
         "type": "run",
@@ -43,7 +43,7 @@ print(f"Activity ID: {activity['id']}")
 
 ```typescript TypeScript
 const response = await fetch(
-  "https://api.saturday.fit/v1/athletes/ath_abc123/activities",
+  "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities",
   {
     method: "POST",
     headers: {
@@ -70,23 +70,52 @@ console.log(`Activity ID: ${activity.id}`);
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `type` | string | Yes | Activity type (see [supported types](/guides/nutrition-calculation#supported-activity-types)) |
-| `duration_min` | integer | Yes | Expected duration in minutes |
+| `type` | string | Yes | Activity type (see [supported types](/guides/nutrition-calculation#supported-activity-types)), or `brick` or `triathlon` with `legs` |
+| `duration_min` | integer | For a single sport | Expected duration in minutes. For a brick or triathlon, the legs' total: leave it out or send that total |
+| `legs` | array | For a brick or triathlon | Its legs in order ([below](#bricks-and-triathlons)) |
 | `intensity_level` | integer | No | 1-9 scale; `lift` and `hike` use 1-3 (low, medium, high), store anything higher as 3, and an omitted level counts as 2 |
 | `thermal_stress_level` | integer | No | 1-9 scale |
-| `is_race_event` | boolean | No | Whether this is a race |
-| `meal_before_min` | integer | No | Minutes between the athlete's last meal and the start |
+| `is_race_event` | boolean | No | Whether this is a race. The calculate request spells it `is_race`; here that name is refused. Exact numbers need it |
+| `meal_before_min` | integer | No | Minutes since the athlete's last carb-rich meal at the start. More than 180 plans a fasted start. Exact numbers need it |
 | `external_id` | string | No | Your platform's activity ID |
 
-Create accepts these fields and no others. There is no field for a display name or a scheduled start time; keep those on your side and join on `external_id`.
+Create takes these fields. It also accepts `name` and `scheduled_at` and ignores them: there is no stored display name or scheduled start time, so keep those on your side and join on `external_id`. Any other field is refused with `400` and code `unsupported_field`, `param` naming it and the message naming the field to send: `activity_type` (send `type`), `is_race` (send `is_race_event`), `duration` (send `duration_min`), or the closest field for a misspelling. See [Error Handling](/error-handling#a-field-the-request-does-not-take).
 
 `external_id` is worth sending. Saturday's hosted onboarding finish screen uses it to deep-link the athlete back into the matching activity in your app.
 
-### Multi-sport activities
+### Bricks and triathlons
 
-Each activity carries one `type`, and Saturday prescribes for that type: an athlete fuels differently on the bike than on the run. For a triathlon or a brick, create one activity per leg.
+A brick or a triathlon is one activity with `type` `brick` or `triathlon` and its `legs`, never one activity per leg.
 
-To work out which legs a multi-sport title implies, use `POST /v1/infer/brick-types`.
+```json
+{
+  "type": "brick",
+  "meal_before_min": 120,
+  "is_race_event": false,
+  "external_id": "your-activity-88214",
+  "legs": [
+    {"type": "bike", "duration_min": 90, "intensity_level": 6, "thermal_stress_level": 6},
+    {"type": "run", "duration_min": 30, "intensity_level": 7, "thermal_stress_level": 6}
+  ]
+}
+```
+
+A leg here names its sport `type`, as an activity does (on calculate a leg's sport is `activity_type`). The legs follow the rules on [Bricks and triathlons](/guides/nutrition-calculation#bricks-and-triathlons): 2 to 10 legs, each with its sport, `duration_min` (5 to 2160), `intensity_level` and `thermal_stress_level`, at most 2160 minutes together. Effort and heat belong on the legs, so `intensity_level` and `thermal_stress_level` are refused at the top level; `meal_before_min` and `is_race_event` stay there. The stored activity carries `legs` and `duration_min`, their total, and no top-level effort or heat. Its calculated prescription carries `legs`, each leg's share, when the numbers are exact.
+
+To work out which legs a multi-sport title implies, use `POST /v1/infer/brick-types` ([below](#activity-type-inference)).
+
+## Updating an activity
+
+```bash
+PATCH /v1/athletes/{athlete_id}/activities/{activity_id}
+```
+
+Send only the fields that change: `type`, `duration_min`, `legs`, `intensity_level`, `thermal_stress_level`, `is_race_event`, `meal_before_min` or `external_id`. Any other field is refused with `400` and code `unsupported_field`. A change does not recalculate the stored prescription; call calculate again.
+
+- `legs` replaces a brick's or triathlon's legs and sets `duration_min` to their total.
+- A brick or triathlon refuses `intensity_level`, `thermal_stress_level` and a `duration_min` other than its legs' total with `400` `invalid_value`: change its legs instead.
+- Changing `type` to `brick` or `triathlon` needs `legs` in the same request, unless the activity holds legs already, and drops the stored single effort and heat.
+- Changing `type` to a single sport removes the legs; send `duration_min` and the effort and heat with it.
 
 ## Calculating a prescription
 
@@ -114,33 +143,37 @@ Returns the most recently calculated prescription for this activity, wrapped wit
 ```json
 {
   "prescription": {
-    "carb_g_per_hr": 62.5,
-    "sodium_mg_per_hr": 485.0,
-    "fluid_ml_per_hr": 620.0,
-    "total_carb_g": 125,
-    "total_sodium_mg": 970,
-    "total_fluid_ml": 1240,
+    "carb_g_per_hr": 71,
+    "sodium_mg_per_hr": 790,
+    "fluid_ml_per_hr": 750,
+    "total_carb_g": 190,
+    "total_sodium_mg": 2100,
+    "total_fluid_ml": 2000,
     "calculated_at": 1737010500
   },
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
-    "confidence_score": 0,
+    "confidence_score": 1,
     "requires_human_review": false,
-    "warnings": null,
+    "warnings": [],
     "not_instructions": true
   }
 }
 ```
 
-`calculated_at` is a Unix timestamp in seconds, not an ISO 8601 string. Timestamps across the athlete and activity objects (`created_at`, `updated_at`) use the same encoding.
+Per-hour figures are whole numbers, as the Saturday app shows them; see [Per-hour figures](/guides/nutrition-calculation#per-hour-figures). A prescription stored while the profile was incomplete carries `profile_complete: false` and the three range fields, and leaves out the six numbers.
+
+To size the athlete's products against a stored prescription, see [Prep and Products](/guides/prep-and-products).
+
+`calculated_at` is a Unix timestamp in seconds, not an ISO 8601 string, like every time a partner key receives ([What the API returns](/introduction#what-the-api-returns)).
 
 <Note>
   On this stored-prescription endpoint, read `prescription.*` for values and `safety.*` for guardrails. `POST /v1/nutrition/calculate` instead returns flat nutrition fields. The activity calculation uses the tier-aware envelope described above. The `not_instructions: true` flag marks these as recommendations for a person to consider, not commands to execute.
 </Note>
 
 <Warning>
-  The activity-scoped endpoints populate the two ceilings and `not_instructions`, but not the rest of the block: `confidence_score` comes back as `0` and `warnings` as `null` from both this read and `POST .../calculate`. Handle the null, and do not render that zero as a confidence of zero. When you need a confidence score or prescription warnings, call `POST /v1/nutrition/calculate` with the same parameters. See [Safety](/guides/safety#where-each-safety-field-is-populated).
+  The activity-scoped endpoints do not run the prescription warning checks: `warnings` comes back as an empty list from both this read and `POST .../calculate`, so do not read it as a check that found nothing. When you need prescription warnings, call `POST /v1/nutrition/calculate` with the same parameters. `confidence_score` is the score that calculation gave; a prescription stored before 2026-11-15 reads `0`, which is not a confidence of zero. See [Safety](/guides/safety#where-each-safety-field-is-populated).
 </Warning>
 
 ## Getting an activity with prescription
@@ -154,7 +187,7 @@ The activity response carries the stored prescription inline. An athlete's synce
 ## Listing activities
 
 ```bash
-GET /v1/athletes/{athlete_id}/activities?limit=50&cursor=1737043200%7Cact_7Kq2
+GET /v1/athletes/{athlete_id}/activities?limit=50&cursor=1737043200%7C3f6c2b1e-8d4a-4e7b-9c2f-1a5d7e9b0c43
 ```
 
 Activities come back newest first, paginated by cursor. `limit` defaults to 50 and is clamped to 1-200; pass `pagination.next_cursor` back as `cursor` for the next page, URL-encoded and unchanged. There are no date-range or type filters; filter on your side, or track activities by `external_id`.
@@ -170,7 +203,7 @@ import os
 import requests
 
 response = requests.post(
-    "https://api.saturday.fit/v1/athletes/ath_abc123/activities/act_xyz789/feedback",
+    "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities/3f6c2b1e-8d4a-4e7b-9c2f-1a5d7e9b0c43/feedback",
     headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={
         "rating": 4,
@@ -181,7 +214,7 @@ response = requests.post(
 
 ```typescript TypeScript
 const response = await fetch(
-  "https://api.saturday.fit/v1/athletes/ath_abc123/activities/act_xyz789/feedback",
+  "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d/activities/3f6c2b1e-8d4a-4e7b-9c2f-1a5d7e9b0c43/feedback",
   {
     method: "POST",
     headers: {
@@ -238,7 +271,7 @@ Response:
 
 Sending more than a title sharpens the result. The endpoint also reads `pre_activity_comment`, `workout_type` (your provider's own coarse type), `tss_calculation_method`, `structure_summary`, `velocity` in m/s, `has_power`, and `cadence`, and those structured signals resolve many cases before the model is consulted. The API reference names two of these differently, and both spellings work: `activity_name` is `title`, and `source_type` is `workout_type`. You can also send `device`, the recording device's name.
 
-A strength session also carries `intensity`: `1` light, `2` medium, `3` heavy. Lift uses levels 1-3 of `intensity_level`, so pass the value unchanged as `intensity_level` when you create the lift activity; rescaling it onto 1-9 raises the carbohydrate ceiling. An entry that marks a day with no training, such as "Rest day", comes back with `"rest_day": true` and type `"unknown"`; it is not a workout to create.
+A strength session also carries `intensity`: `1` light, `2` medium, `3` heavy. Lift uses levels 1-3 of `intensity_level`, so pass the value unchanged as `intensity_level` when you create the lift activity, without rescaling it onto 1-9. An entry that marks a day with no training, such as "Rest day", comes back with `"rest_day": true` and type `"unknown"`; it is not a workout to create.
 
 For multi-sport titles like "Bike/run brick", use `POST /v1/infer/brick-types`. It takes the same fields plus an optional `segments` list of the legs you already know, in order, and returns every leg in order:
 
@@ -254,4 +287,4 @@ For multi-sport titles like "Bike/run brick", use `POST /v1/infer/brick-types`. 
 }
 ```
 
-`sub_types` is the same list without the order numbers. Create one activity per leg.
+`sub_types` is the same list without the order numbers. Create one `brick` or `triathlon` activity with those legs, adding each leg's minutes, effort and heat.

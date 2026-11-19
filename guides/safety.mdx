@@ -75,11 +75,11 @@ The safety block is present on every prescription response, but not every endpoi
 | `max_safe_sodium_mg_per_hr` | 3000 | 3000 |
 | `not_instructions` | `true` | `true` |
 | `requires_human_review` | `false` | `false` |
-| `confidence_score` | Derived from band width | Always `0` |
-| `warnings` | Threshold warnings, else `[]` | Always `null` |
+| `confidence_score` | Derived from band width | The same score for an activity calculate, and for a read of a prescription that calculate stored; `0` on a prescription stored before 2026-11-15 |
+| `warnings` | Threshold warnings, else `[]` | Always `[]` |
 
 <Warning>
-  If your integration drives fueling from `POST /v1/athletes/{id}/activities/{id}/calculate`, you are not receiving prescription warnings. Call `POST /v1/nutrition/calculate` with the same parameters when you need them, and handle `warnings: null` rather than assuming an array.
+  If your integration drives fueling from `POST /v1/athletes/{id}/activities/{id}/calculate`, you are not receiving prescription warnings: the array is always empty there. Call `POST /v1/nutrition/calculate` with the same parameters when you need them.
 </Warning>
 
 ## Engine limits
@@ -117,7 +117,7 @@ Sending the same activity with a fuller profile is the fastest way to tell a gua
 
 ## Confidence score
 
-`confidence_score` (0.0-1.0) reports how much of the athlete's fueling profile was answered. A complete profile scores 1.0. It is a completeness signal, not a clinical risk score, and `precision.missing_fields` tells you which answers would raise it. See [Athlete Onboarding](/guides/onboarding).
+`confidence_score` (0.0-1.0) reports how much of the athlete's fueling profile and the call's activity inputs was answered, read from the width of the band. A call with all of them answered scores 1.0; one that omits `intensity_level` and `thermal_stress_level` can score 0 even with a complete profile. It is a completeness signal, not a clinical risk score, and `precision.missing_fields` tells you which answers would raise it. See [Athlete Onboarding](/guides/onboarding).
 
 | Confidence range | Meaning | Your display |
 |-----------------|---------|--------------|

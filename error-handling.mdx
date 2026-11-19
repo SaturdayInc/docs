@@ -17,7 +17,7 @@ Saturday uses one error format across all endpoints, modeled on Stripe's error s
     "code": "missing_field",
     "message": "activity_type is required",
     "param": "activity_type",
-    "documentation_url": "https://docs.saturday.fit/errors#missing_field",
+    "documentation_url": "https://docs.saturday.fit/error-handling",
     "request_id": "req_abc123def456"
   }
 }
@@ -29,8 +29,33 @@ Saturday uses one error format across all endpoints, modeled on Stripe's error s
 | `code` | Yes | Specific error code, machine-readable |
 | `message` | Yes | Human-readable explanation |
 | `param` | No | The request parameter that caused the error |
-| `documentation_url` | Yes | Docs link for this code |
-| `request_id` | Yes | Identifier for this request. Include it in support tickets |
+| `documentation_url` | Yes | The docs page that explains this code, the same page `GET /v1/errors` lists for it |
+| `request_id` | Yes, except on a `not_found_error` 404 | Identifier for this request. Include it in support tickets |
+
+A value of the wrong JSON type is refused with code `invalid_value` and the field in `param`, on the athlete, activity, calculate, batch, gear and integration routes: `"duration_min": "90"` answers "duration_min must be a whole number (got a string)." A nested field carries its path, such as `settings.sweat_level`. A body that is not JSON answers `invalid_json`.
+
+### A field the request does not take
+
+A request made with a partner API key to calculate, batch, activity create, import, prep, product fit or compare may carry only the fields that request takes. Any other field, at any depth, is refused with `400` and code `unsupported_field`, so a misspelled field never computes silently on a default. `param` is the field's path in your body, and the message names the field it was probably meant to be:
+
+```json
+{
+  "error": {
+    "type": "invalid_request",
+    "code": "unsupported_field",
+    "message": "\"legs[1].duration_mins\" is not a field of this request, so its value would not be used. Did you mean \"duration_min\"? See https://docs.saturday.fit/guides/nutrition-calculation",
+    "param": "legs[1].duration_mins",
+    "documentation_url": "https://docs.saturday.fit/error-handling",
+    "request_id": "req_4f2a9c1e7b30"
+  }
+}
+```
+
+A field another request spells differently gets that spelling: `weight_kg` on calculate answers `Send "athlete_weight_kg".`, and `activity_type` on activity create answers `Send "type".` Activity create and import accept and ignore `name` and `scheduled_at`. The update routes (`PATCH` on athletes, activities, organizations and seat subscriptions) and webhook create also refuse fields they do not take with `unsupported_field`. Both SDKs raise a validation error carrying `param`, and `suggestion` with the field to send when the message names one.
+
+### A prescription Saturday could not compute
+
+When Saturday cannot compute a prescription for a request it accepted, calculate, activity calculate, prep, product fit and compare answer `500` with code `internal_error` and the message "Failed to calculate the prescription. Retry, and contact support if it persists." The answer never carries zeros in place of numbers. Retry it as any `500`, and quote the `request_id` if it repeats.
 
 ## Error types
 
@@ -43,11 +68,11 @@ Branch on `type` for handling class, and on `code` for the specific case. A type
 | `authorization_error` | 403 | Valid credentials, insufficient permission, scope, tier, or feature access |
 | `not_found_error` | 404 | The URL does not match an endpoint available to your key |
 | `resource_not_found` | 404 | The endpoint exists, but the referenced resource doesn't, or belongs to another partner |
-| `rate_limit_error` | 429 | Rate limit, daily call ceiling, or request-pattern friction |
+| `rate_limit_error` | 429 | A throttle, catalog pacing, a request-pattern block, or a daily ceiling; `code` says which |
 | `api_error` | 500, 502, 503 | Saturday-side failure (500), upstream service (502), transient dependency (503) |
 
 <Note>
-  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `prescription_not_found`, `product_not_found`, `key_not_found`, `webhook_not_found`, `conversation_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"` with `code: "rate_limit_exceeded"` or `code: "rate_limited"`. Switching on `type` means using the values in the table above.
+  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `prescription_not_found`, `product_not_found`, `key_not_found`, `webhook_not_found`, `conversation_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"`, and its `code` says which limit was reached ([Rate Limiting](/rate-limiting)). Switching on `type` means using the values in the table above.
 </Note>
 
 Safety ceilings do not surface as an error status. A prescription that runs into a guardrail returns `200` with the clamped values plus `safety.warnings` and `safety.requires_human_review` set. See [Safety](/guides/safety).
@@ -61,71 +86,80 @@ Safety ceilings do not surface as an error status. A prescription that runs into
 | `invalid_request` | No | Fix the request |
 | `not_found_error` | No | Check the URL and your key's feature access |
 | `resource_not_found` | No | Fix the resource ID |
-| `rate_limit_error` | Yes | Honor `Retry-After` when present, otherwise back off. See [Rate Limiting](/rate-limiting) |
-| `api_error` | Yes | Exponential backoff. A 503 from key verification is transient: retry, don't rotate the key |
+| `rate_limit_error` | Depends on `code` | Retry `rate_limit_exceeded` after `Retry-After`, and `catalog_paced` when the wait is short; the daily codes reset at midnight UTC. See [Rate Limiting](/rate-limiting) |
+| `api_error` | Yes | Honor `Retry-After` on a `503` (usually 5 seconds), otherwise exponential backoff. Don't repeat a `POST` that creates a record without checking whether it was created. A 503 from key verification is transient: retry, don't rotate the key |
 
-### Exponential backoff
+### Retrying
 
-`Retry-After` is absent on some 429s, notably the daily call ceiling, so read it with a fallback rather than indexing it directly.
+Every `429`, and every `503` with code `service_unavailable`, carries `Retry-After` in seconds. A `429` whose `code` is a daily ceiling waits until midnight UTC, so leave those out of a retry loop; [Rate Limiting](/rate-limiting) lists the codes.
 
 <CodeGroup>
 
 ```python Python
-import time
 import random
+import time
+
+RETRY_429 = {"rate_limit_exceeded", "catalog_paced"}
 
 def request_with_retry(make_request, max_retries=3):
     for attempt in range(max_retries + 1):
         response = make_request()
+        if attempt == max_retries:
+            return response
 
         if response.status_code == 429:
-            retry_after = int(response.headers.get("Retry-After", 60))
-            time.sleep(retry_after)
-            continue
+            wait = int(response.headers["Retry-After"])
+            if response.json()["error"]["code"] in RETRY_429 and wait <= 30:
+                time.sleep(wait)
+                continue
+            return response
 
         if response.status_code >= 500:
-            if attempt < max_retries:
-                delay = (2 ** attempt) + random.uniform(0, 1)
-                time.sleep(delay)
-                continue
+            wait = response.headers.get("Retry-After")
+            time.sleep(int(wait) if wait else (2 ** attempt) + random.uniform(0, 1))
+            continue
 
         return response
-
-    return response
 ```
 
 ```typescript TypeScript
+const RETRY_429 = new Set(["rate_limit_exceeded", "catalog_paced"]);
+
 async function requestWithRetry(
   makeRequest: () => Promise<Response>,
   maxRetries = 3
 ): Promise<Response> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; ; attempt++) {
     const response = await makeRequest();
+    if (attempt === maxRetries) return response;
 
     if (response.status === 429) {
-      const retryAfter = parseInt(response.headers.get("Retry-After") ?? "60");
-      await new Promise((r) => setTimeout(r, retryAfter * 1000));
+      const wait = Number(response.headers.get("Retry-After"));
+      const { error } = await response.clone().json();
+      if (!RETRY_429.has(error.code) || wait > 30) return response;
+      await new Promise((r) => setTimeout(r, wait * 1000));
       continue;
     }
 
-    if (response.status >= 500 && attempt < maxRetries) {
-      const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+    if (response.status >= 500) {
+      const header = response.headers.get("Retry-After");
+      const delay = header ? Number(header) * 1000 : Math.pow(2, attempt) * 1000 + Math.random() * 1000;
       await new Promise((r) => setTimeout(r, delay));
       continue;
     }
 
     return response;
   }
-
-  throw new Error("Max retries exceeded");
 }
 ```
 
 </CodeGroup>
 
+Use these for reads and calculations. A `POST` that creates a record (an athlete, an activity, a webhook) may have succeeded before a `5xx`: look the record up (for an athlete, by `external_id`) before sending it again.
+
 ### Request IDs
 
-Every response carries an `X-Request-ID` header, and every error body repeats it as `request_id`. Quote it when reporting an issue and we can trace that exact request.
+Every response carries an `X-Request-ID` header, and every error body repeats it as `request_id`, with one exception: a `not_found_error` 404 (a URL that matches no endpoint available to your key) carries neither. Quote the request ID when reporting an issue and we can trace that exact request.
 
 ### Error catalog
 
