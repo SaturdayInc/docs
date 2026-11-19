@@ -57,7 +57,7 @@ curl -X POST https://api.saturday.fit/v1/athletes/ATHLETE_ID/activities/ACTIVITY
   "totals_from_products": { "carb_g": 200, "sodium_mg": 1900, "fluid_ml": 20 },
   "remaining_gap": { "carb_g": 0, "sodium_mg": 300, "fluid_ml": 2080 },
   "coverage_pct": { "carb": 100, "sodium": 86, "fluid": 1 },
-  "note": "The base mix covers the rest: sugar 0g, sodium 300mg from salt, water 2080mL. Products are additions to the base recipe: this gap is normal and often optimal.",
+  "note": "The base mix covers the rest: sugar 0g, sodium 300mg from salt, water 2080mL.",
   "safety": {
     "max_safe_fluid_ml_per_hr": 1500,
     "max_safe_sodium_mg_per_hr": 3000,
@@ -201,7 +201,7 @@ On a stored brick or triathlon, send either list:
 }
 ```
 
-With `legs`, `products` is not read, so send one or the other. `legs` on a single session, or with a count other than the activity's legs, is refused with `400` `invalid_value` on `legs`: `this activity has 2 legs; send one entry per leg, in order (got 1)`. When the activity's plan is from ranges, which carry no legs, the per-leg lists are sized together as one list against the session.
+Send `products` or `legs`, not both: the pair is refused with `400` `invalid_value` on `products`. `legs` on a single session, or with a count other than the activity's legs, is refused with `400` `invalid_value` on `legs`: `this activity has 2 legs; send one entry per leg, in order (got 1)`. When the activity's plan is from ranges, which carry no legs, the per-leg lists are sized together as one list against the session.
 
 The answer carries `legs`, each leg shaped like a single session's prep, and a top level that is the legs added up. For the brick on [Nutrition Calculation](/guides/nutrition-calculation#bricks-and-triathlons), with the lists above:
 
@@ -216,7 +216,7 @@ The answer carries `legs`, each leg shaped like a single session's prep, and a t
   "remaining_gap": { "carb_g": 10, "sodium_mg": 210, "fluid_ml": 1380 },
   "coverage_pct": { "carb": 100, "sodium": 100, "fluid": 1 },
   "warnings": ["Leg 2 (run): Carbs exceed prescription by 20g"],
-  "note": "The base mix covers the rest: sugar 10g, sodium 210mg from salt, water 1380mL. Products are additions to the base recipe: this gap is normal and often optimal.",
+  "note": "The base mix covers the rest: sugar 10g, sodium 210mg from salt, water 1380mL.",
   "legs": [
     {
       "activity_type": "bike",
@@ -228,7 +228,7 @@ The answer carries `legs`, each leg shaped like a single session's prep, and a t
       "totals_from_products": { "carb_g": 100, "sodium_mg": 1240, "fluid_ml": 0 },
       "remaining_gap": { "carb_g": 10, "sodium_mg": 0, "fluid_ml": 1100 },
       "coverage_pct": { "carb": 91, "sodium": 100, "fluid": 0 },
-      "note": "The base mix covers the rest: sugar 10g, sodium 0mg from salt, water 1100mL. Products are additions to the base recipe: this gap is normal and often optimal."
+      "note": "The base mix covers the rest: sugar 10g, sodium 0mg from salt, water 1100mL."
     },
     {
       "activity_type": "run",
@@ -241,7 +241,7 @@ The answer carries `legs`, each leg shaped like a single session's prep, and a t
       "remaining_gap": { "carb_g": 0, "sodium_mg": 210, "fluid_ml": 280 },
       "coverage_pct": { "carb": 100, "sodium": 16, "fluid": 7 },
       "warnings": ["Carbs exceed prescription by 20g"],
-      "note": "The base mix covers the rest: sugar 0g, sodium 210mg from salt, water 280mL. Products are additions to the base recipe: this gap is normal and often optimal."
+      "note": "The base mix covers the rest: sugar 0g, sodium 210mg from salt, water 280mL."
     }
   ],
   "safety": {
