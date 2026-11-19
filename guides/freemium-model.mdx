@@ -152,6 +152,8 @@ The test base URL is `https://test-api.saturday.fit`.
 
 `{"active": true}` writes the same link fields and fires the same `subscription.created` webhook as a real purchase; `{"active": false}` fires `subscription.cancelled`. The endpoint does not exist in production.
 
+A key marks at most 10 athletes as subscribed per UTC day; marking an athlete already marked today again is free. Past that, the call returns `429` `simulated_subscriber_daily_limit_reached`, with `Retry-After` running to midnight UTC. Each simulated subscriber gets exact numbers for up to 100 answers and 3 versions of its profile; past either, answers come back in ranges with `simulated_limit_reached: true` and a `simulation_note`. Need more for a test run? Email api@saturday.fit.
+
 You can also run a real test checkout with Stripe's `4242 4242 4242 4242` card from the CTA link in any test-env teaser response.
 
 <Note>

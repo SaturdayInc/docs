@@ -46,7 +46,7 @@ curl -H "Authorization: Bearer $SATURDAY_API_KEY" \
 
 ### Getting your keys
 
-Self-serve accounts are issued a key at checkout. It is revealed once on the success page and emailed. If it never arrived, `POST /v1/signup/resend` with your checkout session id rotates and re-sends it.
+Self-serve accounts are issued a key at checkout. It is revealed once on the success page and emailed. If it never arrived, write to [api@saturday.fit](mailto:api@saturday.fit).
 
 Platform partners are issued keys as part of the agreement: contact [api@saturday.fit](mailto:api@saturday.fit) with your platform name and use case. See [Getting Access](/access) for which lane applies to you.
 
@@ -118,7 +118,7 @@ The key prefix and the base URL travel together. Each environment keeps separate
 
 - Athlete data is isolated. Sandbox athletes are not real people
 - Nutrition calculations run the same engine as production, on sandbox profiles
-- `POST /v1/test/athletes/{athlete_id}/simulate-subscription` flips an athlete between tiers and fires the matching webhook. It exists only in sandbox
+- `POST /v1/test/athletes/{athlete_id}/simulate-subscription` flips an athlete between tiers and fires the matching webhook, for up to 10 athletes a day per key. It exists only in sandbox
 - Teaser subscribe links carry `test=1` so the whole checkout loop resolves against sandbox
 - Rate limits are enforced by the same code path as production, from your account's configured limits. Sandbox is not exempt
 - No billing impact
