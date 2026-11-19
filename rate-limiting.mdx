@@ -66,7 +66,7 @@ Every `429` carries a `Retry-After` header, in seconds, and a `code` that says w
 | `distinct_lookup_daily_limit_reached` | Your daily budget of distinct product lookups | Seconds until midnight UTC | Repeat lookups keep working; new ones wait until midnight UTC |
 | `simulated_subscriber_daily_limit_reached` | Sandbox only: your key has marked its day's athletes as subscribed with `simulate-subscription` | Seconds until midnight UTC | Athletes already marked keep their simulated subscription; mark more after midnight UTC |
 
-Retry `rate_limit_exceeded`, and `catalog_paced` when the wait is short. Never sleep on the four daily codes: their `Retry-After` runs to midnight UTC, so stop that work and resume after the reset.
+Retry `rate_limit_exceeded`, and `catalog_paced` when the wait is short. Never sleep on the daily codes: their `Retry-After` runs to midnight UTC, so stop that work and resume after the reset.
 
 Both SDKs do this for you. They wait out a throttle, and a pacing wait of 30 seconds or less, and retry. Everything else is raised as a rate-limit error that carries the `code`, the wait (`retryAfter` in TypeScript, `retry_after` in Python) and, for the daily codes, the reset time (`resetsAt`, `resets_at`).
 
@@ -80,6 +80,7 @@ DAILY = {
     "intelligence_daily_limit_reached",
     "athlete_free_daily_limit_reached",
     "distinct_lookup_daily_limit_reached",
+    "simulated_subscriber_daily_limit_reached",
 }
 
 response = make_api_request()
@@ -100,6 +101,7 @@ const DAILY = new Set([
   "intelligence_daily_limit_reached",
   "athlete_free_daily_limit_reached",
   "distinct_lookup_daily_limit_reached",
+  "simulated_subscriber_daily_limit_reached",
 ]);
 
 let response = await makeApiRequest();
