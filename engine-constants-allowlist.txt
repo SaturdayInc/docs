@@ -23,6 +23,7 @@ nutrient-ceiling	guides/safety.mdx	350	same example
 nutrient-ceiling	guides/safety.mdx	200	the low edge of the bucket that example renders
 nutrient-ceiling	guides/safety.mdx	500	the high edge of the bucket that example renders
 rate-adjacent	guides/athletes.mdx	150 g/hr	request bound: carb_upper_limit_override is set BY the caller and rejected with a 400 outside its range, so a partner who does not know the range cannot debug the rejection
+rate-adjacent	guides/nutrition-calculation.mdx	150 g/hr	request bound: carb_upper_limit_override is set BY the caller and rejected with a 400 outside its range, as on guides/athletes.mdx
 rate-adjacent	guides/nutrition-calculation.mdx	30 g/hr	teaser bucket width for carbohydrate, which any single teaser response reveals and a caller needs in order to render a range
 rate-adjacent	guides/nutrition-calculation.mdx	500 units/hr	teaser bucket width for sodium and fluid, same reasoning
 rate-adjacent	guides/attribution.mdx	80 g/hr	sample values inside an attribution display example; illustrative UI copy, not engine output

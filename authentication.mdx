@@ -110,7 +110,7 @@ curl -X DELETE https://api.saturday.fit/v1/partner/api-keys/{key_id} \
 | Environment | Base URL | Data |
 |-------------|----------|------|
 | Production | `https://api.saturday.fit` | Real athlete data |
-| Sandbox | Issued with your `sk_test_` key | Synthetic test data |
+| Sandbox | `https://test-api.saturday.fit` | Synthetic test data |
 
 The key prefix and the base URL travel together. Each environment keeps separate key records, so a key issued by the sandbox does not authenticate against `api.saturday.fit`, and the reverse.
 

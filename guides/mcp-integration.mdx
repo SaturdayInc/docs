@@ -109,16 +109,6 @@ A result on a partner key carries its times as the REST route does, in Unix seco
 
 The result contains `created_count` and `sessions` in input order. Each session has its `key` and `status`: `created` or `already_there` includes `id` and `start`; `refused` includes `reason`. A refused session does not block the others. Reuse the same key and original local start day on retries: an existing session is returned with its current start without writes, and a deleted session is created again. Use different keys for separate sessions on the same day. Lists outside 1 to 60 are refused before any writes.
 
-<Note>
-  **Product tools follow the athlete's subscription.** `search_products`,
-  `list_curated_products`, and `analyze_product_fit` take an optional `athlete_id`
-  and answer at that athlete's tier. A connection where the caller *is* the
-  athlete (the Saturday connector in Claude) resolves it from the signed-in account and never
-  needs to pass one; a platform integration on a partner key passes the athlete's
-  id, and gets the category tier until it does. See
-  [Freemium Model](/guides/freemium-model#the-product-catalog).
-</Note>
-
 ### Bottling plans
 
 `build_bottling_plan` takes `carb_g`, `sodium_mg`, `fluid_ml`, and `duration_min` from a prescription, plus optional `activity_id`, `activity_type`, `strategy`, `vessel_count`, `vessels`, and `products`, and returns the plan twice: as text in `content`, and as `structuredContent` carrying the `plan` object with a `createdAt` and `seq` election key, the `products` you passed, and the athlete's `saved` carriage context when one exists. With an `activity_id`, the plan runs over the activity's minutes, the length its prescription was calculated for (a brick's or triathlon's legs' total); a different `duration_min` sent with it is not used, and `structuredContent.durationNote` and the text say so. When the activity's stored prescription is ranges, the totals are the middle of those ranges and `structuredContent.planBasis` names what is missing, as `plan_basis` does on [prep](/guides/prep-and-products#plans-from-ranges). `strategy` is `evenly`, `concentrate`, or `goldilocks` (the default, which balances the two). When the totals will not fit the vessels, the plan carries an escalation state: carry it more concentrated and top up with water, rather than a dead end. `record_bottling_choice` takes the committed `plan` object back, once, when the athlete settles on it.
