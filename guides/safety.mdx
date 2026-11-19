@@ -84,36 +84,28 @@ The safety block is present on every prescription response, but not every endpoi
 
 ## Engine limits
 
-Saturday bounds every calculation. The limits are computed per athlete and per activity, then clamped by absolutes that no input combination can exceed.
+Every calculation is bounded by Saturday's safety limits. No request field, athlete setting or partner setting raises them.
 
-| Guardrail | How it is bounded |
-|-----------|-------------------|
-| Fluid | A fixed ceiling no prescription crosses. Thermal stress and intensity tighten the usable range well below it |
-| Sodium | A ceiling that scales with body weight, under a fixed absolute maximum. Carb experience, intensity, and thermal stress narrow the range |
-| Sodium floor | Rises with thermal stress. Hot conditions cannot produce a low-sodium prescription |
-| Carbohydrate | A ceiling narrowed by `carb_upper_limit_override`, by stated carb experience, and by whether the athlete is prioritizing performance. An athlete who has never fueled at high carbohydrate rates is not handed an aggressive target |
-| Duration scaling | Intake ranges are a function of duration, so a 6-hour target is not a 1-hour rate multiplied out |
+### What a request may send
 
-These apply on every calculation and are not partner-overridable. That is deliberate. A caller able to raise a ceiling could raise it past what is safe for that athlete, and the athlete would have no way to know it happened. The ceilings are not uniform either: several scale with the athlete, so a smaller athlete is held to a tighter limit than a larger one on the same session.
+Send values inside these ranges. When the API refuses a value, the error names the field in `param`. Every field is in [Nutrition Calculation](/guides/nutrition-calculation).
 
-<Note>
-  Teaser ranges are display buckets, and both ends are bounded. The upper bound is clamped to the engine's ceiling, so a bucket never implies an intake the engine would not prescribe. The lower bound never reads zero for a value the engine prescribed, so a 350 mg/hr sodium prescription renders `200-500` rather than `0-500`. A zero low bound means the prescribed value is near zero.
+| Input | Range |
+|-------|-------|
+| `duration_min` | 1 to 2160 minutes. For a brick or triathlon, each leg 5 or more and the legs together at most 2160 |
+| `intensity_level` | 1 to 9; `lift` and `hike` use 1 to 3 |
+| `thermal_stress_level` | 1 (cold, dry) to 9 (hot, humid) |
+| `meal_before_min` | Minutes since the last carb-rich meal; over 180 is a fasted start |
+| `athlete_weight_kg` | 20 to 250 |
+| `age` | 1 to 120 |
+| `sweat_level`, `saltiness`, `satiety_level`, `fitness_level` | 1 to 9 |
+| `carb_upper_limit_override` | 50 to 150 g/hr, a ceiling the athlete sets on their carbohydrate |
 
-  The bounds still describe a bucket rather than a target. Render the range as a range, and do not treat either endpoint as a recommended intake.
-</Note>
+### Reading the answer
 
-### When a prescription reads lower than expected
-
-A number that reads low usually has one of these causes:
-
-- **The athlete capped themselves.** `carb_upper_limit_override` is a ceiling the athlete sets on their carbohydrate, and the engine does not exceed it.
-- **Stated carb experience is low.** An athlete who reports never having fueled at high carbohydrate rates is held below a target they have not trained for.
-- **`performance` is `false`.** An athlete who is not prioritizing performance gets a lower carbohydrate ceiling.
-- **Conditions are cool.** Low thermal stress pulls fluid and sodium down sharply. Overdrinking without sodium is the hyponatremia mechanism, so the engine is conservative in the cold by design.
-- **The session is long.** Hourly rates are a function of duration rather than a constant, so a long session's per-hour target is not the short-session rate carried forward.
-- **The profile is incomplete.** Check `precision.missing_fields`. A defaulted field widens the band and moves the number.
-
-Sending the same activity with a fuller profile is the fastest way to tell a guardrail from a gap in the data.
+- **Ranges are display buckets.** `carb_range_g_per_hr` and the other ranges come back when an answer is not exact. Render a range as a range, and do not treat either end as a recommended intake.
+- **Ranges name what is missing.** `precision.profile_complete` is `false` on an answer of ranges, and `precision.missing_fields` lists the profile answers and session inputs that exact numbers need.
+- **Show the numbers as given.** Do not raise, lower or cap them in your product, and show `safety.warnings` with them whenever it is not empty.
 
 ## Confidence score
 
