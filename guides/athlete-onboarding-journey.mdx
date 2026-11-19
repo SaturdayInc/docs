@@ -15,11 +15,11 @@ An athlete on your platform is always in exactly one of these states:
 |---|---|---|
 | **No profile** | Widest bands, plus an onboarding invite. Trial clock not started. | Any single answered field |
 | **Partial profile** | Narrower bands; `missing_fields` shows what is left, most-impactful first. Trial clock running. | More answers, by any of the four mechanisms |
-| **Complete, in trial** | Exact numbers, for 30 days, within the daily call cap | Subscribing |
+| **Complete, in trial** | Exact numbers, for 14 days and up to 42 answers, within the daily call cap | Subscribing |
 | **Complete, subscribed** | Exact numbers, always | Nothing left to do |
 | **Complete, trial expired** | Teaser ranges plus a subscribe CTA | Subscribing |
 
-The subscribe CTA rides on teaser responses, so an athlete meets it when the trial expires or when they spend the day's calls, not while the trial is answering in full.
+The subscribe CTA rides on teaser responses, so an athlete meets it when the trial expires, when it has given all its exact answers, or when they spend the day's calls, not while the trial is answering in full.
 
 ## The journey, narrated
 
@@ -42,7 +42,7 @@ On the last answer, the page asks: *"Can we show you fuel for one of your activi
 *Your code:* register `activity_link_template` and `fueling_path_copy` on your partner account once. That is what turns Saturday's finish screen into a hand-back into your product at the moment the athlete most wants to be there.
 
 **5. The webhook fires.**
-`athlete.profile_completed` arrives once. Their next calculation, and every one after, returns exact numbers, as long as the call also carries the activity's intensity, thermal stress, meal timing, and race flag. The 30-day trial is running; the subscribe CTA handles conversion after that ([Freemium Model](/guides/freemium-model)).
+`athlete.profile_completed` arrives once. Their next calculation, and every one after, returns exact numbers, as long as the call also carries the activity's intensity, thermal stress, meal timing, and race flag. The 14-day trial is running; the subscribe CTA handles conversion after that ([Freemium Model](/guides/freemium-model)).
 
 *Your code:* on that webhook, refresh any cached athlete state, and consider marking the moment in your UI: "Your fueling numbers are now exact."
 
