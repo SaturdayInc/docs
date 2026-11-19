@@ -110,7 +110,7 @@ To work out which legs a multi-sport title implies, use `POST /v1/infer/brick-ty
 PATCH /v1/athletes/{athlete_id}/activities/{activity_id}
 ```
 
-Send only the fields that change: `type`, `duration_min`, `legs`, `intensity_level`, `thermal_stress_level`, `is_race_event`, `meal_before_min` or `external_id`. Any other field is refused with `400` and code `unsupported_field`. A change does not recalculate the stored prescription; call calculate again.
+Send only the fields that change: `type`, `duration_min`, `legs`, `intensity_level`, `thermal_stress_level`, `is_race_event`, `meal_before_min` or `external_id`. Any other field is refused with `400` and code `unsupported_field`. A change to any of these fields but `external_id` removes the stored prescription, so `GET .../prescription` answers `404` `prescription_not_found` until you calculate the activity again. A field sent at its stored value changes nothing.
 
 - `legs` replaces a brick's or triathlon's legs and sets `duration_min` to their total.
 - A brick or triathlon refuses `intensity_level`, `thermal_stress_level` and a `duration_min` other than its legs' total with `400` `invalid_value`: change its legs instead.
@@ -138,7 +138,7 @@ The response is tier-aware, with the same semantics as `/v1/nutrition/calculate`
 GET /v1/athletes/{athlete_id}/activities/{activity_id}/prescription
 ```
 
-Returns the most recently calculated prescription for this activity, wrapped with safety metadata:
+Returns the prescription calculated for the activity as it stands, wrapped with safety metadata:
 
 ```json
 {
