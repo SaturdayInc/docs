@@ -124,7 +124,7 @@ Any name outside this list is rejected with `400`, and one bad name fails the en
 }
 ```
 
-`reason` is the Stripe event type that ended access, such as `customer.subscription.deleted`, or one of `expired`, `refund`, `dispute`, `email_match_decayed` (an email-matched link that stopped matching), and `simulated` (test env only).
+`reason` is the Stripe event type that ended access, such as `customer.subscription.deleted`, or one of `expired`, `refund`, `dispute`, `email_match_decayed` (an email-matched link that stopped matching), `account_deleted` (the athlete's linked Saturday account was deleted), and `simulated` (test env only).
 
 ### Profile sharing event payloads
 
