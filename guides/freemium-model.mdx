@@ -79,7 +79,7 @@ on the **athlete's** subscription, not on your partner account. Every product ro
 `/v1/nutrition/products/fit`, `/v1/nutrition/products/compare`) takes an
 `athlete_id`, and the answer follows that athlete's standing:
 
-- **Subscribed, or inside their 30-day trial**: `tier: "full"`. Search and browse
+- **Subscribed, or inside their 14-day trial**: `tier: "full"`. Search and browse
   return products; a barcode lookup returns a curated product's per-serving carbs, sodium,
   fluid and caffeine,
   or a `product_not_found` 404.
@@ -117,7 +117,7 @@ taxonomy *is* the free tier, so it answers the same for every athlete.
   asset, and it stays priced.
 </Note>
 
-The athlete's trial opens the catalog on its 30-day **window**, independently of
+The athlete's trial opens the catalog on its 14-day **window**, independently of
 the daily full-precision call cap. An athlete who has spent today's exact
 calculations can still see the products those calculations point at, and browsing
 products never debits the cap.
@@ -128,9 +128,9 @@ calculation does, and a first call starts the trial. Past today's calls the plan
 middle of the ranges a calculation gives, `plan_basis.source` is `trial_allowance`, and
 `plan_basis.message` says why in words you can show the athlete.
 
-## 30-day full-precision trial
+## Full-precision trial
 
-An athlete-scoped calculation with real profile or optional activity inputs starts a **30-day trial of full-tier responses: 15 calls on the first UTC day (exploration allowance), then 5 calls per athlete per UTC day**. Zero-data calls do not start the trial. Complete inputs are still required for exact numbers. During the trial, full responses carry trial metadata so you can build countdown UX:
+An athlete-scoped calculation with real profile or optional activity inputs starts a **14-day trial of full-tier responses: 15 calls on the first UTC day (exploration allowance), then 5 calls per athlete per UTC day, and at most 42 in all**. Zero-data calls do not start the trial. Complete inputs are still required for exact numbers. During the trial, full responses carry trial metadata so you can build countdown UX:
 
 ```json
 {
@@ -144,14 +144,15 @@ An athlete-scoped calculation with real profile or optional activity inputs star
 
 `trial_ends_at` is a Unix timestamp in seconds, like every other time a partner key receives.
 
-Over the daily cap, responses degrade to teaser ranges (never an error) and include `trial_cap_reached: true` plus a human-readable `trial_cap_note` you can surface directly to the athlete. It carries the apology and the reason. Batch scenarios debit the cap individually. After 30 days, responses are teaser tier until the athlete subscribes.
+Over the daily cap, responses degrade to teaser ranges (never an error) and include `trial_cap_reached: true` plus a human-readable `trial_cap_note` you can surface directly to the athlete. It carries the apology and the reason. Batch scenarios debit the cap individually. After 14 days, or once the trial has given its 42 exact answers, responses are teaser tier until the athlete subscribes.
 
 ### Trial bounds per key
 
-Two more bounds keep the trial to real athletes. Neither is an error: the answer comes back in teaser ranges with a flag and a `trial_note` you can show the athlete as it stands.
+Three more bounds keep the trial to real athletes. None is an error: the answer comes back in teaser ranges with a flag and a `trial_note` you can show the athlete as it stands.
 
 - **New trials per day.** A key starts at most 50 new trials per UTC day (5 for a self-serve key). An athlete past that gets ranges with `trial_start_deferred: true`, and their trial starts on a later day. Athletes already in their trial are not affected. Rolling out to a large roster? Email api@saturday.fit and we raise it for your key.
 - **Profiles per trial athlete.** One trial athlete's exact numbers cover up to 3 distinct profiles over the trial: their first, plus two changes. Small day-to-day weight changes do not count as changes. A fourth profile gets ranges with `trial_profile_limit_reached: true`; the earlier profiles stay exact. Subscribed athletes have no such bound.
+- **Exact answers per trial.** One athlete's trial gives at most 42 exact answers in all, however the days fall. The next answer comes back in ranges with `trial_answers_used_up: true`, and its `trial_note` says a Saturday subscription gives exact numbers.
 
 `GET /v1/partner` shows your key's numbers under `rate_limits`.
 
