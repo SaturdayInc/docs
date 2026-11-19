@@ -69,7 +69,9 @@ The `external_id` field maps the Saturday athlete to your platform's user. This 
 GET /v1/athletes?external_id=your-user-12345
 ```
 
-The answer lists every athlete you created with that `external_id`, newest first, in one page. Saturday does not deduplicate `external_id`, so a create that you retry after a timeout makes a second athlete. Look the id up first and create only when the list is empty.
+The answer lists every athlete you created with that `external_id`, newest first, in one page.
+
+An `external_id` belongs to one athlete in your account. A create with an `external_id` one of your athletes holds creates nothing and answers `409` with code `athlete_exists`, and `athlete_id` in the error names that athlete, so a create you retry after a timeout is safe. An update that moves an athlete onto an `external_id` another athlete holds is refused the same way and changes nothing. Athletes created before this rule may share an `external_id`; the lookup returns all of them.
 
 ## Profile fields
 
@@ -214,16 +216,18 @@ Two endpoints delete, and they are not interchangeable.
 DELETE /v1/athletes/{id}
 ```
 
-Removes the athlete from your roster together with everything stored under them: activities, prescriptions, feedback, AI conversations, consent records, integration tokens, and gear. Connected providers are not told, and the request is not filed with the data warehouse.
+Removes the athlete from your roster together with everything stored under them: activities, prescriptions, feedback, AI conversations, consent records, integration tokens, and gear. The provider connections you supplied are not revoked at the provider.
 
 ```bash
 POST /v1/athletes/{id}/delete
 ```
 
-The erasure path. It deauthorizes connected providers, purges the athlete's subcollections (activities, conversations, consent, integrations), and files the request the data warehouse honors.
+The erasure path. It revokes at the provider every connection you supplied for the athlete through `POST /v1/integrations/{provider}/sync`, then deletes the athlete and everything stored under them, including the activities synced through those connections and the athlete's link to a Saturday account.
+
+A linked athlete's own Saturday account is not changed. What they connected or entered there, including their own provider connections and workouts, stays until they remove it in the Saturday app or delete their account.
 
 <Warning>
-  Use `POST /v1/athletes/{id}/delete` for a GDPR erasure request. `DELETE` clears your copy of the athlete but does not revoke their provider connections or notify the data warehouse. Neither can be undone.
+  Use `POST /v1/athletes/{id}/delete` for a GDPR erasure request. `DELETE` clears your copy of the athlete but does not revoke the provider connections you supplied. Neither can be undone.
 </Warning>
 
 ## Data export (GDPR)
