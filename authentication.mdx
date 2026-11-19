@@ -46,7 +46,7 @@ curl -H "Authorization: Bearer $SATURDAY_API_KEY" \
 
 ### Getting your keys
 
-Self-serve accounts are issued a key at checkout. It is revealed once on the success page and emailed. If it never arrived, `POST /v1/signup/resend` with your checkout session id emails a new key to the address you bought with. Keys you had before keep working; revoke one with `DELETE /v1/partner/api-keys/{key_id}`. Resends send at most 3 new keys in 24 hours.
+Self-serve accounts are issued a key at checkout. It is revealed once on the success page and emailed. If it never arrived, `POST /v1/signup/resend` with your checkout session id rotates and re-sends it.
 
 Platform partners are issued keys as part of the agreement: contact [api@saturday.fit](mailto:api@saturday.fit) with your platform name and use case. See [Getting Access](/access) for which lane applies to you.
 
@@ -110,7 +110,7 @@ curl -X DELETE https://api.saturday.fit/v1/partner/api-keys/{key_id} \
 | Environment | Base URL | Data |
 |-------------|----------|------|
 | Production | `https://api.saturday.fit` | Real athlete data |
-| Sandbox | Issued with your `sk_test_` key | Synthetic test data |
+| Sandbox | `https://test-api.saturday.fit` | Synthetic test data |
 
 The key prefix and the base URL travel together. Each environment keeps separate key records, so a key issued by the sandbox does not authenticate against `api.saturday.fit`, and the reverse.
 
