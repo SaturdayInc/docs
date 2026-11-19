@@ -31,6 +31,7 @@ Saturday uses one error format across all endpoints, modeled on Stripe's error s
 | `param` | No | The request parameter that caused the error |
 | `documentation_url` | Yes | The docs page that explains this code, the same page `GET /v1/errors` lists for it |
 | `request_id` | Yes, except on a `not_found_error` 404 | Identifier for this request. Include it in support tickets |
+| `athlete_id` | No | On `athlete_exists`: the athlete that holds the `external_id` you sent |
 
 A value of the wrong JSON type is refused with code `invalid_value` and the field in `param`, on the athlete, activity, calculate, batch, gear and integration routes: `"duration_min": "90"` answers "duration_min must be a whole number (got a string)." A nested field carries its path, such as `settings.sweat_level`. A body that is not JSON answers `invalid_json`.
 
@@ -72,7 +73,7 @@ Branch on `type` for handling class, and on `code` for the specific case. A type
 | `api_error` | 500, 502, 503 | Saturday-side failure (500), upstream service (502), transient dependency (503) |
 
 <Note>
-  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `prescription_not_found`, `product_not_found`, `key_not_found`, `webhook_not_found`, `conversation_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"`, and its `code` says which limit was reached ([Rate Limiting](/rate-limiting)). Switching on `type` means using the values in the table above.
+  A 404 carries one of two types. `not_found_error` means the URL itself found no endpoint (including endpoints not available to your key), always with `code: "resource_not_found"`. `resource_not_found` as a type comes from an endpoint that could not find the thing you referenced, and its `code` narrows it: `athlete_not_found`, `activity_not_found`, `prescription_not_found`, `key_not_found`, `webhook_not_found`. Handle both types as the same case unless you need the distinction. A 429 carries `type: "rate_limit_error"`, and its `code` says which limit was reached ([Rate Limiting](/rate-limiting)). Switching on `type` means using the values in the table above.
 </Note>
 
 Safety ceilings do not surface as an error status. A prescription that runs into a guardrail returns `200` with the clamped values plus `safety.warnings` and `safety.requires_human_review` set. See [Safety](/guides/safety).
@@ -155,7 +156,7 @@ async function requestWithRetry(
 
 </CodeGroup>
 
-Use these for reads and calculations. A `POST` that creates a record (an athlete, an activity, a webhook) may have succeeded before a `5xx`: look the record up (for an athlete, by `external_id`) before sending it again.
+Use these for reads and calculations. A `POST` that creates a record (an athlete, an activity, a webhook) may have succeeded before a `5xx`: look the record up before sending it again. An athlete create that carries an `external_id` is safe to resend: if the first one went through, the retry answers `409` `athlete_exists` with the athlete's id in `athlete_id`.
 
 ### Request IDs
 
