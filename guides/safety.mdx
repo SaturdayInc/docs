@@ -25,7 +25,7 @@ Saturday is a nutrition API for endurance athletes, and nutrition advice can cau
 
 The two failure modes that dominate endurance are under-fueling and hyponatremia from drinking large volumes of plain water without sodium. Both are failures to take in enough of something. High carbohydrate and high sodium intakes are normal, and a long hot ride can correctly call for over 200 g of carbohydrate and over 3000 mg of sodium in total. If your UI adds caution on top of Saturday's numbers, it is likely to push athletes the wrong way.
 
-Saturday's engine applies limits on every calculation. They are score-based rather than a single fixed number: the athlete's profile and the activity's conditions set a range, and absolute ceilings bound it.
+Saturday applies safety limits on every calculation.
 
 ## The safety block
 
@@ -109,7 +109,7 @@ Send values inside these ranges. When the API refuses a value, the error names t
 
 ## Confidence score
 
-`confidence_score` (0.0-1.0) reports how much of the athlete's fueling profile and the call's activity inputs was answered, read from the width of the band. A call with all of them answered scores 1.0; one that omits `intensity_level` and `thermal_stress_level` can score 0 even with a complete profile. It is a completeness signal, not a clinical risk score, and `precision.missing_fields` tells you which answers would raise it. See [Athlete Onboarding](/guides/onboarding).
+`confidence_score` (0.0-1.0) reports how much of the athlete's fueling profile and the call's activity inputs was answered. A call with all of them answered scores 1.0; one that omits `intensity_level` and `thermal_stress_level` can score 0 even with a complete profile. It is a completeness signal, not a clinical risk score, and `precision.missing_fields` tells you which answers would raise it. See [Athlete Onboarding](/guides/onboarding).
 
 | Confidence range | Meaning | Your display |
 |-----------------|---------|--------------|
