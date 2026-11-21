@@ -34,7 +34,7 @@ They land on a Saturday page co-branded with your platform ("YOURAPP × SATURDAY
 *Your code:* nothing. The page asks only what is missing, and skips anything you sent, such as sex or weight.
 
 **3. They answer one question per screen.**
-Sweat level, saltiness, carb experience, the same questions Saturday's own app asks, as tap targets. Every answer saves as it is given, so bailing at question 4 still leaves those 4 answers narrowing the bands. The link keeps working and they can come back.
+Sweat level, saltiness, carb experience, the same questions Saturday's own app asks, as tap targets. Every answer saves as it is given, so bailing at question 4 still leaves those 4 answers narrowing the bands. The link keeps working for 90 days and they can come back. If they open it later than that, the page sends them to your `refresh_url`, if you registered one, and your server sends them on to a fresh link ([When a link expires](/guides/onboarding#when-a-link-expires)).
 
 **4. The finish moment.**
 On the last answer, the page asks: *"Can we show you fuel for one of your activities?"* If they say yes and you have registered `activity_link_template`, they deep-link straight into your activity screen, where your integration now shows exact Saturday numbers. If not, the page shows their most recent activity's exact targets alongside your `fueling_path_copy` ("In YourApp: open any activity, then the Fuel tab"), and returns them via your `return_url`.
@@ -62,5 +62,6 @@ Unless their account reads as under 18, their numbers on your platform are calcu
 2. Register `activity_link_template` and `fueling_path_copy` once.
 3. Handle `athlete.profile_completed`, if you want to mark the moment in your UI.
 4. Handle `athlete.profile_sharing_changed`, if you want the athlete's Saturday app answers.
+5. Register a `refresh_url` and serve it, if you want an athlete with an old link back on their questions without asking you for a new one.
 
 Saturday handles the questions, the hosted page, the linking, and the checkout.
