@@ -109,15 +109,19 @@ A result on a partner key carries its times as the REST route does, in Unix seco
 
 The result contains `created_count` and `sessions` in input order. Each session has its `key` and `status`: `created` or `already_there` includes `id` and `start`; `refused` includes `reason`. A refused session does not block the others. Reuse the same key and original local start day on retries: an existing session is returned with its current start without writes, and a deleted session is created again. Use different keys for separate sessions on the same day. Lists outside 1 to 60 are refused before any writes.
 
-<Note>
-  **Product tools follow the athlete's subscription.** `search_products`,
-  `list_curated_products`, and `analyze_product_fit` take an optional `athlete_id`
-  and answer at that athlete's tier. A connection where the caller *is* the
-  athlete (the Saturday connector in Claude) resolves it from the signed-in account and never
-  needs to pass one; a platform integration on a partner key passes the athlete's
-  id, and gets the category tier until it does. See
-  [Freemium Model](/guides/freemium-model#the-product-catalog).
-</Note>
+### Session links
+
+When the caller is the athlete, a member connected through Claude or ChatGPT, every session returned by `create_activity`, `get_activity` and `list_activities`, and every `created` or `already_there` session in a `set_up_week` result, carries `links`, an object with one URL per screen, each of the form `https://saturday.fit/go/<key>/<handle>`:
+
+| Key in `links` | Opens |
+|----------------|-------|
+| `activity` | The session |
+| `prepare` | Prep for the session |
+| `consume` | The session's drinking plan |
+
+Give the athlete the link that fits what they asked for. On a phone with Saturday installed the link opens that screen in the app; on a phone without it, a page offers the app; on a computer, a QR code to scan with the phone. A link signs nobody in, and it opens the session only in an app signed in to the account that owns it.
+
+The handle is the session's `id` for a session Saturday made. For a session a connected app imported, it is a random handle Saturday stores on the session the first time a link is made for it, the same from then on; the connected app's id never appears in a link. Treat the URLs as opaque and pass them on as they are. A session for which no handle could be made comes back without `links`. Partner connections do not receive `links`.
 
 ### Bottling plans
 
@@ -164,7 +168,7 @@ How a Claude-powered agent might use Saturday's tools in a conversation:
 
 1. Gather each session's real start, sport, duration and effort. Judge sweat per session from the forecast at that hour and place, the sport, effort, and indoor or outdoor conditions. An indoor trainer with a fan in an air-conditioned room is low.
 2. Call `set_up_week` once for two or more sessions, up to 60, choosing a short key for each. A retry can contain one session.
-3. Report the per-session results and any refusal reasons. Call `calculate_activity_prescription` only when the member asks for numbers; Saturday plans each session when the member opens the app.
+3. Report the per-session results and any refusal reasons, and offer the `links` URL that fits what the member asked for. Call `calculate_activity_prescription` only when the member asks for numbers; Saturday plans each session when the member opens the app.
 
 ## Safety-aware tool descriptions
 

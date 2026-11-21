@@ -34,7 +34,7 @@ Calculation responses carry a `precision` object on every tier:
 
 - **`profile_complete: true`** means the inputs are complete. Full-tier responses carry exact numbers (`carb_g_per_hr` and friends); teaser responses still carry ranges.
 - **`profile_complete: false`** puts bands there instead (`carb_range_g_per_hr` and friends). With a partner API key, `missing_fields` arrives sorted most-impactful-first, so it is your collection roadmap: the top entry is the question that buys the most precision.
-- The trial clock starts at the athlete's first calculation carrying any real data. Zero-data calls never start it. Collect the profile first and the 30-day window delivers exact numbers rather than wide bands. See [Freemium Model](/guides/freemium-model#30-day-full-precision-trial).
+- The trial clock starts at the athlete's first calculation carrying any real data. Zero-data calls never start it. Collect the profile first and the 14-day window delivers exact numbers rather than wide bands. See [Freemium Model](/guides/freemium-model#full-precision-trial).
 
 Each missing field carries a `display_label`, the plain-English name of the question ("how much you sweat"), so you can build the prompt without exposing an internal key. With a partner API key, `precision.message` names fields by their API names and says where each goes, for your code and your logs; build what the athlete sees from the `display_label`s. With a partner API key each field also carries `band_impact`, in per-hour units, rounded to the same increments the bands use, saying roughly how much narrower the band gets once that field is answered. Take `missing_fields` in the order it arrives rather than re-sorting on these numbers, since rounding can leave two fields tied.
 
@@ -56,13 +56,13 @@ With a partner API key, `precision` also splits the list in two, on every tier: 
 
 ## Four ways to collect the profile
 
-### 1. Hosted onboarding page (recommended start)
+### 1. Hosted onboarding page (sandbox)
 
-An incomplete-profile response for a request with an `athlete_id` can carry `precision.onboarding.url`, a long-lived athlete-scoped link to Saturday's hosted onboarding page, co-branded with your platform. Check that the URL is present before showing a button, email link, or push action. Requests without an athlete reference do not receive a hosted-onboarding URL.
+In the sandbox, an incomplete-profile response for a request with an `athlete_id` carries `precision.onboarding.url`, a link to Saturday's hosted onboarding page for that athlete, co-branded with your platform. Production responses carry no link until the page opens there; until then, collect the answers with your own UI and our questions (option 2). Check that the URL is present before showing a button, email link, or push action. Requests without an athlete reference do not receive a hosted-onboarding URL.
 
-- It asks only the questions that are missing, one per screen, mobile-first, in about two minutes.
+- It asks only the questions that are missing, one per screen, mobile-first, in about three minutes.
 - Each answer commits as it is given, so a half-finished session still narrows the bands.
-- The finish screen asks the athlete's consent to show fuel for their most recent activity. If you have registered an `activity_link_template` on your partner account (`yourapp://activity/{external_id}`, for instance), it deep-links into your activity screen. Otherwise it renders the numbers itself and returns the athlete via your `return_url`.
+- The finish screen asks the athlete's consent to show fuel for their most recent activity. An athlete with a complete profile whom your API calls would answer exactly (a subscription, a license, or a trial call left) gets that fuel: if you have registered an `activity_link_template` on your partner account (`yourapp://activity/{external_id}`, for instance), it deep-links into your activity screen; otherwise it renders the numbers itself and returns the athlete via your `return_url`. Any other athlete sees no numbers: the finish says their answers are saved and sends them back to you for their fueling numbers.
 - When the athlete's Saturday account is connected to your platform and they are 18 or older, the finish screen also asks "Let \{your platform\} see your fueling answers?". Yes emails their Saturday address a one-tap confirmation, and sharing starts when they tap it; No turns sharing off at once. See [Reading an athlete's fueling profile](/guides/fueling-profile).
 - The link stays valid for 90 days, and every later incomplete-profile response carries a fresh one, so athletes can come back and edit their answers.
 

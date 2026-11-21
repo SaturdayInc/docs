@@ -249,9 +249,9 @@ Each athlete is also validated on `weight_kg` (20 to 250, as on single create), 
 
 The batch is also checked against your account's total athlete quota before processing. If you are at the cap the whole request returns `403` with the code `resource_limit_exceeded`, rather than partially filling.
 
-<Warning>
-  **`external_id` is not deduplicated.** Saturday does not reject or merge an athlete whose `external_id` you used before; every create mints a new athlete with a new UUID. Retrying a batch that partially succeeded will therefore create duplicates of the athletes that succeeded the first time. Track the returned IDs against your `external_id` values and retry only the items that failed.
-</Warning>
+<Note>
+  **`external_id` is unique within your account.** An item whose `external_id` one of your athletes holds, an earlier item of the same batch included, is not created: it fails with code `athlete_exists`, and `athlete_id` on that error names the athlete that holds it. Retrying a batch that partially succeeded is therefore safe for items that carry an `external_id`. Items without one are created again on a retry.
+</Note>
 
 ## Activity import
 
