@@ -192,7 +192,7 @@
     "primary": {
       "type": "button",
       "label": "Get API Key",
-      "href": "mailto:api@saturday.fit?subject=API%20Access%20Request"
+      "href": "https://saturday.fit/api"
     }
   },
   "footer": {
