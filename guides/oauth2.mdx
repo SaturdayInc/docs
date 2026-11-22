@@ -148,9 +148,12 @@ response = requests.post(
         "client_secret": "your_client_secret",
         "code_verifier": code_verifier,
     },
+    timeout=30,
 )
 
 tokens = response.json()
+if response.status_code >= 400:
+    raise RuntimeError(tokens["error"])
 access_token = tokens["access_token"]      # JWT, 1-hour expiry
 refresh_token = tokens["refresh_token"]    # Opaque, 90-day expiry
 expires_in = tokens["expires_in"]          # Seconds until access token expires
@@ -171,8 +174,9 @@ const response = await fetch("https://api.saturday.fit/v1/oauth/token", {
 });
 
 const tokens = await response.json();
-const accessToken = tokens.access_token;   // JWT, 1-hour expiry
-const refreshToken = tokens.refresh_token; // Opaque, 90-day expiry
+if (!response.ok) throw new Error(tokens.error);
+let accessToken = tokens.access_token;   // JWT, 1-hour expiry
+let refreshToken = tokens.refresh_token; // Opaque, 90-day expiry
 ```
 
 </CodeGroup>
@@ -192,6 +196,8 @@ curl -H "Authorization: Bearer ACCESS_TOKEN_JWT" \
 
 The API scopes requests to the athlete who granted consent. You do not pass an `athlete_id`; it is in the JWT, alongside the partner ID and the granted scopes.
 
+With either SDK, pass the access token as `bearerToken` in TypeScript or `bearer_token` in Python, and it is sent in place of the API key. Both constructors still require an `apiKey` or `api_key` argument.
+
 ## Step 6: Refresh expired tokens
 
 Access tokens expire after 1 hour. Use the refresh token to get a new pair:
@@ -208,6 +214,7 @@ response = requests.post(
         "refresh_token": refresh_token,
         "client_id": "your_partner_id",
     },
+    timeout=30,
 )
 
 new_tokens = response.json()
@@ -229,6 +236,8 @@ const response = await fetch("https://api.saturday.fit/v1/oauth/token", {
 
 const newTokens = await response.json();
 // Rotation: save the new refresh token, the old one stops working shortly
+accessToken = newTokens.access_token;
+refreshToken = newTokens.refresh_token;
 ```
 
 </CodeGroup>
@@ -374,10 +383,9 @@ The subscription-lapse case deserves distinct handling: its description tells th
 Athletes can revoke access from their Saturday account settings. Partners can revoke programmatically:
 
 ```bash
-POST /v1/oauth/token/revoke
-Content-Type: application/x-www-form-urlencoded
-
-token=REFRESH_TOKEN
+curl -X POST https://api.saturday.fit/v1/oauth/token/revoke \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "token=REFRESH_TOKEN"
 ```
 
 The endpoint revokes refresh tokens. An access token stays valid until it expires, at most one hour later. Per RFC 7009 this returns `200` whether or not the token existed, so a repeated revoke is not an error.

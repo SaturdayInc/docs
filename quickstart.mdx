@@ -54,7 +54,22 @@ The response is the stored athlete, with `"profile_complete": true` and an `id`:
 ```json
 {
   "id": "b0bffebc-6575-4689-b97f-4a3bbf9cd364",
+  "partner_id": "your-partner-id",
   "external_id": "user-42",
+  "sex": "female",
+  "year_of_birth": 1990,
+  "weight_kg": 62,
+  "settings": {
+    "sweat_level": 5,
+    "saltiness": 5,
+    "satiety_level": 5,
+    "fitness_level": 5,
+    "carb_experience": "range_40_60",
+    "usual_carb_consumption": "range_60_80",
+    "concerns_answered": true
+  },
+  "created_at": 1797584400,
+  "updated_at": 1797584400,
   "profile_complete": true
 }
 ```
@@ -118,7 +133,7 @@ curl -X POST https://api.saturday.fit/v1/nutrition/calculate \
 |-------|---------------|
 | `carb_g_per_hr`, `sodium_mg_per_hr`, `fluid_ml_per_hr` | Per-hour targets, whole numbers, as the Saturday app shows them |
 | `total_*` | Totals for the whole session |
-| `precision.profile_complete` | `true`: these are exact numbers. `false`: the response carries ranges instead (step 5) |
+| `precision.profile_complete` | When `precision` is present, `true`: these are exact numbers. `false`: the response carries ranges instead (step 5) |
 | `tier`, `tier_source` | `full` with `trial`: the athlete's 14-day trial gives exact numbers. It started with this call: 15 calls on the first day, then 5 a day, up to 42 in all |
 | `safety` | Shown on every response. Show each warning to the athlete. `not_instructions` marks the numbers as guidance, not commands |
 | `attribution` | Show it wherever you show the numbers |
@@ -166,7 +181,6 @@ An athlete whose profile is missing answers gets ranges and a list of what to as
     "missing_profile_fields": ["carb_experience"],
     "message": "For exact numbers, fill in what is missing. This athlete's profile is missing carb_experience: the onboarding link collects it.",
     "onboarding": {
-      "url": "https://saturday.fit/onboard?ot=...",
       "message": "Answer the missing questions once, or have the athlete onboard in the Saturday app, to get exact numbers for this athlete."
     }
   },
@@ -176,11 +190,13 @@ An athlete whose profile is missing answers gets ranges and a list of what to as
 }
 ```
 
-`missing_fields` arrives most impactful first. `missing_profile_fields` names the athlete's answers to collect: ask those questions in your app, or send the athlete to `precision.onboarding.url`. A session input your request left out (`meal_before_min`, say) is listed in `missing_fields` too and in `missing_session_inputs`: it is yours to send. Check `precision.profile_complete`, not `tier`, to tell exact numbers from ranges. `trial_ends_at`, like every time the API gives you, is in Unix seconds.
+`missing_fields` arrives most impactful first. `missing_profile_fields` names the athlete's answers to collect: ask those questions in your app, or, in the sandbox, send the athlete to `precision.onboarding.url` when the response carries one. A session input your request left out (`meal_before_min`, say) is listed in `missing_fields` too and in `missing_session_inputs`: it is yours to send. Check `precision.profile_complete` when the response carries `precision`, and the range fields when it does not, not `tier`, to tell exact numbers from ranges. `trial_ends_at`, like every time the API gives you, is in Unix seconds.
 
 After the trial, an athlete without a Saturday subscription gets `"tier": "teaser"`: ranges and a `subscription_cta` with their subscribe link. See [Freemium Model](/guides/freemium-model) for how the tiers are decided and how the subscribe loop pays you.
 
 ## 6. Use an SDK
+
+The TypeScript snippets in these guides use top-level `await`, so run them as ES modules: save them with an `.mts` extension, or set `"type": "module"` in your `package.json`.
 
 <CodeGroup>
 

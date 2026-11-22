@@ -337,6 +337,8 @@ A plan uses the athlete's exact numbers only when calculate would give them exac
 | `session_incomplete` | Session inputs, listed in `missing_session_inputs`. Send them in the request (fit, compare) or set them on the activity (prep) |
 | `profile_and_session_incomplete` | Both lists |
 | `stored_ranges` | Prep on an activity whose stored prescription is ranges, with nothing missing now (the athlete has answered since): calculate the activity again |
+| `trial_allowance` | The athlete's trial has used today's calls or given all its exact answers, or this profile is past the trial's allowance of profiles. `message` says which |
+| `simulation_allowance` | Test environment only: the athlete's simulated subscription has given its allowance of exact answers or profiles |
 
 A fully onboarded athlete and a session missing `meal_before_min` and `is_race`:
 
