@@ -95,12 +95,12 @@ Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`
 
 ### Settings: the fueling profile
 
-`settings` holds the fields the engine reads. The 1-9 scales are odd-point selectors, not continuous sliders: send 1, 3, 5, 7, or 9. `satiety_level` and `fitness_level` take only those five levels, the ones the Saturday app stores, and `carb_upper_limit_override` takes 50 to 150 g/hr in steps of 10, as the app's Max Carbs slider does, so your athletes get the same answers as members of the app.
+`settings` holds the fields the engine reads. The 1-9 scales take only the levels the Saturday app stores: `sweat_level`, `satiety_level` and `fitness_level` take 1, 3, 5, 7 or 9, and `saltiness` takes 1, 5 or 9. `carb_upper_limit_override` takes 50 to 150 g/hr in steps of 10, as the app's Max Carbs slider does, so your athletes get the same answers as members of the app.
 
 | Field | Type | Values | Safety-core |
 |-------|------|--------|-------------|
-| `sweat_level` | integer | 1 (light) to 9 (heavy), default 5 | Yes |
-| `saltiness` | integer | 1 (not salty) to 9 (very salty), default 5 | Yes |
+| `sweat_level` | integer | 1, 3, 5, 7 or 9: 1 light to 9 heavy, default 5 | Yes |
+| `saltiness` | integer | 1, 5 or 9: 1 not very salty, 5 somewhat salty, 9 very salty, default 5 | Yes |
 | `carb_experience` | string | `range_0_30`, `range_40_60`, `range_gt_70` | Yes |
 | `usual_carb_consumption` | string | `range_lt_60`, `range_60_80`, `range_80_100`, `range_gt_100` | Yes |
 | `satiety_level` | integer | 1, 3, 5, 7 or 9: 1 mostly whole food to 9 high-octane fuel, default 5 | No |
@@ -109,7 +109,7 @@ Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`
 
 `carb_experience` is the most carbohydrate per hour the athlete has ever fueled with; `usual_carb_consumption` is what they typically take. Both are stored as range tokens rather than numbers, because a range is what an athlete can answer without guessing.
 
-On create, on update and on `PATCH /v1/athletes/{id}/settings`, a scale outside 1 to 9, a `satiety_level` or `fitness_level` other than 1, 3, 5, 7 or 9, a token outside its list, or a `sex` outside the three values is refused with a `400` of code `invalid_value`, naming the field in `param` and the accepted values in the message. Nothing in that request is saved.
+On create, on update and on `PATCH /v1/athletes/{id}/settings`, a `sweat_level`, `satiety_level` or `fitness_level` other than 1, 3, 5, 7 or 9, a `saltiness` other than 1, 5 or 9, a token outside its list, or a `sex` outside the three values is refused with a `400` of code `invalid_value`, naming the field in `param` and the accepted values in the message. Nothing in that request is saved.
 
 ### Fueling concerns
 
