@@ -82,6 +82,7 @@ athlete_id = "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d"
 response = requests.get(
     f"https://api.saturday.fit/v1/athletes/{athlete_id}/fueling-profile",
     headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
+    timeout=30,
 )
 response.raise_for_status()
 body = response.json()

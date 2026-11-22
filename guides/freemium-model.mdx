@@ -30,21 +30,22 @@ Partner integrates (free) -> Athletes see teasers (free) -> Athletes subscribe f
 
 ## Detecting response type
 
-Both teaser responses and incomplete full-tier profiles carry range fields. Choose the number display from those fields; use `tier` separately to decide whether to show the subscription CTA. Exact zero values may be omitted, so the exact branch defaults them to zero.
+Both teaser responses and incomplete full-tier profiles carry range fields. Choose the number display from those fields; use `tier` separately to decide whether to show the subscription CTA. Exact zero values may be omitted, so the exact branch defaults them to zero. An activity calculation nests its exact numbers under `prescription`, so read the number fields from there when it is present.
 
 <CodeGroup>
 
 ```python Python
 data = response.json()
+numbers = data.get("prescription", data)
 
-if "carb_range_g_per_hr" in data:
-    show_range(data["carb_range_g_per_hr"])
-    show_range(data["sodium_range_mg_per_hr"])
-    show_range(data["fluid_range_ml_per_hr"])
+if "carb_range_g_per_hr" in numbers:
+    show_range(numbers["carb_range_g_per_hr"])
+    show_range(numbers["sodium_range_mg_per_hr"])
+    show_range(numbers["fluid_range_ml_per_hr"])
 else:
-    show_exact(data.get("carb_g_per_hr", 0))
-    show_exact(data.get("sodium_mg_per_hr", 0))
-    show_exact(data.get("fluid_ml_per_hr", 0))
+    show_exact(numbers.get("carb_g_per_hr", 0))
+    show_exact(numbers.get("sodium_mg_per_hr", 0))
+    show_exact(numbers.get("fluid_ml_per_hr", 0))
 
 if data["tier"] == "teaser":
     show_upgrade_cta(data["subscription_cta"]["subscribe_url"])
@@ -52,15 +53,16 @@ if data["tier"] == "teaser":
 
 ```typescript TypeScript
 const data = await response.json();
+const numbers = data.prescription ?? data;
 
-if (data.carb_range_g_per_hr !== undefined) {
-  showRange(data.carb_range_g_per_hr);
-  showRange(data.sodium_range_mg_per_hr);
-  showRange(data.fluid_range_ml_per_hr);
+if (numbers.carb_range_g_per_hr !== undefined) {
+  showRange(numbers.carb_range_g_per_hr);
+  showRange(numbers.sodium_range_mg_per_hr);
+  showRange(numbers.fluid_range_ml_per_hr);
 } else {
-  showExact(data.carb_g_per_hr ?? 0);
-  showExact(data.sodium_mg_per_hr ?? 0);
-  showExact(data.fluid_ml_per_hr ?? 0);
+  showExact(numbers.carb_g_per_hr ?? 0);
+  showExact(numbers.sodium_mg_per_hr ?? 0);
+  showExact(numbers.fluid_ml_per_hr ?? 0);
 }
 
 if (data.tier === "teaser") {

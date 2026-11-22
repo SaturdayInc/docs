@@ -59,7 +59,7 @@ import os
 import requests
 
 headers = {"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"}
-response = requests.get("https://api.saturday.fit/v1/athletes", headers=headers)
+response = requests.get("https://api.saturday.fit/v1/athletes", headers=headers, timeout=30)
 ```
 
 ```typescript TypeScript
@@ -155,6 +155,6 @@ Authentication and authorization failures share the standard [error envelope](/e
 | `plan_inactive` | `authorization_error` | 403 | The key comes with a paid Saturday plan, and the plan on its account has ended. It works again, with its athletes as they were, once the plan is active |
 | `insufficient_scope` | `authorization_error` | 403 | The key's scopes don't permit this method |
 | `coach_tier_required` | `authorization_error` | 403 | A `cp_` key whose coach is below Pro Coach |
-| `internal_error` | `api_error` | 503 | Key verification is temporarily unavailable. Retry rather than rotating a working key |
+| `service_unavailable` | `api_error` | 503 | Key verification is temporarily unavailable. Retry rather than rotating a working key |
 
 A key used against the wrong environment fails closed as `invalid_api_key`, and the message names the environment the key was issued for. Each environment keeps separate key records, and a record whose environment is not the host's is refused even if it is present.

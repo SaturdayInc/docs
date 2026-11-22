@@ -35,6 +35,7 @@ response = requests.post(
         "duration_min": 90,
         "athlete_weight_kg": 70,
     },
+    timeout=30,
 )
 ```
 
@@ -267,6 +268,20 @@ An answer with exact numbers carries `legs`: each leg's share, in the order sent
     {"duration_min": 90, "total_carb_g": 110, "total_sodium_mg": 850, "total_fluid_ml": 1100, "carb_g_per_hr": 73, "sodium_mg_per_hr": 570, "fluid_ml_per_hr": 730},
     {"duration_min": 30, "total_carb_g": 30, "total_sodium_mg": 250, "total_fluid_ml": 300, "carb_g_per_hr": 60, "sodium_mg_per_hr": 500, "fluid_ml_per_hr": 600}
   ],
+  "safety": {
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 1,
+    "requires_human_review": false,
+    "warnings": [],
+    "not_instructions": true
+  },
+  "attribution": {
+    "text": "Powered by Saturday",
+    "logo_url": "https://saturday.fit/logo.png",
+    "link": "https://saturday.fit",
+    "required": true
+  },
   "precision": {"profile_complete": true}
 }
 ```
@@ -276,5 +291,5 @@ Each leg's figures are as the app's leg card shows them, per hour as the [per-ho
 Bricks and triathlons work the same way in [batches](/guides/batch-operations), on [stored activities](/guides/activities#bricks-and-triathlons), in [prep, product fit and compare](/guides/prep-and-products#bricks-and-triathlons), each of which answers leg by leg. Bricks and triathlons are for requests made with a partner API key; an athlete's own assistant connected through the Saturday connector plans single sports.
 
 <Note>
-Every calculation response carries a `precision` object: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
+Read `precision` when the response carries it: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
 </Note>
