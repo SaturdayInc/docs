@@ -92,8 +92,8 @@ if response.status_code == 429:
     if wait is not None and (code == "rate_limit_exceeded" or (code == "catalog_paced" and wait <= 30)):
         time.sleep(wait)
         response = make_api_request()
-    elif code in DAILY and wait is not None:
-        schedule_after_reset(wait)  # resumes after midnight UTC
+    elif code in DAILY:
+        schedule_after_reset(wait)  # resumes after midnight UTC; wait is None without a Retry-After header
 ```
 
 ```typescript TypeScript
@@ -114,8 +114,8 @@ if (response.status === 429) {
   if (wait !== undefined && (error.code === "rate_limit_exceeded" || (error.code === "catalog_paced" && wait <= 30))) {
     await new Promise((r) => setTimeout(r, wait * 1000));
     response = await makeApiRequest();
-  } else if (DAILY.has(error.code) && wait !== undefined) {
-    scheduleAfterReset(wait); // resumes after midnight UTC
+  } else if (DAILY.has(error.code)) {
+    scheduleAfterReset(wait); // resumes after midnight UTC; wait is undefined without a Retry-After header
   }
 }
 ```
