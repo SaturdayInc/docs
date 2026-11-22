@@ -254,6 +254,6 @@ Fetch the global settings schema to build dynamic forms:
 GET /v1/settings/schema
 ```
 
-Returns each field's type, valid range or option list, description, and default, so a settings UI does not have to hardcode Saturday's requirements. This is a global schema, identical for every athlete; fetch one athlete's current values with `GET /v1/athletes/{id}/settings`. The schema lists the editable fields; a stored settings object can also carry `concerns_answered`, which sending any concern field sets, so keep it when you write a settings object back.
+Returns each field's type, valid range or option list, description, and default, so a settings UI does not have to hardcode Saturday's requirements. `values` lists the only numbers a scale takes (`[1, 3, 5, 7, 9]`, or `[1, 5, 9]` for `saltiness`), and `step` is the spacing of `carb_upper_limit_override` (10). This is a global schema, identical for every athlete; fetch one athlete's current values with `GET /v1/athletes/{id}/settings`. The schema lists the editable fields; a stored settings object can also carry `concerns_answered`, which sending any concern field sets, so keep it when you write a settings object back.
 
 For collecting the profile from scratch rather than editing it, `GET /v1/onboarding/questions` returns the same fields as athlete-facing questions with copy, ordering, and answer values. See [Athlete Onboarding](/guides/onboarding).
