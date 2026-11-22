@@ -95,7 +95,7 @@ Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`
 
 ### Settings: the fueling profile
 
-`settings` holds the fields the engine reads. The 1-9 scales are odd-point selectors, not continuous sliders: send 1, 3, 5, 7, or 9.
+`settings` holds the fields the engine reads. The 1-9 scales are odd-point selectors, not continuous sliders: send 1, 3, 5, 7, or 9. `satiety_level` and `fitness_level` take only those five levels, the ones the Saturday app stores, and `carb_upper_limit_override` takes 50 to 150 g/hr in steps of 10, as the app's Max Carbs slider does, so your athletes get the same answers as members of the app.
 
 | Field | Type | Values | Safety-core |
 |-------|------|--------|-------------|
@@ -103,13 +103,13 @@ Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`
 | `saltiness` | integer | 1 (not salty) to 9 (very salty), default 5 | Yes |
 | `carb_experience` | string | `range_0_30`, `range_40_60`, `range_gt_70` | Yes |
 | `usual_carb_consumption` | string | `range_lt_60`, `range_60_80`, `range_80_100`, `range_gt_100` | Yes |
-| `satiety_level` | integer | 1 (mostly whole food) to 9 (high-octane fuel), default 5 | No |
-| `fitness_level` | integer | 1 (beginner) to 9 (elite), default 5 | No |
-| `carb_upper_limit_override` | integer | 50 to 150 g/hr, default 150 | No |
+| `satiety_level` | integer | 1, 3, 5, 7 or 9: 1 mostly whole food to 9 high-octane fuel, default 5 | No |
+| `fitness_level` | integer | 1, 3, 5, 7 or 9: 1 complete novice to 9 elite, default 5 | No |
+| `carb_upper_limit_override` | integer | 50 to 150 g/hr in steps of 10, default 150 | No |
 
 `carb_experience` is the most carbohydrate per hour the athlete has ever fueled with; `usual_carb_consumption` is what they typically take. Both are stored as range tokens rather than numbers, because a range is what an athlete can answer without guessing.
 
-On create, on update and on `PATCH /v1/athletes/{id}/settings`, a scale outside 1 to 9, a token outside its list, or a `sex` outside the three values is refused with a `400` of code `invalid_value`, naming the field in `param` and the accepted values in the message. Nothing in that request is saved.
+On create, on update and on `PATCH /v1/athletes/{id}/settings`, a scale outside 1 to 9, a `satiety_level` or `fitness_level` other than 1, 3, 5, 7 or 9, a token outside its list, or a `sex` outside the three values is refused with a `400` of code `invalid_value`, naming the field in `param` and the accepted values in the message. Nothing in that request is saved.
 
 ### Fueling concerns
 
@@ -189,7 +189,7 @@ The settings object is written as a unit. Send the athlete's complete settings o
 
 The same replacement rule applies if you send a `settings` object through `PATCH /v1/athletes/{id}`.
 
-On create, on update and on calculate, Saturday rejects `carb_upper_limit_override` outside 50-150 g/hr and `weight_kg` outside 20-250 with a `400` of code `out_of_range` rather than clamping, so a bad value in your data surfaces at the boundary instead of distorting a prescription. Batch create reports the same code per item.
+On create, on update and on calculate, Saturday rejects a `carb_upper_limit_override` that is not 50 to 150 g/hr in steps of 10 and `weight_kg` outside 20-250 with a `400` of code `out_of_range` rather than clamping, so a bad value in your data surfaces at the boundary instead of distorting a prescription. Batch create reports the same code per item.
 
 Saturday is for athletes 14 and up. On create and on update, a `year_of_birth` that makes the athlete younger than 14 (the current year minus the birth year) is refused with a `400` of code `under_minimum_age` and param `year_of_birth`, and nothing in that request is saved. The message names the minimum age:
 

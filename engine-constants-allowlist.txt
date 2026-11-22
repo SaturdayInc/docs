@@ -19,6 +19,7 @@ rate-adjacent	guides/safety.mdx	1500 mL/hr	response field: max_safe_fluid_ml_per
 rate-adjacent	guides/safety.mdx	3000 mg/hr	response field: max_safe_sodium_mg_per_hr, same block, same reasoning
 nutrient-ceiling	guides/safety.mdx	50	request bound: carb_upper_limit_override below 50 is refused with 400 out_of_range, so a caller must respect it
 nutrient-ceiling	guides/safety.mdx	150	request bound: carb_upper_limit_override above 150 is refused with 400 out_of_range, so a caller must respect it
+nutrient-ceiling	guides/safety.mdx	10	request bound: a carb_upper_limit_override off its steps of 10 is refused with 400 out_of_range, so a caller must respect it
 rate-adjacent	guides/safety.mdx	150 g/hr	the same request bound, with its unit
 nutrient-ceiling	guides/safety.mdx	1500	response field: the fluid advisory threshold again, on the line that states the warning it triggers
 rate-adjacent	guides/athletes.mdx	150 g/hr	request bound: carb_upper_limit_override is set BY the caller and rejected with a 400 outside its range, so a partner who does not know the range cannot debug the rejection
