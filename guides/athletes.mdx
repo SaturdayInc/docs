@@ -80,7 +80,7 @@ An `external_id` belongs to one athlete in your account. A create with an `exter
 
 ## Profile fields
 
-Send at least one of `name`, `email` or `external_id` at create time; every other field is optional. The athlete's fueling profile is what makes prescriptions exact, so the fields below split into two groups: the ones the engine needs before it will return exact numbers, and the ones that narrow the band further. An athlete missing any safety-core field gets a range instead of a number. See [Athlete Onboarding](/guides/onboarding).
+Every field is optional at create time. A [batch create](/guides/batch-operations) needs at least one of `name`, `email` or `external_id` for each athlete. The athlete's fueling profile is what makes prescriptions exact, so the fields below split into two groups: the ones the engine needs before it will return exact numbers, and the ones that narrow the band further. An athlete missing any safety-core field gets a range instead of a number. See [Athlete Onboarding](/guides/onboarding).
 
 ### Top-level fields
 
@@ -244,7 +244,7 @@ Export all data held for an athlete:
 POST /v1/athletes/{id}/export
 ```
 
-Returns JSON containing the athlete's profile, every activity with its prescription and feedback, and their consent records.
+Returns JSON containing the athlete's profile, every activity with its prescription and feedback, any conversations with Saturday's assistant, and their consent records.
 
 ## Settings schema
 
