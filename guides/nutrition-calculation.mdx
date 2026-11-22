@@ -35,6 +35,7 @@ response = requests.post(
         "duration_min": 90,
         "athlete_weight_kg": 70,
     },
+    timeout=30,
 )
 ```
 
@@ -119,7 +120,7 @@ The two lists name inputs only and come with a partner API key on every tier, te
 
 An `athlete_id` your account does not hold is refused with `404` and code `athlete_not_found`; leave `athlete_id` out for a range estimate.
 
-Profile fields, at the top level of the request, stand in for a stored athlete or override one stored answer for that call: `sex` (`male`, `female` or `intersex`), `age` (years), `athlete_weight_kg` (20 to 250), `sweat_level`, `saltiness`, `satiety_level` and `fitness_level` (1, 3, 5, 7 or 9), `carb_experience` and `usual_carb_consumption` (the values in [Settings: the fueling profile](/guides/athletes#settings-the-fueling-profile)), `carb_upper_limit_override` (50 to 150 g/hr), and `concerns`, one object of the eight flags `performance`, `gut_distress`, `heat_tolerance`, `muscle_cramps`, `faintness`, `hunger`, `thirst` and `drinking_resistance`.
+Profile fields, at the top level of the request, stand in for a stored athlete or override one stored answer for that call: `sex` (`male`, `female` or `intersex`), `age` (years), `athlete_weight_kg` (20 to 250), `sweat_level`, `saltiness`, `satiety_level` and `fitness_level` (1 to 9), `carb_experience` and `usual_carb_consumption` (the values in [Settings: the fueling profile](/guides/athletes#settings-the-fueling-profile)), `carb_upper_limit_override` (50 to 150 g/hr), and `concerns`, one object of the eight flags `performance`, `gut_distress`, `heat_tolerance`, `muscle_cramps`, `faintness`, `hunger`, `thirst` and `drinking_resistance`.
 
 The request may carry only the fields on this page. Any other field, at any depth, is refused with `400` and code `unsupported_field`, `param` naming it, and the message naming the field it was probably meant to be: `meal_before_mins` answers `Did you mean "meal_before_min"?`. A field spelled the way the athlete or activity request spells it gets that request's spelling: `weight_kg` (send `athlete_weight_kg`), `year_of_birth` (send `age`), `is_race_event` (send `is_race`), `type` (send `activity_type`), `duration` (send `duration_min`) and `settings` (send the profile fields at the top level, or an `athlete_id`). See [Error Handling](/error-handling#a-field-the-request-does-not-take).
 
@@ -267,6 +268,20 @@ An answer with exact numbers carries `legs`: each leg's share, in the order sent
     {"duration_min": 90, "total_carb_g": 110, "total_sodium_mg": 850, "total_fluid_ml": 1100, "carb_g_per_hr": 73, "sodium_mg_per_hr": 570, "fluid_ml_per_hr": 730},
     {"duration_min": 30, "total_carb_g": 30, "total_sodium_mg": 250, "total_fluid_ml": 300, "carb_g_per_hr": 60, "sodium_mg_per_hr": 500, "fluid_ml_per_hr": 600}
   ],
+  "safety": {
+    "max_safe_fluid_ml_per_hr": 1500,
+    "max_safe_sodium_mg_per_hr": 3000,
+    "confidence_score": 1,
+    "requires_human_review": false,
+    "warnings": [],
+    "not_instructions": true
+  },
+  "attribution": {
+    "text": "Powered by Saturday",
+    "logo_url": "https://saturday.fit/logo.png",
+    "link": "https://saturday.fit",
+    "required": true
+  },
   "precision": {"profile_complete": true}
 }
 ```
@@ -276,5 +291,5 @@ Each leg's figures are as the app's leg card shows them, per hour as the [per-ho
 Bricks and triathlons work the same way in [batches](/guides/batch-operations), on [stored activities](/guides/activities#bricks-and-triathlons), in [prep, product fit and compare](/guides/prep-and-products#bricks-and-triathlons), each of which answers leg by leg. Bricks and triathlons are for requests made with a partner API key; an athlete's own assistant connected through the Saturday connector plans single sports.
 
 <Note>
-Every calculation response carries a `precision` object: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
+Read `precision` when the response carries it: `profile_complete`, `missing_fields`, and an onboarding invite. Exact numbers require a complete fueling profile; an incomplete one gets a band instead. See [Athlete Onboarding](/guides/onboarding).
 </Note>

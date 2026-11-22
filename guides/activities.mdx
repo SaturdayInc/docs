@@ -33,8 +33,11 @@ response = requests.post(
         "duration_min": 120,
         "intensity_level": 5,
         "thermal_stress_level": 4,
+        "is_race_event": False,
+        "meal_before_min": 120,
         "external_id": "your-activity-88213",
     },
+    timeout=30,
 )
 
 activity = response.json()
@@ -55,6 +58,8 @@ const response = await fetch(
       duration_min: 120,
       intensity_level: 5,
       thermal_stress_level: 4,
+      is_race_event: false,
+      meal_before_min: 120,
       external_id: "your-activity-88213",
     }),
   }
@@ -241,6 +246,7 @@ response = requests.post(
         "rating": 4,
         "notes": "Felt good until mile 18, then energy dropped",
     },
+    timeout=30,
 )
 ```
 

@@ -47,7 +47,7 @@ Exceeding a limit returns `429 Too Many Requests`:
     "type": "rate_limit_error",
     "code": "rate_limit_exceeded",
     "message": "Rate limit exceeded. Retry after 1 seconds.",
-    "documentation_url": "https://docs.saturday.fit/errors#rate_limit_exceeded",
+    "documentation_url": "https://docs.saturday.fit/rate-limiting",
     "request_id": "req_abc123def456"
   }
 }
@@ -87,11 +87,12 @@ response = make_api_request()
 
 if response.status_code == 429:
     code = response.json()["error"]["code"]
-    wait = int(response.headers["Retry-After"])
-    if code == "rate_limit_exceeded" or (code == "catalog_paced" and wait <= 30):
+    raw = response.headers.get("Retry-After")
+    wait = int(raw) if raw and raw.isdigit() else None
+    if wait is not None and (code == "rate_limit_exceeded" or (code == "catalog_paced" and wait <= 30)):
         time.sleep(wait)
         response = make_api_request()
-    elif code in DAILY:
+    elif code in DAILY and wait is not None:
         schedule_after_reset(wait)  # resumes after midnight UTC
 ```
 
@@ -108,11 +109,12 @@ let response = await makeApiRequest();
 
 if (response.status === 429) {
   const { error } = await response.json();
-  const wait = Number(response.headers.get("Retry-After"));
-  if (error.code === "rate_limit_exceeded" || (error.code === "catalog_paced" && wait <= 30)) {
+  const header = response.headers.get("Retry-After");
+  const wait = header === null ? undefined : Number(header);
+  if (wait !== undefined && (error.code === "rate_limit_exceeded" || (error.code === "catalog_paced" && wait <= 30))) {
     await new Promise((r) => setTimeout(r, wait * 1000));
     response = await makeApiRequest();
-  } else if (DAILY.has(error.code)) {
+  } else if (DAILY.has(error.code) && wait !== undefined) {
     scheduleAfterReset(wait); // resumes after midnight UTC
   }
 }
@@ -159,7 +161,10 @@ A prescription for the same inputs is stable. Cache the result and recalculate w
 ### Use the batch endpoint
 
 ```bash
-POST /v1/nutrition/calculate/batch
+curl -X POST https://api.saturday.fit/v1/nutrition/calculate/batch \
+  -H "Authorization: Bearer $SATURDAY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"scenarios": [{"activity_type": "run", "duration_min": 45}]}'
 ```
 
 Each item in a batch debits a token, so a batch of 10 costs what 10 calls cost. What it saves is round trips, not quota. See [Batch Operations](/guides/batch-operations).

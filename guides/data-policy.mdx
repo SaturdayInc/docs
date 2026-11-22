@@ -102,7 +102,7 @@ Saturday provides endpoints for GDPR compliance:
 
 | Endpoint | Right | Description |
 |----------|-------|-------------|
-| `POST /v1/athletes/{id}/export` | Data portability | Export the athlete's profile, activities, AI conversations, and consent records as JSON |
+| `POST /v1/athletes/{id}/export` | Data portability | Export the athlete's profile, activities, and consent records as JSON |
 | `POST /v1/athletes/{id}/delete` | Right to erasure | Cascading deletion: revokes the provider connections you supplied, then deletes the athlete and everything stored under them (profile, activities, conversations, consent records, integration tokens) and their link to a Saturday account |
 | `POST /v1/athletes/{id}/consent`, `GET /v1/athletes/{id}/consent`, `DELETE /v1/athletes/{id}/consent/{consent_id}` | Consent records | Append-only log of consent granted or revoked, by type: `data_processing`, `marketing`, `analytics` |
 

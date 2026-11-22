@@ -27,6 +27,7 @@ response = requests.post(
         "description": "Marathon training group",
         "sport": "run",
     },
+    timeout=30,
 )
 
 org = response.json()  # 201 Created
@@ -81,6 +82,7 @@ response = requests.post(
         "role": "admin",
         "athlete_id": "a1b2c3d4-...",  # optional link to an athlete record
     },
+    timeout=30,
 )
 ```
 
@@ -196,6 +198,7 @@ response = requests.put(
         "negotiated_by": "Coach Dana Reyes",
         "note": "2026 season team agreement",
     },
+    timeout=30,
 )
 ```
 

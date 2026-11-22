@@ -31,9 +31,12 @@ response = requests.post(
         "weight_kg": 70,
         "settings": {"sweat_level": 7, "saltiness": 5},
     },
+    timeout=30,
 )
 
 athlete = response.json()
+if response.status_code >= 400:
+    raise RuntimeError(athlete["error"])
 print(f"Saturday ID: {athlete['id']}")
 ```
 
@@ -56,6 +59,7 @@ const response = await fetch("https://api.saturday.fit/v1/athletes", {
 });
 
 const athlete = await response.json();
+if (!response.ok) throw new Error(athlete.error.message);
 console.log(`Saturday ID: ${athlete.id}`);
 ```
 
@@ -66,7 +70,8 @@ console.log(`Saturday ID: ${athlete.id}`);
 The `external_id` field maps the Saturday athlete to your platform's user. This is your user ID, not Saturday's. Use it to look athletes up without storing Saturday's own IDs:
 
 ```bash
-GET /v1/athletes?external_id=your-user-12345
+curl "https://api.saturday.fit/v1/athletes?external_id=your-user-12345" \
+  -H "Authorization: Bearer $SATURDAY_API_KEY"
 ```
 
 The answer lists every athlete you created with that `external_id`, newest first, in one page.
@@ -75,7 +80,7 @@ An `external_id` belongs to one athlete in your account. A create with an `exter
 
 ## Profile fields
 
-Every field is optional at create time. The athlete's fueling profile is what makes prescriptions exact, so the fields below split into two groups: the ones the engine needs before it will return exact numbers, and the ones that narrow the band further. An athlete missing any safety-core field gets a range instead of a number. See [Athlete Onboarding](/guides/onboarding).
+Send at least one of `name`, `email` or `external_id` at create time; every other field is optional. The athlete's fueling profile is what makes prescriptions exact, so the fields below split into two groups: the ones the engine needs before it will return exact numbers, and the ones that narrow the band further. An athlete missing any safety-core field gets a range instead of a number. See [Athlete Onboarding](/guides/onboarding).
 
 ### Top-level fields
 
@@ -95,7 +100,7 @@ Saturday sets `id`, `partner_id`, `created_at`, `updated_at`, `profile_complete`
 
 ### Settings: the fueling profile
 
-`settings` holds the fields the engine reads. The 1-9 scales are odd-point selectors, not continuous sliders: send 1, 3, 5, 7, or 9.
+`settings` holds the fields the engine reads. The 1-9 scales take any whole number from 1 to 9.
 
 | Field | Type | Values | Safety-core |
 |-------|------|--------|-------------|
@@ -160,6 +165,7 @@ response = requests.patch(
     "https://api.saturday.fit/v1/athletes/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
     headers={"Authorization": f"Bearer {os.environ['SATURDAY_API_KEY']}"},
     json={"weight_kg": 72, "email": "alex@example.com"},
+    timeout=30,
 )
 ```
 
@@ -200,7 +206,7 @@ Saturday is for athletes 14 and up. On create and on update, a `year_of_birth` t
     "code": "under_minimum_age",
     "message": "Saturday is for athletes 14 and up, and year_of_birth 2014 is under that age. Nothing was saved. See https://docs.saturday.fit/guides/athletes",
     "param": "year_of_birth",
-    "documentation_url": "https://docs.saturday.fit/errors#under_minimum_age",
+    "documentation_url": "https://docs.saturday.fit/guides/athletes",
     "request_id": "req_a1b2c3d4e5f6"
   }
 }
@@ -238,7 +244,7 @@ Export all data held for an athlete:
 POST /v1/athletes/{id}/export
 ```
 
-Returns JSON containing the athlete's profile, every activity with its prescription and feedback, any conversations with Saturday's assistant, and their consent records.
+Returns JSON containing the athlete's profile, every activity with its prescription and feedback, and their consent records.
 
 ## Settings schema
 
@@ -248,6 +254,6 @@ Fetch the global settings schema to build dynamic forms:
 GET /v1/settings/schema
 ```
 
-Returns each field's type, valid range or option list, description, and default, so a settings UI does not have to hardcode Saturday's requirements. This is a global schema, identical for every athlete; fetch one athlete's current values with `GET /v1/athletes/{id}/settings`.
+Returns each field's type, valid range or option list, description, and default, so a settings UI does not have to hardcode Saturday's requirements. This is a global schema, identical for every athlete; fetch one athlete's current values with `GET /v1/athletes/{id}/settings`. The schema lists the editable fields; a stored settings object can also carry `concerns_answered`, which sending any concern field sets, so keep it when you write a settings object back.
 
 For collecting the profile from scratch rather than editing it, `GET /v1/onboarding/questions` returns the same fields as athlete-facing questions with copy, ordering, and answer values. See [Athlete Onboarding](/guides/onboarding).
