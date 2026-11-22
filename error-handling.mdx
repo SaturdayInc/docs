@@ -166,4 +166,4 @@ Every response carries an `X-Request-ID` header, and every error body repeats it
 
 ### Error catalog
 
-`GET /v1/errors` (no auth) lists the error codes, leaving out features in STEALTH.
+`GET /v1/errors` (no auth) lists the error codes, leaving out features in STEALTH. Each entry's `retryable` says whether you may retry the same call automatically after `Retry-After`: it is `false` for the daily ceilings, which clear only at midnight UTC. A code that appears only on one item of a batch, such as `missing_identifier`, is listed with the status a single request would get.
