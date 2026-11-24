@@ -1,0 +1,75 @@
+---
+title: 'Sessions in a member\'s Saturday'
+description: 'The sessions you plan for an athlete, added to their own Saturday app'
+sidebarTitle: 'Member sessions'
+icon: 'calendar-plus'
+---
+
+# Sessions in a member's Saturday
+
+When an athlete on your platform is linked to their Saturday account, the sessions you plan for them can appear in their Saturday app with a fuel plan for each, and follow your changes. Nothing extra to call: the [activity routes](/guides/activities) you use today do it.
+
+This needs two things:
+
+1. **Saturday's go-ahead for your platform.** Ask at api@saturday.fit. Until then the routes below behave exactly as before and their answers carry no `member_session`.
+2. **The member's yes.** When a member confirms the link to your platform (the confirmation page Saturday emails, or your checkout on saturday.fit), the page says "{your name} will add the sessions it plans for you to Saturday." Confirming is their yes. A member linked before that sentence was shown gives it by confirming again.
+
+## Adding a session
+
+Create the activity as usual, with a `start` and your own `external_id`:
+
+```json
+POST /v1/athletes/{athlete_id}/activities
+{
+  "type": "run",
+  "duration_min": 60,
+  "intensity_level": 5,
+  "start": "2026-12-02T07:00:00-07:00",
+  "external_id": "your-session-4411"
+}
+```
+
+The answer carries what happened in the member's Saturday:
+
+```json
+{
+  "id": "…",
+  "type": "run",
+  "start": "2026-12-02T07:00:00-07:00",
+  "member_session": { "state": "added" }
+}
+```
+
+The member's session is matched on `external_id`. Sending the same session again, or retrying a request, updates the one session the member has.
+
+## Changing and moving a session
+
+`PATCH` the activity. The member's session takes your change, and `member_session` reads `updated`. A field the member changed in Saturday stays as they set it, and `kept_fields` lists it:
+
+```json
+{ "member_session": { "state": "updated", "kept_fields": ["duration_min"] } }
+```
+
+To move a session, send a new `start`. A session the member moved stays where they put it.
+
+## Removing a session
+
+`DELETE` the activity. The session leaves the member's Saturday unless the member used it (changed it, planned fuel or bottles for it, reported on it, rated it, wrote a note or marked it done), or another of your activities for this athlete holds the same `external_id`. A session the member used stays theirs.
+
+## When a session is not added
+
+`member_session.state` is `not_added`, and `code` says why:
+
+| `code` | What it means | What to do |
+|---|---|---|
+| `not_linked` | The athlete is not linked to a Saturday account | Nothing; sessions start once they link |
+| `no_member_yes` | The member linked before agreeing that you add their sessions | They agree when they confirm the link again |
+| `member_turned_off` | The member turned your sessions off in Saturday | Nothing; sessions already added stay with them |
+| `start_required` | The activity has no `start` | Send `start` |
+| `start_needs_offset` | Saturday holds no time zone for the member | Send `start` with a UTC offset |
+| `legs_not_added` | Bricks and triathlons stay on your record only | Nothing |
+| `member_deleted` | The member deleted this session in Saturday | Nothing; it stays deleted |
+| `not_partner_session` | The member's Saturday holds a session there that you did not add | Nothing; it is left as it is |
+| `try_again` | Saturday could not write the session | `PATCH` the activity with the same values |
+
+The activity itself is stored on your record in every case, and its prescription works as before.
