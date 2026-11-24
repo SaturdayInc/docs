@@ -12,7 +12,7 @@ When an athlete on your platform is linked to their Saturday account, the sessio
 This needs two things:
 
 1. **Saturday's go-ahead for your platform.** Ask at api@saturday.fit. Until then the routes below behave exactly as before and their answers carry no `member_session`.
-2. **The member's yes.** When a member confirms the link to your platform (the confirmation page Saturday emails, or your checkout on saturday.fit), the page says "{your name} will add the sessions it plans for you to Saturday." Confirming is their yes. A member linked before that sentence was shown gives it by confirming again.
+2. **The member's yes.** When a member confirms the link to your platform (the confirmation page Saturday emails, or your checkout on saturday.fit), the page says "{your name} will add the sessions it plans for you to Saturday." Confirming is their yes. A member linked before that sentence was shown gives it by turning your sessions on in the Saturday app (Preferences, Partner Sharing), or by confirming again. The same switch turns your sessions off.
 
 ## Adding a session
 
@@ -63,7 +63,7 @@ To move a session, send a new `start`. A session the member moved stays where th
 | `code` | What it means | What to do |
 |---|---|---|
 | `not_linked` | The athlete is not linked to a Saturday account | Nothing; sessions start once they link |
-| `no_member_yes` | The member linked before agreeing that you add their sessions | They agree when they confirm the link again |
+| `no_member_yes` | The member linked before agreeing that you add their sessions | They agree by turning your sessions on in the Saturday app, or when they confirm the link again |
 | `member_turned_off` | The member turned your sessions off in Saturday | Nothing; sessions already added stay with them |
 | `start_required` | The activity has no `start` | Send `start` |
 | `start_needs_offset` | Saturday holds no time zone for the member | Send `start` with a UTC offset |
