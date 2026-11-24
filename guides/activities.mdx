@@ -83,8 +83,9 @@ console.log(`Activity ID: ${activity.id}`);
 | `is_race_event` | boolean | No | Whether this is a race. The calculate request spells it `is_race`; here that name is refused. Exact numbers need it |
 | `meal_before_min` | integer | No | Minutes since the athlete's last carb-rich meal at the start. More than 180 plans a fasted start. Exact numbers need it |
 | `external_id` | string | No | Your platform's activity ID |
+| `start` | string | No | When the session is planned: ISO 8601 with a UTC offset (`2026-12-02T07:00:00-07:00`), or without one for the athlete's clock in Saturday. Within a year of today. Needed to [add the session to a member's Saturday](/guides/member-sessions) |
 
-Create takes these fields. It also accepts `name` and `scheduled_at` and ignores them: there is no stored display name or scheduled start time, so keep those on your side and join on `external_id`. Any other field is refused with `400` and code `unsupported_field`, `param` naming it and the message naming the field to send: `activity_type` (send `type`), `is_race` (send `is_race_event`), `duration` (send `duration_min`), or the closest field for a misspelling. See [Error Handling](/error-handling#a-field-the-request-does-not-take).
+Create takes these fields. It also accepts `name` and `scheduled_at` and ignores them: there is no stored display name, and the planned start goes in `start`. Keep the name on your side and join on `external_id`. Any other field is refused with `400` and code `unsupported_field`, `param` naming it and the message naming the field to send: `activity_type` (send `type`), `is_race` (send `is_race_event`), `duration` (send `duration_min`), or the closest field for a misspelling. See [Error Handling](/error-handling#a-field-the-request-does-not-take).
 
 `external_id` is worth sending. Saturday's hosted onboarding finish screen uses it to deep-link the athlete back into the matching activity in your app.
 
