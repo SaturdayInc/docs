@@ -9,10 +9,14 @@ icon: 'users'
 
 The Coach API exposes a coach's Saturday surface over a coach-scoped REST API, and over an [MCP connector](/guides/coach-connector): the per-athlete fueling rollup, AI reports, the roster's needs-attention markers, the notification and alerting settings, and a read-only view of the coach's billing.
 
-It is built for a coach who wants to automate fueling monitoring: read who needs attention, pull a report, and configure alert rules and digests across a whole roster programmatically.
+With it, a coach's scripts or AI assistant read who needs attention, pull reports, and set alert rules and digests for the whole roster.
+
+<Warning>
+  **Closed for now.** Coach API keys aren't available right now: the portal mints no coach key, and a request with a `cp_` key is refused with `403 coach_keys_closed`. Keys you hold stay listed in the portal, and you can revoke them there. A coach's AI assistant reaches the coach surface only after the coach completes the [training-setting step](#the-training-setting-step). Write to api@saturday.fit to ask about access.
+</Warning>
 
 <Note>
-  **Tier requirements.** Coach endpoints require the Pro Coach tier or above (Pro Coach, Head Coach, Business, Enterprise), and the tier is checked on every request. Two further gates sit above that line: minting a coach API key in the portal requires the Business or Enterprise tier, and webhook *delivery* requires Business or Enterprise. A Pro Coach or Head Coach therefore reaches the whole surface through the OAuth connector, and reaches it through an API key only if someone on a Business or Enterprise plan minted one.
+  **Tier requirements.** Coach endpoints require Pro Coach or higher (Pro Coach, Head Coach, Business, Enterprise), and the tier is checked on every request. Webhook *delivery* requires Business or Enterprise.
 </Note>
 
 <Note>
@@ -28,17 +32,34 @@ Two ways to authenticate as a coach. Both resolve to the same coach identity and
 | **Coach API key** | `cp_live_…` / `cp_test_…` (Bearer) | Scripts, automations, server-to-server |
 | **OAuth2 (coach scopes)** | OAuth2 access token (Bearer) | The Saturday connector for AI assistants / user-delegated apps |
 
-<Warning>
-  Coach API keys aren't available right now. Write to api@saturday.fit to ask about access. Until then the portal mints no coach key, and a request with a `cp_` key is refused with `403 coach_keys_closed`. Keys you hold stay listed in the portal, and you can revoke them there.
-</Warning>
-
-Coach API keys are minted in the [coach portal](https://coach.saturday.fit) under **[Admin → API Keys](https://coach.saturday.fit/admin/api-keys)**. Pass the key as a Bearer token:
+Coach API keys come from the [coach portal](https://coach.saturday.fit)'s **[Admin → API Keys](https://coach.saturday.fit/admin/api-keys)** page. Pass the key as a Bearer token:
 
 ```bash
 curl -H "Authorization: Bearer cp_live_..." https://api.saturday.fit/v1/coach/roster
 ```
 
 OAuth2 coaches use the [connector OAuth flow](/guides/oauth2) with coach scopes (`coach:roster`, `coach:reports`, `coach:alerts`, `coach:webhooks`). Because a coach is also an athlete, the same OAuth token acts as an athlete-self token on `/v1/athletes/*`.
+
+## The training-setting step
+
+Before a coach's AI assistant (Claude or ChatGPT, through the [connector](/guides/coach-connector) or any OAuth token with coach scopes) works with athletes' Saturday data, the coach does two things for the assistant account they connect:
+
+1. Signs a short statement, typing their full name: model training is off in that account and will stay off while it is connected to Saturday; the account is theirs and they use their athletes' Saturday data there only to coach them; and if model training is ever turned on there, they will disconnect it from Saturday first.
+2. Shows a screenshot that model training is off in that account.
+
+Both stand for 90 days, and then we ask again. Until both stand, the coach surface answers that assistant with `403 coach_training_proof_required` and the coach tools stay off. The message says what is needed; where the step is open (the sandbox today), it ends with a link to the step. The token keeps working for the coach's own athlete data on `/v1/athletes/*`. When we can't read the coach's standing, the answer is `503 service_unavailable`: retry.
+
+## Errors
+
+The coach surface answers with the standard [error envelope](/error-handling). These codes are its own:
+
+| Code | Status | When |
+|------|--------|------|
+| `coach_keys_closed` | 403 | A valid `cp_` key while coach API keys are closed. The message: "Coach API keys aren't available right now. Write to api@saturday.fit to ask about access." |
+| `coach_training_proof_required` | 403 | A coach's AI assistant before the coach has completed the [training-setting step](#the-training-setting-step) for that assistant's account |
+| `coach_tier_required` | 403 | A `cp_` key whose coach is below Pro Coach |
+
+A resource outside the coach's roster, or a credential without the capability a route needs, answers `404` (below).
 
 ## Scopes and capabilities
 
@@ -111,7 +132,7 @@ The markers come from Saturday's single shared concern definition, so they match
 
 ### Roster digest (flagged-only)
 
-`GET /v1/coach/roster/digest` returns the same data for athletes who crossed a concern bar this window, most-flagged first. Athletes who did not cross a bar are omitted, which is what makes this the useful call on a large roster.
+`GET /v1/coach/roster/digest` returns the same data for athletes who crossed a concern bar this window, most-flagged first. Athletes who did not cross a bar are omitted.
 
 ```json
 {
@@ -200,7 +221,7 @@ A workout recorded on a Garmin device that reached Saturday through another serv
 
 Sessions from some connected services stay on Saturday and are never returned by the Coach API, so no response carries them or anything built from them. A workout recorded by Garmin or COROS alone is withheld; when the same workout also reached Saturday from another service, it comes back with only that other service's details. When an athlete has connected such a service, the fueling rollup, AI report and AI plan responses, and that athlete's roster row, carry a `withheld` object (`kind`: `connected_app_sessions`, plus a `message` to show). Treat the sessions you do get as incomplete: a short list does not mean the athlete trained less.
 
-The adherence fractions are uncapped, so a value above `1.0` is genuine over-consumption rather than an error. Every missing value stays `null`, never `0`, and an absent `symptoms` key is not a zero.
+The adherence fractions are uncapped: a value above `1.0` means the athlete had more than prescribed. Every missing value stays `null`, never `0`, and an absent `symptoms` key is not a zero.
 
 ### AI report
 
@@ -251,7 +272,7 @@ Served from cache unless a newer session has landed or `refresh=true`.
 
 ## Configuration
 
-Most of the Coach API is a configuration surface. It writes the same alert-rule and report-settings model the portal reads: channels, triggers, per-trigger thresholds, the overall/group/athlete scope hierarchy, cadence, quiet hours, the hourly cap, two-trigger combinators, and AI-report defaults. The portal UI and the API are two views of one config model.
+Most of the Coach API is a configuration surface. It writes the same alert-rule and report-settings model the portal reads: channels, triggers, per-trigger thresholds, the overall/group/athlete scope hierarchy, cadence, quiet hours, the hourly cap, two-trigger combinators, and AI-report defaults.
 
 <Info>
   **Scope precedence.** Config applies at one of three scopes: `overall` (the whole roster), `group` (a coach group), or `athlete` (one athlete). When resolving what an athlete sees, the most specific scope wins (athlete over group over overall). `scope_id` is required for `group` and `athlete`, and omitted for `overall`.
