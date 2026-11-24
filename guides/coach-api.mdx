@@ -42,12 +42,9 @@ OAuth2 coaches use the [connector OAuth flow](/guides/oauth2) with coach scopes 
 
 ## The training-setting step
 
-Before a coach's AI assistant (Claude or ChatGPT, through the [connector](/guides/coach-connector) or any OAuth token with coach scopes) works with athletes' Saturday data, the coach does two things for the assistant account they connect:
+Before a coach's AI assistant (Claude or ChatGPT, through the [connector](/guides/coach-connector) or any OAuth token with coach scopes) works with athletes' Saturday data, the coach confirms that model training is off in the assistant account they connect. The step is closed for now, and the coach tools stay off until it opens.
 
-1. Signs a short statement, typing their full name: model training is off in that account and will stay off while it is connected to Saturday; the account is theirs and they use their athletes' Saturday data there only to coach them; and if model training is ever turned on there, they will disconnect it from Saturday first.
-2. Shows a screenshot that model training is off in that account.
-
-Both stand for 90 days, and then we ask again. Until both stand, the coach surface answers that assistant with `403 coach_training_proof_required` and the coach tools stay off. The message says what is needed; where the step is open (the sandbox today), it ends with a link to the step. The token keeps working for the coach's own athlete data on `/v1/athletes/*`. When we can't read the coach's standing, the answer is `503 service_unavailable`: retry.
+An assistant whose coach has not completed the step gets `403 coach_training_proof_required` from the coach surface. The token keeps working for the coach's own athlete data on `/v1/athletes/*`. When we can't read the coach's standing, the answer is `503 service_unavailable`: retry.
 
 ## Errors
 
