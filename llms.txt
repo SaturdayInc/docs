@@ -12,7 +12,7 @@ Authenticated API requests use a Bearer token in the Authorization header. Partn
 Authorization: Bearer $SATURDAY_API_KEY
 ```
 
-Coaches use a separate surface with separate credentials: a `cp_live_` / `cp_test_` coach API key, or an OAuth2 token carrying coach scopes.
+Coaches use a separate surface with separate credentials: a `cp_live_` / `cp_test_` coach API key, or an OAuth2 token carrying coach scopes. Coach API keys are closed for now, and a coach's AI assistant reaches the coach surface only after the coach completes the training-setting step: https://docs.saturday.fit/guides/coach-api
 
 ## Core Endpoints
 

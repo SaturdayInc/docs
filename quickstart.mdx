@@ -8,7 +8,7 @@ sidebarTitle: 'Quickstart'
 
 ## 1. Get your API key
 
-**Your own key:** a key comes with any paid Saturday plan, member or coach. Sign in at [saturday.fit/api](https://saturday.fit/api) and make it; it is shown once and emailed to you. It covers 10 athletes; to cover more, write to [api@saturday.fit](mailto:api@saturday.fit) about what you're building. Not sure which lane is yours? See [Getting Access](/access).
+**Your own key:** a key comes with any paid Saturday plan, member or coach. Sign in at [saturday.fit/api](https://saturday.fit/api) and make it; it is shown once and emailed to you. It covers 10 athletes; to cover more, write to [api@saturday.fit](mailto:api@saturday.fit) about what you're building. Not sure which way in fits you? See [Getting Access](/access).
 
 **Platform partners:** keys come with your agreement. Contact [api@saturday.fit](mailto:api@saturday.fit).
 
@@ -134,14 +134,14 @@ curl -X POST https://api.saturday.fit/v1/nutrition/calculate \
 | `carb_g_per_hr`, `sodium_mg_per_hr`, `fluid_ml_per_hr` | Per-hour targets, whole numbers, as the Saturday app shows them |
 | `total_*` | Totals for the whole session |
 | `precision.profile_complete` | When `precision` is present, `true`: these are exact numbers. `false`: the response carries ranges instead (step 5) |
-| `tier`, `tier_source` | `full` with `trial`: the athlete's 14-day trial gives exact numbers. It started with this call: 15 calls on the first day, then 5 a day, up to 42 in all |
+| `tier`, `tier_source` | `full` with `trial`: the athlete's trial gives exact numbers for up to 14 days. It started with this call: 15 calls on the first day, then 5 a day, up to 42 in all |
 | `safety` | Shown on every response. Show each warning to the athlete. `not_instructions` marks the numbers as guidance, not commands |
 | `attribution` | Show it wherever you show the numbers |
 
-That is a first prescription. To store the session and size the athlete's gels and drink mix against it, continue with [Activities](/guides/activities) and [Prep and Products](/guides/prep-and-products).
+To store the session and size the athlete's gels and drink mix against it, continue with [Activities](/guides/activities) and [Prep and Products](/guides/prep-and-products).
 
 <Warning>
-  Safety data is never gated. Every response carries full safety metadata regardless of subscription status, because overdrinking can cause hyponatremia, a potentially fatal condition.
+  Every response carries the full safety metadata, whatever the athlete's subscription: overdrinking can cause hyponatremia, which can be fatal.
 </Warning>
 
 ## 5. Ranges and what they ask for
@@ -192,7 +192,7 @@ An athlete whose profile is missing answers gets ranges and a list of what to as
 
 `missing_fields` arrives most impactful first. `missing_profile_fields` names the athlete's answers to collect: ask those questions in your app, or, in the sandbox, send the athlete to `precision.onboarding.url` when the response carries one. A session input your request left out (`meal_before_min`, say) is listed in `missing_fields` too and in `missing_session_inputs`: it is yours to send. Check `precision.profile_complete` when the response carries `precision`, and the range fields when it does not, not `tier`, to tell exact numbers from ranges. `trial_ends_at`, like every time the API gives you, is in Unix seconds.
 
-After the trial, an athlete without a Saturday subscription gets `"tier": "teaser"`: ranges and a `subscription_cta` with their subscribe link. See [Freemium Model](/guides/freemium-model) for how the tiers are decided and how the subscribe loop pays you.
+After the trial, an athlete without a Saturday subscription gets `"tier": "teaser"`: ranges and a `subscription_cta` with their subscribe link. See [Freemium Model](/guides/freemium-model) for how the tiers are decided.
 
 ## 6. Use an SDK
 

@@ -7,11 +7,7 @@ icon: 'gift'
 
 # Freemium Model
 
-Saturday's API is free for partners to integrate. The monetization happens at the athlete level: athletes subscribe to Saturday for full-precision nutrition data.
-
-```
-Partner integrates (free) -> Athletes see teasers (free) -> Athletes subscribe for precision
-```
+Platform partners integrate at no charge, and a key you make at saturday.fit/api comes with your paid Saturday plan. Athletes without a Saturday subscription get ranges; athletes who subscribe get exact numbers.
 
 ## Teaser vs. full comparison
 
@@ -25,7 +21,7 @@ Partner integrates (free) -> Athletes see teasers (free) -> Athletes subscribe f
 | **Confidence score** | Shown | Shown |
 
 <Note>
-  **Safety is never gated.** Both teaser and full responses include complete safety metadata. Safety information is always free.
+  **Safety is never gated.** Teaser and full responses both carry the full safety metadata.
 </Note>
 
 ## Detecting response type
@@ -74,7 +70,7 @@ if (data.tier === "teaser") {
 
 ## Full-precision trial
 
-An athlete-scoped calculation with real profile or optional activity inputs starts a **14-day trial of full-tier responses: 15 calls on the first UTC day (exploration allowance), then 5 calls per athlete per UTC day, and at most 42 in all**. Zero-data calls do not start the trial. Complete inputs are still required for exact numbers. During the trial, full responses carry trial metadata so you can build countdown UX:
+An athlete-scoped calculation with real profile or optional activity inputs starts a **14-day trial of full-tier responses: 15 calls on the first UTC day, then 5 calls per athlete per UTC day, and at most 42 in all**. Zero-data calls do not start the trial. Complete inputs are still required for exact numbers. During the trial, full responses carry trial metadata, so you can show how much of the trial is left:
 
 ```json
 {
@@ -94,7 +90,7 @@ Over the daily cap, responses degrade to teaser ranges (never an error) and incl
 
 Three more bounds keep the trial to real athletes. None is an error: the answer comes back in teaser ranges with a flag and a `trial_note` you can show the athlete as it stands.
 
-- **New trials per day.** A key starts at most 50 new trials per UTC day (5 for a key that comes with a Saturday plan). An athlete past that gets ranges with `trial_start_deferred: true`, and their trial starts on a later day. Athletes already in their trial are not affected. Rolling out to a large roster? Email api@saturday.fit and we raise it for your key.
+- **New trials per day.** A key starts at most 50 new trials per UTC day (5 for a key that comes with a Saturday plan). An athlete past that gets ranges with `trial_start_deferred: true`, and their trial starts on a later day. Athletes already in their trial are not affected. Rolling out to a large roster? Email api@saturday.fit and we'll raise it for your key.
 - **Profiles per trial athlete.** One trial athlete's exact numbers cover up to 3 distinct profiles over the trial: their first, plus two changes. Small day-to-day weight changes do not count as changes. A fourth profile gets ranges with `trial_profile_limit_reached: true`; the earlier profiles stay exact. Subscribed athletes have no such bound.
 - **Exact answers per trial.** One athlete's trial gives at most 42 exact answers in all, however the days fall. The next answer comes back in ranges with `trial_answers_used_up: true`, and its `trial_note` says a Saturday subscription gives exact numbers.
 
@@ -109,7 +105,7 @@ When an athlete wants full precision:
 3. The athlete lands on Saturday's checkout page (partner-branded), pays via Stripe, and is sent back toward your app
 4. Saturday writes the link and fires the `subscription.created` webhook, and the athlete's next API call returns full precision
 
-Saturday manages the subscription and the payment. Two important details:
+Saturday manages the subscription and the payment. Two details:
 
 - **The unlock requires athlete-scoped requests.** Only CTAs minted from requests that included an `athlete_id` carry the `pst`; identity-less CTAs are attribution-only and cannot auto-unlock anyone.
 - **Subscribed Saturday users are never double-charged.** If the athlete has an active Saturday subscription, checkout links their account to your athlete instead of charging, and `subscription.created` fires with `source: "existing_subscription_linked"`.
@@ -120,7 +116,7 @@ Saturday manages the subscription and the payment. Two important details:
 
 ### Return-to-app handoff
 
-Give Saturday a `return_url` (https or deep link) at partner onboarding and the post-payment success page shows a "Back to your app" button, so athletes land back in your product with full precision flowing.
+Give Saturday a `return_url` (https or deep link) at partner onboarding and the post-payment success page shows a "Back to your app" button, so athletes return to your product.
 
 ### Automatic linking by email
 
@@ -147,7 +143,7 @@ When an athlete qualifies for more than one discount source (a partner offer **a
 20% partner + 15% org → 1 − (0.80 × 0.85) = 32% → capped to 30%
 ```
 
-Checkout collapses the stack into a single combined discount, and Saturday's subscribe landing page displays the stacked percent plus which sources contributed, so athletes see the number they will pay rather than a per-source figure.
+Checkout collapses the stack into a single combined discount, and Saturday's subscribe landing page displays the stacked percent plus which sources contributed, so athletes see the price they will pay.
 
 ## Testing the loop (test environment)
 
@@ -175,19 +171,11 @@ You can also run a real test checkout with Stripe's `4242 4242 4242 4242` card f
 ## Attribution
 
 Teaser data must carry the "Powered by Saturday" mark, linked, near the numbers. Full data carries a
-lighter mark wherever Saturday data appears. That linked mark is how the loop closes: athletes seeing
-teasers find their way to full precision through it.
+lighter mark wherever Saturday data appears. Athletes who see ranges reach Saturday's subscribe page
+through that link.
 
 Full placement rules, marks, sizing, and the per-surface matrix live on the
 [Brand & Attribution](/guides/attribution) page.
-
-## Partner value exchange
-
-- **Partners get**: Free nutrition intelligence for their platform
-- **Saturday gets**: Distribution to athletes who may subscribe
-- **Athletes get**: Personalized nutrition whether they subscribe or not
-
-More partners means more athletes seeing Saturday, and more subscribers.
 
 <Note>
 The trial starts once real profile or optional activity inputs are present. Zero-data calculations never start or burn it. Collect the [fueling profile](/guides/onboarding) and provide the per-activity inputs so trial calculations can return exact numbers.

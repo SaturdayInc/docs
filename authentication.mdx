@@ -22,20 +22,20 @@ All server-to-server requests pass the key in the `Authorization` header as a Be
 
 ### Key types
 
-The prefix encodes both the principal and the environment, so a misrouted key fails closed instead of touching the wrong data.
+The prefix encodes both the principal and the environment, so a key sent to the wrong environment is refused.
 
 | Prefix | Environment | Purpose |
 |--------|-------------|---------|
 | `sk_test_` | Sandbox | Partner key for development and testing |
 | `sk_live_` | Production | Partner key against real athlete data |
 | `cp_test_` | Sandbox | Coach key for a coach's roster surface (`/v1/coach/*`) |
-| `cp_live_` | Production | Coach key in production. Requires the Business tier or higher |
+| `cp_live_` | Production | Coach key in production. Requires Pro Coach or higher |
 
 <Warning>
   Coach API keys aren't available right now. Write to api@saturday.fit to ask about access. Until then the portal mints no coach key, and a request with a `cp_` key is refused with `403 coach_keys_closed`.
 </Warning>
 
-Coach keys (`cp_*`) are minted in the [coach portal](https://coach.saturday.fit) under **[API Keys](https://coach.saturday.fit/admin/api-keys)**, not via `api@saturday.fit`. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster and configuration. A coach whose subscription lapses below Pro Coach loses `cp_` key access on the next request.
+Coach keys (`cp_*`) come from the [coach portal](https://coach.saturday.fit)'s **[API Keys](https://coach.saturday.fit/admin/api-keys)** page. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster and configuration. A coach whose subscription lapses below Pro Coach loses `cp_` key access on the next request.
 
 Coach keys use a separate scope vocabulary, chosen at mint time in the portal: `roster:read`, `roster:write`, `reports:read`, `org:read`, `org:write`, `org:admin`, `webhooks:manage`, `billing:read`. That is a different model from the partner-key scopes below, and the two do not mix. The portal offers each coach only the scopes their role and plan can mint.
 
@@ -45,14 +45,14 @@ curl -H "Authorization: Bearer $SATURDAY_API_KEY" \
 ```
 
 <Warning>
-  Never expose live keys in client-side code. API keys belong in server-to-server requests only. If you suspect a key has been compromised, revoke it immediately.
+  Keep live keys out of client-side code: API keys belong in server-to-server requests. If a key may have leaked, revoke it.
 </Warning>
 
 ### Getting your keys
 
 Your own key comes with any paid Saturday plan: sign in at [saturday.fit/api](https://saturday.fit/api) to make it. It is shown once and emailed to your sign-in address once it is verified. If you lose it, make a new one there; the old one stops working at once.
 
-Platform partners are issued keys as part of the agreement: contact [api@saturday.fit](mailto:api@saturday.fit) with your platform name and use case. See [Getting Access](/access) for which lane applies to you.
+Platform partners get keys with their agreement: write to [api@saturday.fit](mailto:api@saturday.fit) with your platform name and what you're building. [Getting Access](/access) compares the ways in.
 
 ### Using your key
 
@@ -76,7 +76,7 @@ const response = await fetch("https://api.saturday.fit/v1/athletes", {
 
 ### Key management
 
-**Creating additional keys.** One key per service or deployment stage keeps a compromise contained and makes rotation a non-event.
+**Creating additional keys.** With one key per service or deployment stage, a leaked key reaches less, and you can rotate one without touching the others.
 
 ```bash
 curl -X POST https://api.saturday.fit/v1/partner/api-keys \
@@ -160,6 +160,7 @@ Authentication and authorization failures share the standard [error envelope](/e
 | `insufficient_scope` | `authorization_error` | 403 | The key's scopes don't permit this method |
 | `coach_keys_closed` | `authorization_error` | 403 | A valid `cp_` key while coach API keys are closed |
 | `coach_tier_required` | `authorization_error` | 403 | A `cp_` key whose coach is below Pro Coach |
+| `coach_training_proof_required` | `authorization_error` | 403 | A coach's AI assistant on a coach endpoint before the coach has completed the [training-setting step](/guides/coach-api#the-training-setting-step) for that assistant's account |
 | `service_unavailable` | `api_error` | 503 | Key verification is temporarily unavailable. Retry rather than rotating a working key |
 
 A key used against the wrong environment fails closed as `invalid_api_key`, and the message names the environment the key was issued for. Each environment keeps separate key records, and a record whose environment is not the host's is refused even if it is present.

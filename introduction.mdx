@@ -10,8 +10,6 @@ Saturday calculates personalized fuel, hydration, and electrolyte prescriptions 
 
 ## What the API returns
 
-Training platforms build the workout. Saturday fuels it.
-
 | Output | Field | Units |
 |--------|-------|-------|
 | Carbohydrate target | `carb_g_per_hr` | grams per hour |
@@ -24,25 +22,11 @@ Safety metadata is present on every response at every tier, including free ones.
 
 Every time a partner key receives is a whole number of Unix seconds: on athletes, activities and stored prescriptions, webhooks and their deliveries, each event's `created_at`, API keys, your partner account, `trial_ends_at`, the fueling profile's `updated_at`, the export's `exported_at` and every time in its records, over REST, webhooks and MCP alike. The webhook signature header's `t` is Unix seconds too ([Webhooks](/guides/webhooks#verifying-webhook-signatures-hmac-sha256)). Usage dates are `YYYY-MM-DD` in UTC, and `GET /v1/health` gives its `timestamp` as an RFC 3339 string. The [Coach API](/guides/coach-api) answers in Unix milliseconds.
 
-Product matching against Saturday's curated endurance-nutrition catalog and conversations with Saturday's assistant are gated. [Feature Gates](/guides/feature-gates) covers the launch stages and how to request access.
-
-## The problem
-
-Fueling for endurance athletes is safety-critical. Hyponatremia, dangerously low blood sodium from overdrinking, kills athletes. Bad fueling causes GI distress, bonking, and DNFs. Getting those edge cases right is the hard part.
-
-Saturday's API lets a platform offer that without building it. Your platform handles the training. Saturday handles the fueling.
-
-## Who builds on it
-
-- Training platforms, the Athletica.ai / Intervals.icu / TriDot / AI Endurance / Final Surge category
-- Wearable companies putting nutrition into watch faces and workout summaries
-- Race organizers issuing fueling plans to event participants
-- Coaching platforms adding nutrition tools alongside training tools
-- AI agents consuming Saturday over MCP or direct HTTP
+Product matching against Saturday's endurance-nutrition catalog and conversations with Saturday's assistant are gated. [Feature Gates](/guides/feature-gates) covers the launch stages and how to request access.
 
 ## What it costs
 
-Platform partners integrate at no charge and earn attribution. Athletes who want exact numbers subscribe to Saturday directly, so the partner carries no nutrition billing. Builders whose athletes live in the builder's database get a key with any paid Saturday plan, member or coach. [Getting Access](/access) routes you to the right lane.
+Platform partners integrate at no charge and earn attribution. Athletes who want exact numbers subscribe to Saturday directly, so the partner carries no nutrition billing. If you keep your athletes' records in your own system, your key comes with any paid Saturday plan, member or coach. [Getting Access](/access) compares the ways in.
 
 Athletes without a subscription get teaser responses: ranges in place of exact numbers, safety metadata intact. [Freemium Model](/guides/freemium-model) shows both response shapes.
 
@@ -54,7 +38,7 @@ Athletes without a subscription get teaser responses: ranges in place of exact n
 | [Athletes](/guides/athletes) | Athlete profiles scoped to your organization |
 | [Activities](/guides/activities) | Creating activities and attaching prescriptions |
 | [Webhooks](/guides/webhooks) | Event notifications for your integration |
-| [Safety](/guides/safety) | Saturday's safety model, and why it is load-bearing |
+| [Safety](/guides/safety) | The safety metadata and what you must show |
 
 ## Getting started
 
