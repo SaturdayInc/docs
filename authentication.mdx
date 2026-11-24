@@ -31,6 +31,10 @@ The prefix encodes both the principal and the environment, so a misrouted key fa
 | `cp_test_` | Sandbox | Coach key for a coach's roster surface (`/v1/coach/*`) |
 | `cp_live_` | Production | Coach key in production. Requires the Business tier or higher |
 
+<Warning>
+  Coach API keys aren't available right now. Write to api@saturday.fit to ask about access. Until then the portal mints no coach key, and a request with a `cp_` key is refused with `403 coach_keys_closed`.
+</Warning>
+
 Coach keys (`cp_*`) are minted in the [coach portal](https://coach.saturday.fit) under **[API Keys](https://coach.saturday.fit/admin/api-keys)**, not via `api@saturday.fit`. They authenticate the coach to the [Coach API](/guides/coach-api) and are confined to that coach's roster and configuration. A coach whose subscription lapses below Pro Coach loses `cp_` key access on the next request.
 
 Coach keys use a separate scope vocabulary, chosen at mint time in the portal: `roster:read`, `roster:write`, `reports:read`, `org:read`, `org:write`, `org:admin`, `webhooks:manage`, `billing:read`. That is a different model from the partner-key scopes below, and the two do not mix. The portal offers each coach only the scopes their role and plan can mint.
@@ -154,6 +158,7 @@ Authentication and authorization failures share the standard [error envelope](/e
 | `api_key_revoked` | `authentication_error` | 403 | Key revoked, or the account is suspended |
 | `plan_inactive` | `authorization_error` | 403 | The key comes with a paid Saturday plan, and the plan on its account has ended. It works again, with its athletes as they were, once the plan is active |
 | `insufficient_scope` | `authorization_error` | 403 | The key's scopes don't permit this method |
+| `coach_keys_closed` | `authorization_error` | 403 | A valid `cp_` key while coach API keys are closed |
 | `coach_tier_required` | `authorization_error` | 403 | A `cp_` key whose coach is below Pro Coach |
 | `service_unavailable` | `api_error` | 503 | Key verification is temporarily unavailable. Retry rather than rotating a working key |
 

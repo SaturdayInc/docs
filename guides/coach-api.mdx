@@ -28,6 +28,10 @@ Two ways to authenticate as a coach. Both resolve to the same coach identity and
 | **Coach API key** | `cp_live_…` / `cp_test_…` (Bearer) | Scripts, automations, server-to-server |
 | **OAuth2 (coach scopes)** | OAuth2 access token (Bearer) | The Saturday connector for AI assistants / user-delegated apps |
 
+<Warning>
+  Coach API keys aren't available right now. Write to api@saturday.fit to ask about access. Until then the portal mints no coach key, and a request with a `cp_` key is refused with `403 coach_keys_closed`. Keys you hold stay listed in the portal, and you can revoke them there.
+</Warning>
+
 Coach API keys are minted in the [coach portal](https://coach.saturday.fit) under **[Admin → API Keys](https://coach.saturday.fit/admin/api-keys)**. Pass the key as a Bearer token:
 
 ```bash
